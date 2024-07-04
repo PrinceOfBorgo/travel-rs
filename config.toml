@@ -1,0 +1,8 @@
+# Bot
+token = ""
+
+# Database
+host = "127.0.0.1"
+port = 8000
+username = "root"
+password = "root"

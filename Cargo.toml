@@ -1,0 +1,20 @@
+[package]
+name = "travel-rs"
+version = "0.1.0"
+authors = ["Michele Medori <princeofborgo@hotmail.com>"]
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+teloxide = { version = "0.12", features = ["macros"] }
+log = "0.4.22"
+tokio = { version =  "1.8", features = ["rt-multi-thread", "macros"] }
+rust_decimal = "1.35.0"
+surrealdb = "1.5.3"
+config = "0.14.0"
+anyhow = "1.0.86"
+serde = "1.0.203"
+tracing = "0.1.40"
+tracing-subscriber = { version = "0.3.18", features = ["local-time", "env-filter"] }
+macro_rules_attribute = "0.2.0"
