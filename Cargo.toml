@@ -18,3 +18,7 @@ serde = "1.0.203"
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["local-time", "env-filter"] }
 macro_rules_attribute = "0.2.0"
+regex = "1.10.5"
+strum = { version = "0.26.3", features = ["derive"] }
+chrono = "0.4.38"
+travel-rs-derive = { version = "0.1.0", path = "travel-rs-derive" }

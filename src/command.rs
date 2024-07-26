@@ -1,59 +1,100 @@
 use {
     crate::{
-        db::db,
-        error::Error,
-        trace_command, trace_command_no_err,
+        consts::{ALL_KWORD, SPLIT_AMONG_ENTRIES_SEP, SPLIT_AMONG_NAME_AMOUNT_SEP},
+        errors::CommandError,
+        expense::Expense,
+        trace_command,
         traveler::{Name, Traveler},
         HandlerResult,
     },
     macro_rules_attribute::apply,
+    strum::{AsRefStr, EnumIter, IntoEnumIterator},
     teloxide::{prelude::*, utils::command::BotCommands},
     tracing::Level,
 };
 
-#[derive(BotCommands, Clone)]
+pub trait HelpMessage {
+    fn help_message(&self) -> String;
+}
+
+#[derive(BotCommands, Clone, EnumIter, AsRefStr)]
 #[command(
     rename_rule = "lowercase",
     description = "These commands are supported:"
 )]
 pub enum Command {
-    #[command(description = "display this text.")]
-    Help,
+    #[command(
+        description = "show an help message for the specified command. If no command is specified, show this text."
+    )]
+    Help { command: String },
     #[command(description = "add a traveler to the travel plan.")]
     AddTraveler { name: Name },
     #[command(description = "delete a traveler from the travel plan.")]
     DeleteTraveler { name: Name },
     #[command(description = "show the travelers in the travel plan.")]
     ListTravelers,
-    #[command(
-        description = "add a new expense to the travel plan, evenly split among the travelers."
-    )]
+    #[command(description = "add a new expense to the travel plan.")]
     AddExpense,
-    #[command(
-        description = "add a new expense to the travel plan, unevenly split among the travelers. The amount each traveler has to pay can be specified as a fixed value or with a percentage of the total, using %."
-    )]
-    AddUnevenExpense,
-    #[command(description = "delete the expense with specified ID from the travel plan.")]
-    DeleteExpense { expense_id: usize },
+    #[command(description = "delete the expense with specified number from the travel plan.")]
+    DeleteExpense { number: i64 },
     #[command(description = "show the expenses in the travel plan.")]
     ListExpenses,
-    #[command(description = "cancel the current interactive command (e.g. /add_expense).")]
+    #[command(description = "find the expenses matching the specified description.")]
+    FindExpenses { description: String },
+    #[command(description = "cancel the currently running interactive command.")]
     Cancel,
+}
+
+impl Default for Command {
+    fn default() -> Self {
+        Command::Help {
+            command: String::new(),
+        }
+    }
+}
+
+impl HelpMessage for Command {
+    fn help_message(&self) -> String {
+        use Command::*;
+        match self {
+            Help { .. } => Command::descriptions().to_string(),
+            AddTraveler { .. } => Command::descriptions().to_string(),
+            DeleteTraveler { .. } => Command::descriptions().to_string(),
+            ListTravelers => Command::descriptions().to_string(),
+            AddExpense => format!(
+"Add a new expense to the travel plan.
+
+- Send a message for each traveler you want to share the expense with, or specify multiple travelers separating them by `{SPLIT_AMONG_ENTRIES_SEP}`.
+- Use the format `<name>{SPLIT_AMONG_NAME_AMOUNT_SEP} <amount>` where `<amount>` can be followed by `%` if it is a percentage of the residual amount.
+> Example: `Alice{SPLIT_AMONG_NAME_AMOUNT_SEP} 50`, `Bob{SPLIT_AMONG_NAME_AMOUNT_SEP} 20%`, `Charles`, `John{SPLIT_AMONG_NAME_AMOUNT_SEP} 30{SPLIT_AMONG_ENTRIES_SEP} Jane{SPLIT_AMONG_NAME_AMOUNT_SEP} 10%` are all valid syntaxes.
+> Example: If the total is `100`, typing `Alice{SPLIT_AMONG_NAME_AMOUNT_SEP} 40{SPLIT_AMONG_ENTRIES_SEP} Bob{SPLIT_AMONG_NAME_AMOUNT_SEP} 40%{SPLIT_AMONG_ENTRIES_SEP} Charles{SPLIT_AMONG_NAME_AMOUNT_SEP} 60%` means that Alice will pay `40` so the residual is `60`, Bob will pay `24` (i.e. 40% of 60) and Charles will pay `36` (i.e. 60% of 60).
+
+- You can omit `{SPLIT_AMONG_NAME_AMOUNT_SEP} <amount>` if you want to evenly split the residual expense among the travelers.
+> Example: If the total is `100`, the input `Alice{SPLIT_AMONG_NAME_AMOUNT_SEP} 40{SPLIT_AMONG_ENTRIES_SEP} Bob{SPLIT_AMONG_NAME_AMOUNT_SEP} 40%{SPLIT_AMONG_ENTRIES_SEP} Charles{SPLIT_AMONG_ENTRIES_SEP} David` is equivalent to set both Charles and David amounts to 30%.
+
+- You can enter `{ALL_KWORD}` to split it evenly among all travelers."),
+            DeleteExpense { .. } => Command::descriptions().to_string(),
+            ListExpenses => Command::descriptions().to_string(),
+            FindExpenses { .. } => Command::descriptions().to_string(),
+            Cancel => Command::descriptions().to_string(),
+        }
+    }
 }
 
 pub async fn commands_handler(bot: Bot, msg: Message, cmd: Command) -> HandlerResult {
     use Command::*;
 
     let result = match cmd {
-        Help => Ok(help(&msg)),
+        Help { command } => help(&msg, &command),
         AddTraveler { name } => add_traveler(&msg, name).await,
         DeleteTraveler { name } => delete_traveler(&msg, name).await,
         ListTravelers => list_travelers(&msg).await,
-        AddExpense => add_expense(&msg, false).await,
-        AddUnevenExpense => add_expense(&msg, true).await,
-        DeleteExpense { expense_id } => delete_expense(&msg, expense_id).await,
+        DeleteExpense { number } => delete_expense(&msg, number).await,
         ListExpenses => list_expenses(&msg).await,
-        Cancel => Ok(String::new()),
+        FindExpenses { description } => find_expenses(&msg, &description).await,
+        Cancel | AddExpense => {
+            unreachable!("This command is handled before calling this function.")
+        }
     };
 
     match result {
@@ -68,63 +109,65 @@ pub async fn commands_handler(bot: Bot, msg: Message, cmd: Command) -> HandlerRe
     Ok(())
 }
 
-#[apply(trace_command_no_err)]
-fn help(msg: &Message) -> String {
-    Command::descriptions().to_string()
-}
-
 #[apply(trace_command)]
-async fn add_traveler(msg: &Message, name: Name) -> Result<String, Error> {
+fn help(msg: &Message, command: &str) -> Result<String, CommandError> {
     tracing::debug!("START");
-    if name.is_empty() {
-        return Err(Error::EmptyInput);
+    let command = command.trim();
+    if command.is_empty() {
+        tracing::debug!("SUCCESS");
+        return Ok(Command::descriptions().to_string());
     }
 
-    let db = db().await;
-    let result: Result<Vec<Traveler>, surrealdb::Error> = db
-        .create("traveler")
-        .content(Traveler {
-            chat_id: msg.chat.id,
-            name: name.to_owned(),
-        })
-        .await;
-
-    match result {
-        Ok(_) => {
+    match Command::iter()
+        .find(|variant| variant.as_ref().to_lowercase() == command.trim_matches('/').to_lowercase())
+        .map(|variant| variant.help_message())
+    {
+        Some(help) => {
             tracing::debug!("SUCCESS");
-            Ok(format!("Traveler {name} added successfully."))
+            Ok(help.to_string())
         }
-        Err(err) => {
-            tracing::error!("{err}");
-            Err(Error::AddTraveler { name })
+        None => {
+            tracing::error!("No help available for command /{command}.");
+            Err(CommandError::Help {
+                command: command.to_owned(),
+            })
         }
     }
 }
 
 #[apply(trace_command)]
-async fn delete_traveler(msg: &Message, name: Name) -> Result<String, Error> {
+async fn add_traveler(msg: &Message, name: Name) -> Result<String, CommandError> {
     tracing::debug!("START");
     if name.is_empty() {
-        return Err(Error::EmptyInput);
+        return Err(CommandError::EmptyInput);
     }
 
-    let db = db().await;
-    let result = db
-        .query("DELETE traveler WHERE chat_id = $chat_id && name = $name")
-        .bind(Traveler {
-            chat_id: msg.chat.id,
-            name: name.to_owned(),
-        })
-        .await;
-
-    match result {
+    // Check if traveler exists on db
+    let count_res = Traveler::db_count(msg.chat.id, &name).await;
+    match count_res {
+        Ok(Some(count)) if *count > 0 => {
+            tracing::warn!("Traveler {name} has been already added to the travel plan.");
+            Ok(format!(
+                "Traveler {name} has been already added to the travel plan."
+            ))
+        }
         Ok(_) => {
-            tracing::debug!("SUCCESS");
-            Ok(format!("Traveler {name} deleted successfully."))
+            // Create traveler on db
+            let create_res = Traveler::db_create(msg.chat.id, &name).await;
+            match create_res {
+                Ok(_) => {
+                    tracing::debug!("SUCCESS");
+                    Ok(format!("Traveler {name} added successfully."))
+                }
+                Err(err) => {
+                    tracing::error!("{err}");
+                    Err(CommandError::AddTraveler { name })
+                }
+            }
         }
         Err(err) => {
             tracing::error!("{err}");
-            Err(Error::DeleteTraveler {
+            Err(CommandError::AddTraveler {
                 name: name.to_owned(),
             })
         }
@@ -132,19 +175,53 @@ async fn delete_traveler(msg: &Message, name: Name) -> Result<String, Error> {
 }
 
 #[apply(trace_command)]
-async fn list_travelers(msg: &Message) -> Result<String, Error> {
+async fn delete_traveler(msg: &Message, name: Name) -> Result<String, CommandError> {
     tracing::debug!("START");
-    let db = db().await;
-    let result = db
-        .query("SELECT * FROM traveler WHERE chat_id = $chat_id")
-        .bind(("chat_id", msg.chat.id))
-        .await
-        .and_then(|mut response| response.take::<Vec<Traveler>>(0));
+    if name.is_empty() {
+        return Err(CommandError::EmptyInput);
+    }
 
-    match result {
+    // Check if traveler exists on db
+    let count_res = Traveler::db_count(msg.chat.id, &name).await;
+    match count_res {
+        Ok(Some(count)) if *count > 0 => {
+            // Delete traveler from db
+            let delete_res = Traveler::db_delete(msg.chat.id, &name).await;
+            match delete_res {
+                Ok(_) => {
+                    tracing::debug!("SUCCESS");
+                    Ok(format!("Traveler {name} deleted successfully."))
+                }
+                Err(err) => {
+                    tracing::error!("{err}");
+                    Err(CommandError::DeleteTraveler { name })
+                }
+            }
+        }
+        Ok(_) => {
+            tracing::warn!("Couldn't find traveler {name} to delete.");
+            Ok(format!("Couldn't find traveler {name} to delete."))
+        }
+        Err(err) => {
+            tracing::error!("{err}");
+            Err(CommandError::DeleteTraveler {
+                name: name.to_owned(),
+            })
+        }
+    }
+}
+
+#[apply(trace_command)]
+async fn list_travelers(msg: &Message) -> Result<String, CommandError> {
+    tracing::debug!("START");
+    let list_res = Traveler::db_select::<Traveler>(msg.chat.id).await;
+    match list_res {
         Ok(travelers) => {
             let reply = if travelers.is_empty() {
-                String::from("No travelers found. Use /addtraveler <name> to add one.")
+                format!(
+                    "No travelers found. Use `/{add_traveler} <name>` to add one.",
+                    add_traveler = variant_to_string!(Command::AddTraveler)
+                )
             } else {
                 travelers
                     .into_iter()
@@ -157,25 +234,94 @@ async fn list_travelers(msg: &Message) -> Result<String, Error> {
         }
         Err(err) => {
             tracing::error!("{err}");
-            Err(Error::ListTravelers)
+            Err(CommandError::ListTravelers)
         }
     }
 }
 
 #[apply(trace_command)]
-async fn add_expense(msg: &Message, uneven: bool) -> Result<String, Error> {
-    let reply = format!("add_expense({uneven}): TODO");
-    Ok(reply)
+async fn delete_expense(msg: &Message, number: i64) -> Result<String, CommandError> {
+    tracing::debug!("START");
+
+    // Check if expense exists on db
+    let count_res = Expense::db_count(msg.chat.id, number).await;
+    match count_res {
+        Ok(Some(count)) if *count > 0 => {
+            // Delete expense from db
+            let delete_res = Expense::db_delete(msg.chat.id, number).await;
+            match delete_res {
+                Ok(_) => {
+                    tracing::debug!("SUCCESS");
+                    Ok(format!("Expense #{number} deleted successfully."))
+                }
+                Err(err) => {
+                    tracing::error!("{err}");
+                    Err(CommandError::DeleteExpense { number })
+                }
+            }
+        }
+        Ok(_) => {
+            tracing::warn!("Couldn't find expense #{number} to delete.");
+            Ok(format!("Couldn't find expense #{number} to delete."))
+        }
+        Err(err) => {
+            tracing::error!("{err}");
+            Err(CommandError::DeleteExpense { number })
+        }
+    }
 }
 
 #[apply(trace_command)]
-async fn delete_expense(msg: &Message, expense_id: usize) -> Result<String, Error> {
-    let reply = format!("delete_expense({expense_id}): TODO");
-    Ok(reply)
+async fn list_expenses(msg: &Message) -> Result<String, CommandError> {
+    tracing::debug!("START");
+    let list_res = Expense::db_select::<Expense>(msg.chat.id).await;
+    match list_res {
+        Ok(expenses) => {
+            let reply = if expenses.is_empty() {
+                format!(
+                    "No expenses found. Use `/{add_expense}` to add one.",
+                    add_expense = variant_to_string!(Command::AddExpense)
+                )
+            } else {
+                expenses
+                    .into_iter()
+                    .map(|expense| format!("{expense}"))
+                    .collect::<Vec<_>>()
+                    .join("\n")
+            };
+            tracing::debug!("SUCCESS");
+            Ok(reply)
+        }
+        Err(err) => {
+            tracing::error!("{err}");
+            Err(CommandError::ListExpenses)
+        }
+    }
 }
 
 #[apply(trace_command)]
-async fn list_expenses(msg: &Message) -> Result<String, Error> {
-    let reply = "list_expenses(): TODO".to_string();
-    Ok(reply)
+async fn find_expenses(msg: &Message, description: &str) -> Result<String, CommandError> {
+    tracing::debug!("START");
+    let list_res = Expense::db_select_by_descr::<Expense>(msg.chat.id, description).await;
+    match list_res {
+        Ok(expenses) => {
+            let reply = if expenses.is_empty() {
+                format!("No expenses match the specified description (~ \"{description}\").")
+            } else {
+                expenses
+                    .into_iter()
+                    .map(|expense| format!("{expense}"))
+                    .collect::<Vec<_>>()
+                    .join("\n\n")
+            };
+            tracing::debug!("SUCCESS");
+            Ok(reply)
+        }
+        Err(err) => {
+            tracing::error!("{err}");
+            Err(CommandError::FindExpenses {
+                description: description.to_owned(),
+            })
+        }
+    }
 }

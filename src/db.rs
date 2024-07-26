@@ -1,4 +1,7 @@
 use {
+    crate::CONFIG,
+    serde::{Deserialize, Serialize},
+    std::ops::Deref,
     surrealdb::{
         engine::remote::ws::{Client, Ws},
         opt::auth::Root,
@@ -7,7 +10,17 @@ use {
     tokio::sync::OnceCell,
 };
 
-use crate::CONFIG;
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Count {
+    count: i64,
+}
+
+impl Deref for Count {
+    type Target = i64;
+    fn deref(&self) -> &Self::Target {
+        &self.count
+    }
+}
 
 /// Panics if couldn't retrieve the db info from config file.
 async fn connect_to_db() -> Result<Surreal<Client>, surrealdb::Error> {
@@ -25,24 +38,6 @@ async fn connect_to_db() -> Result<Surreal<Client>, surrealdb::Error> {
     tracing::info!("Connected to database.");
 
     Ok(db)
-}
-
-pub async fn init_db() -> Result<(), surrealdb::Error> {
-    tracing::info!("Initializing database...");
-    let db = db().await;
-
-    db.query(
-        "
-DEFINE TABLE traveler SCHEMAFULL;
-DEFINE FIELD chat_id ON TABLE traveler TYPE number;
-DEFINE FIELD name ON TABLE traveler TYPE string ASSERT string::len($value) > 0 ;
-DEFINE INDEX traveler_chat_id_name_index ON traveler FIELDS chat_id, name UNIQUE;
-",
-    )
-    .await?;
-
-    tracing::info!("Database initialized.");
-    Ok(())
 }
 
 /// Panics if couldn't connect to database.

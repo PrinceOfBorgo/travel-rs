@@ -1,6 +1,7 @@
 
 ## Roadmap
 
+- [x] Use stable channel when `std::sync::LazyLock` will be stabilized (1.80 - 25 July, 2024).
 - [ ] Currency support: exchange using external APIs.
 - [ ] Add localization
   - [ ] Add languages.
@@ -8,6 +9,7 @@
 - [ ] Logs with span_id/trace_id.
 - [ ] Formatting of bot responses (bold, italic, etc.).
 - [ ] Improve error handling: distinguish errors resulting from DB queries.
-- [ ] Delete from DB always returns OK even if the entry doesn't exist. Should return WARN with a dedicated message.
+  - [x] Delete from DB always returns OK even if the entry doesn't exist. Should return WARN with a dedicated message.
 - [ ] Refactor code to make it more readable and maintainable.
 - [ ] Add tests (not sure what to test).
+- [ ] Add assertion/events to check if `in.chat = out.chat` for `split` and `paid_for` tables
