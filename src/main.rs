@@ -64,14 +64,7 @@ async fn main() -> anyhow::Result<()> {
     db::db().await;
 
     let handler = Update::filter_message()
-        // .chain(
-        //     // Create chat record on db if it does not exist yet or update it
-        //     dptree::endpoint(update_chat_db).map(|| {
-        //         tracing::debug!("Continue control flow...");
-        //         // Always return ControlFlow::Continue here to continue to the next branch
-        //         ControlFlow::<Result<(), HandlerResult>>::Continue
-        //     }),
-        // )
+        .map_async(update_chat_db)  // Create chat record on db if it does not exist yet or update it
         .branch(
             dptree::entry()
                 // Check if a command is received...
@@ -122,7 +115,8 @@ async fn main() -> anyhow::Result<()> {
                     }]
                     .endpoint(receive_split_among),
                 )
-        });
+        })
+        .map_async(unknown_command);
 
     Dispatcher::builder(bot, handler)
         .error_handler(LoggingErrorHandler::with_custom_text(
@@ -191,6 +185,18 @@ pub async fn update_chat_db(msg: Message) -> HandlerResult {
         }
     } else {
         tracing::debug!("Chat with id: {} created on db", msg.chat.id);
+    }
+    Ok(())
+}
+
+#[apply(trace_skip_all)]
+pub async fn unknown_command(bot: Bot, msg: Message) -> HandlerResult {
+    match msg.text() {
+        Some(text) if text.starts_with('/') => {
+            bot.send_message(msg.chat.id, format!("Unknown command: {}", text))
+                .await?;
+        }
+        _ => {}
     }
     Ok(())
 }

@@ -116,7 +116,8 @@ impl Expense {
         db.query(format!(
             "SELECT *
             FROM {TABLE}
-            WHERE {CHAT} = ${CHAT_ID}",
+            WHERE {CHAT} = ${CHAT_ID}
+            ORDER BY {NUMBER} ASC",
         ))
         .bind((
             CHAT_ID,
@@ -170,7 +171,7 @@ impl Display for Expense {
 
         write!(
             f,
-            "Number: {number} - Description: {description}\nAmount: {amount}",
+            "Number: {number} - Description: {description}\nAmount: {amount}\n",
         )
     }
 }

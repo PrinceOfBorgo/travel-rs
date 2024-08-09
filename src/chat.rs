@@ -21,15 +21,41 @@ impl Chat {
 
     pub async fn db_create(id: ChatId) -> Result<Option<Self>, surrealdb::Error> {
         let db = db().await;
-        db.create((TABLE, id.0))
-            .content((LAST_INTERACTION_UTC, Datetime(Utc::now())))
-            .await
+        db.query(format!(
+            "CREATE ${ID}
+            CONTENT {{
+                {LAST_INTERACTION_UTC}: ${LAST_INTERACTION_UTC}, 
+            }}",
+        ))
+        .bind((
+            ID,
+            Thing {
+                tb: TABLE.to_owned(),
+                id: id.0.into(),
+            },
+        ))
+        .bind((LAST_INTERACTION_UTC, Datetime(Utc::now())))
+        .await
+        .and_then(|mut response| response.take::<Option<Self>>(0))
     }
 
     pub async fn db_update(id: ChatId) -> Result<Option<Self>, surrealdb::Error> {
         let db = db().await;
-        db.update((TABLE, id.0))
-            .content((LAST_INTERACTION_UTC, Datetime(Utc::now())))
-            .await
+        db.query(format!(
+            "UPDATE ${ID}
+            CONTENT {{
+                {LAST_INTERACTION_UTC}: ${LAST_INTERACTION_UTC}, 
+            }}",
+        ))
+        .bind((
+            ID,
+            Thing {
+                tb: TABLE.to_owned(),
+                id: id.0.into(),
+            },
+        ))
+        .bind((LAST_INTERACTION_UTC, Datetime(Utc::now())))
+        .await
+        .and_then(|mut response| response.take::<Option<Self>>(0))
     }
 }
