@@ -12,4 +12,16 @@
   - [x] Delete from DB always returns OK even if the entry doesn't exist. Should return WARN with a dedicated message.
 - [ ] Refactor code to make it more readable and maintainable.
 - [ ] Add tests (not sure what to test).
-- [ ] Add assertion/events to check if `in.chat = out.chat` for `split` and `paid_for` tables
+- [ ] Add assertion/events to check if `in.chat = out.chat` for `split` and `paid_for` tables.
+- [ ] Handle `unknown_command` when command name is right but arguments are incomplete/wrong.
+- [ ] Add dedicated help messages for all commands
+  - [ ] Help
+  - [ ] AddTraveler
+  - [ ] DeleteTraveler
+  - [ ] ListTravelers
+  - [x] AddExpense
+  - [ ] DeleteExpense
+  - [ ] ListExpenses
+  - [ ] FindExpenses
+  - [ ] Transfer
+  - [ ] Cancel

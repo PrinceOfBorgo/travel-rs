@@ -6,15 +6,15 @@ use {
         expense::Expense,
         trace_state,
         traveler::{Name, Traveler},
-        HandlerResult,
+        update_debts, HandlerResult,
     },
     macro_rules_attribute::apply,
     regex::Regex,
     rust_decimal::Decimal,
     std::{collections::BTreeMap, fmt::Debug, str::FromStr, sync::LazyLock},
-    surrealdb::sql::{
-        statements::{BeginStatement, CommitStatement},
-        Thing,
+    surrealdb::{
+        sql::statements::{BeginStatement, CommitStatement},
+        RecordId,
     },
     teloxide::{
         dispatching::dialogue::InMemStorage,
@@ -165,7 +165,7 @@ pub async fn receive_paid_by(
     };
 
     // Select traveler from db
-    let select_res = Traveler::db_select_by_name::<Traveler>(msg.chat.id, &name).await;
+    let select_res = Traveler::db_select_by_name(msg.chat.id, name.clone()).await;
     match select_res {
         Ok(travelers) if !travelers.is_empty() => {
             bot.send_message(
@@ -217,14 +217,21 @@ pub async fn start_split_among(
             match split_res {
                 Ok((SplitAmongEnum::All, split_among)) => {
                     tracing::debug!("SUCCESS");
-                    if let Err(err) = end(
+                    match end(
                         dialogue,
                         (description, amount, paid_by, split_among),
                         msg.chat.id,
                     )
                     .await
                     {
-                        match err {
+                        Ok(expense) => {
+                            bot.send_message(
+                                msg.chat.id,
+                                format!("Expense added successfully!\n{expense}"),
+                            )
+                            .await?;
+                        }
+                        Err(err) => match err {
                             EndError::ClosingDialogue => {
                                 bot.send_message(
                                     msg.chat.id,
@@ -250,7 +257,7 @@ pub async fn start_split_among(
                                 )
                                 .await?;
                             }
-                        }
+                        },
                     }
                 }
                 Ok((SplitAmongEnum::List, split_among)) => {
@@ -336,14 +343,21 @@ pub async fn receive_split_among(
                 }
                 Ok((SplitAmongEnum::End, split_among)) => {
                     tracing::debug!("SUCCESS");
-                    if let Err(err) = end(
+                    match end(
                         dialogue,
                         (description, amount, paid_by, split_among),
                         msg.chat.id,
                     )
                     .await
                     {
-                        match err {
+                        Ok(expense) => {
+                            bot.send_message(
+                                msg.chat.id,
+                                format!("Expense added successfully!\n{expense}"),
+                            )
+                            .await?;
+                        }
+                        Err(err) => match err {
                             EndError::ClosingDialogue => {
                                 bot.send_message(
                                     msg.chat.id,
@@ -369,7 +383,7 @@ pub async fn receive_split_among(
                                 )
                                 .await?;
                             }
-                        }
+                        },
                     }
                 }
                 Err(err) => {
@@ -411,11 +425,11 @@ pub async fn end(
         BTreeMap<Name, AmountEnum>,
     ),
     chat_id: ChatId,
-) -> Result<(), EndError> {
+) -> Result<Expense, EndError> {
     tracing::debug!("START");
     match compute_shares(amount, split_among) {
         Ok(shares) => {
-            let create_res = Expense::db_create(chat_id, &description, amount).await;
+            let create_res = Expense::db_create(chat_id, description.clone(), amount).await;
             match create_res {
                 Ok(Some(expense)) => {
                     if let Err(err_relate) = relate_shares(paid_by, &expense, shares).await {
@@ -425,10 +439,13 @@ pub async fn end(
                         tracing::error!("{err_relate}");
                         Err(EndError::ClosingDialogue)
                     } else {
+                        if let Err(err_update) = update_debts(chat_id).await {
+                            tracing::warn!("{err_update}");
+                        }
                         match dialogue.exit().await {
                             Ok(_) => {
-                                tracing::debug!("SUCCESS");
-                                Ok(())
+                                tracing::debug!("SUCCESS - id: {}", expense.id);
+                                Ok(expense)
                             }
                             Err(err_closing) => {
                                 tracing::error!("{err_closing}");
@@ -472,7 +489,7 @@ async fn parse_split_among(
     }
     // If the expense should be split evenly among all travelers
     else if text_lower == ALL_KWORD.to_lowercase() {
-        let travelers = Traveler::db_select::<Traveler>(chat_id)
+        let travelers = Traveler::db_select(chat_id)
             .await
             .map_err(|err| AddExpenseError::Generic(Box::new(err)))?;
 
@@ -525,6 +542,7 @@ async fn parse_split_among(
                 chat::{ID as CHAT_ID, TABLE as CHAT_TB},
                 traveler::{CHAT, NAME, TABLE as TRAVELER_TB},
             };
+            const NAMES: &str = "names";
 
             let db = db().await;
             let select_res = db
@@ -533,16 +551,10 @@ async fn parse_split_among(
                         FROM {TRAVELER_TB}
                         WHERE
                             {CHAT} = ${CHAT_ID}
-                            && {NAME} IN $names",
+                            && {NAME} IN ${NAMES}",
                 ))
-                .bind((
-                    CHAT_ID,
-                    Thing {
-                        tb: CHAT_TB.to_owned(),
-                        id: chat_id.0.into(),
-                    },
-                ))
-                .bind(("names", split_among.keys().collect::<Vec<&Name>>()))
+                .bind((CHAT_ID, RecordId::from_table_key(CHAT_TB, chat_id.0)))
+                .bind((NAMES, split_among.keys().cloned().collect::<Vec<Name>>()))
                 .await
                 .and_then(|mut response| response.take::<Vec<Traveler>>(0));
 
@@ -595,7 +607,7 @@ fn compute_shares(
         }
     });
 
-    if count_blanks == 0 && residual.is_sign_positive() {
+    if count_blanks == 0 && residual > Decimal::ZERO {
         return Err(AddExpenseError::ExpenseTooLow {
             expense: tot_amount - residual,
             tot_amount,
@@ -630,16 +642,17 @@ async fn relate_shares(
         split::{AMOUNT, TABLE as SPLIT_TB},
         traveler::{NAME, TABLE as TRAVELER_TB},
     };
+    const PAID_BY: &str = "paid_by";
 
     let db = db().await;
     let mut query = db
-        .query(BeginStatement)
-        .query(format!("RELATE $paid_by->{PAID_FOR_TB}->${EXPENSE}"))
-        .bind(("paid_by", paid_by.id))
+        .query(BeginStatement::default())
+        .query(format!("RELATE ${PAID_BY}->{PAID_FOR_TB}->${EXPENSE}"))
+        .bind((PAID_BY, paid_by.id))
         .bind((EXPENSE, expense.id.clone()))
-        .bind((CHAT, &expense.chat));
+        .bind((CHAT, expense.chat.clone()));
 
-    for (i, (name, amount)) in shares.iter().enumerate() {
+    for (i, (name, amount)) in shares.into_iter().enumerate() {
         // Relate travelers with expense specifying their share of the expense
         query = query
             .query(format!(
@@ -655,6 +668,6 @@ async fn relate_shares(
             .bind((format!("{AMOUNT}_{i}"), amount));
     }
 
-    query = query.query(CommitStatement);
+    query = query.query(CommitStatement::default());
     query.await.map(|_| {})
 }

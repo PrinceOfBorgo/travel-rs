@@ -4,14 +4,23 @@ use {
         errors::CommandError,
         expense::Expense,
         trace_command,
+        transferred_to::TransferredTo,
         traveler::{Name, Traveler},
-        HandlerResult,
+        update_debts, HandlerResult,
     },
     macro_rules_attribute::apply,
+    rust_decimal::Decimal,
+    std::sync::LazyLock,
     strum::{AsRefStr, EnumIter, IntoEnumIterator},
     teloxide::{prelude::*, utils::command::BotCommands},
     tracing::Level,
 };
+
+pub static COMMANDS: LazyLock<Vec<String>> = LazyLock::new(|| {
+    Command::iter()
+        .map(|variant| variant.as_ref().to_lowercase())
+        .collect()
+});
 
 pub trait HelpMessage {
     fn help_message(&self) -> String;
@@ -41,6 +50,15 @@ pub enum Command {
     ListExpenses,
     #[command(description = "find the expenses matching the specified description.")]
     FindExpenses { description: String },
+    #[command(
+        description = "transfer the specified amount to the specified traveler.",
+        parse_with = "split"
+    )]
+    Transfer {
+        from: Name,
+        to: Name,
+        amount: Decimal,
+    },
     #[command(description = "cancel the currently running interactive command.")]
     Cancel,
 }
@@ -57,10 +75,6 @@ impl HelpMessage for Command {
     fn help_message(&self) -> String {
         use Command::*;
         match self {
-            Help { .. } => Command::descriptions().to_string(),
-            AddTraveler { .. } => Command::descriptions().to_string(),
-            DeleteTraveler { .. } => Command::descriptions().to_string(),
-            ListTravelers => Command::descriptions().to_string(),
             AddExpense => format!(
 "Add a new expense to the travel plan.
 
@@ -73,10 +87,7 @@ impl HelpMessage for Command {
 > Example: If the total is `100`, the input `Alice{SPLIT_AMONG_NAME_AMOUNT_SEP} 40{SPLIT_AMONG_ENTRIES_SEP} Bob{SPLIT_AMONG_NAME_AMOUNT_SEP} 40%{SPLIT_AMONG_ENTRIES_SEP} Charles{SPLIT_AMONG_ENTRIES_SEP} David` is equivalent to set both Charles and David amounts to 30%.
 
 - You can enter `{ALL_KWORD}` to split it evenly among all travelers."),
-            DeleteExpense { .. } => Command::descriptions().to_string(),
-            ListExpenses => Command::descriptions().to_string(),
-            FindExpenses { .. } => Command::descriptions().to_string(),
-            Cancel => Command::descriptions().to_string(),
+            _ => Command::descriptions().to_string(),
         }
     }
 }
@@ -92,6 +103,7 @@ pub async fn commands_handler(bot: Bot, msg: Message, cmd: Command) -> HandlerRe
         DeleteExpense { number } => delete_expense(&msg, number).await,
         ListExpenses => list_expenses(&msg).await,
         FindExpenses { description } => find_expenses(&msg, &description).await,
+        Transfer { from, to, amount } => transfer(&msg, from, to, amount).await,
         Cancel | AddExpense => {
             unreachable!("This command is handled before calling this function.")
         }
@@ -146,9 +158,9 @@ async fn add_traveler(msg: &Message, name: Name) -> Result<String, CommandError>
     let count_res = Traveler::db_count(msg.chat.id, &name).await;
     match count_res {
         Ok(Some(count)) if *count > 0 => {
-            tracing::warn!("Traveler {name} has been already added to the travel plan.");
+            tracing::warn!("Traveler {name} has already been added to the travel plan.");
             Ok(format!(
-                "Traveler {name} has been already added to the travel plan."
+                "Traveler {name} has already been added to the travel plan."
             ))
         }
         Ok(_) => {
@@ -214,7 +226,7 @@ async fn delete_traveler(msg: &Message, name: Name) -> Result<String, CommandErr
 #[apply(trace_command)]
 async fn list_travelers(msg: &Message) -> Result<String, CommandError> {
     tracing::debug!("START");
-    let list_res = Traveler::db_select::<Traveler>(msg.chat.id).await;
+    let list_res = Traveler::db_select(msg.chat.id).await;
     match list_res {
         Ok(travelers) => {
             let reply = if travelers.is_empty() {
@@ -274,7 +286,7 @@ async fn delete_expense(msg: &Message, number: i64) -> Result<String, CommandErr
 #[apply(trace_command)]
 async fn list_expenses(msg: &Message) -> Result<String, CommandError> {
     tracing::debug!("START");
-    let list_res = Expense::db_select::<Expense>(msg.chat.id).await;
+    let list_res = Expense::db_select(msg.chat.id).await;
     match list_res {
         Ok(expenses) => {
             let reply = if expenses.is_empty() {
@@ -302,7 +314,7 @@ async fn list_expenses(msg: &Message) -> Result<String, CommandError> {
 #[apply(trace_command)]
 async fn find_expenses(msg: &Message, description: &str) -> Result<String, CommandError> {
     tracing::debug!("START");
-    let list_res = Expense::db_select_by_descr::<Expense>(msg.chat.id, description).await;
+    let list_res = Expense::db_select_by_descr(msg.chat.id, description.to_owned()).await;
     match list_res {
         Ok(expenses) => {
             let reply = if expenses.is_empty() {
@@ -312,7 +324,7 @@ async fn find_expenses(msg: &Message, description: &str) -> Result<String, Comma
                     .into_iter()
                     .map(|expense| format!("{expense}"))
                     .collect::<Vec<_>>()
-                    .join("\n\n")
+                    .join("\n")
             };
             tracing::debug!("SUCCESS");
             Ok(reply)
@@ -321,6 +333,93 @@ async fn find_expenses(msg: &Message, description: &str) -> Result<String, Comma
             tracing::error!("{err}");
             Err(CommandError::FindExpenses {
                 description: description.to_owned(),
+            })
+        }
+    }
+}
+
+#[apply(trace_command)]
+async fn transfer(
+    msg: &Message,
+    from: Name,
+    to: Name,
+    amount: Decimal,
+) -> Result<String, CommandError> {
+    tracing::debug!("START");
+    if from.is_empty() || to.is_empty() {
+        return Err(CommandError::EmptyInput);
+    }
+    let chat_id = msg.chat.id;
+
+    // Get sender from db
+    let select_from_res = Traveler::db_select_by_name(chat_id, from.clone()).await;
+    match select_from_res {
+        Ok(senders) if !senders.is_empty() => {
+            // Get receiver from db
+            let select_to_res = Traveler::db_select_by_name(chat_id, to.clone()).await;
+            match select_to_res {
+                Ok(recvs) if !recvs.is_empty() => {
+                    // Record the new transfer on db
+                    let relate_res = TransferredTo::db_relate(
+                        amount,
+                        senders[0].id.clone(),
+                        recvs[0].id.clone(),
+                    )
+                    .await;
+                    match relate_res {
+                        Ok(Some(transfer)) => {
+                            if let Err(err_update) = update_debts(chat_id).await {
+                                tracing::warn!("{err_update}");
+                            }
+                            tracing::debug!("SUCCESS - id: {}", transfer.id);
+                            Ok(String::from("Transfer recorded successfully."))
+                        }
+                        Ok(None) => {
+                            tracing::warn!("Couldn't record the transfer.");
+                            Err(CommandError::Transfer {
+                                from: from.to_owned(),
+                                to: to.to_owned(),
+                                amount,
+                            })
+                        }
+                        Err(err) => {
+                            tracing::error!("{err}");
+                            Err(CommandError::Transfer {
+                                from: from.to_owned(),
+                                to: to.to_owned(),
+                                amount,
+                            })
+                        }
+                    }
+                }
+                Ok(_) => {
+                    tracing::warn!("Couldn't find traveler \"{to}\" to transfer money to.");
+                    Ok(format!(
+                        "Couldn't find traveler \"{to}\" to transfer money to."
+                    ))
+                }
+                Err(err) => {
+                    tracing::error!("{err}");
+                    Err(CommandError::Transfer {
+                        from: from.to_owned(),
+                        to: to.to_owned(),
+                        amount,
+                    })
+                }
+            }
+        }
+        Ok(_) => {
+            tracing::warn!("Couldn't find traveler \"{from}\" to transfer money from.");
+            Ok(format!(
+                "Couldn't find traveler \"{from}\" to transfer money from."
+            ))
+        }
+        Err(err) => {
+            tracing::error!("{err}");
+            Err(CommandError::Transfer {
+                from: from.to_owned(),
+                to: to.to_owned(),
+                amount,
             })
         }
     }

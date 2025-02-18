@@ -1,15 +1,14 @@
 use {
     crate::db::db,
-    chrono::Utc,
     serde::{Deserialize, Serialize},
-    surrealdb::sql::{Datetime, Thing},
+    surrealdb::{sql::Datetime, RecordId},
     teloxide::types::ChatId,
     travel_rs_derive::Table,
 };
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Table)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Table)]
 pub struct Chat {
-    id: Thing,
+    id: RecordId,
     last_interaction_utc: Datetime,
 }
 
@@ -27,14 +26,8 @@ impl Chat {
                 {LAST_INTERACTION_UTC}: ${LAST_INTERACTION_UTC}, 
             }}",
         ))
-        .bind((
-            ID,
-            Thing {
-                tb: TABLE.to_owned(),
-                id: id.0.into(),
-            },
-        ))
-        .bind((LAST_INTERACTION_UTC, Datetime(Utc::now())))
+        .bind((ID, RecordId::from_table_key(TABLE, id.0)))
+        .bind((LAST_INTERACTION_UTC, Datetime::default()))
         .await
         .and_then(|mut response| response.take::<Option<Self>>(0))
     }
@@ -47,14 +40,8 @@ impl Chat {
                 {LAST_INTERACTION_UTC}: ${LAST_INTERACTION_UTC}, 
             }}",
         ))
-        .bind((
-            ID,
-            Thing {
-                tb: TABLE.to_owned(),
-                id: id.0.into(),
-            },
-        ))
-        .bind((LAST_INTERACTION_UTC, Datetime(Utc::now())))
+        .bind((ID, RecordId::from_table_key(TABLE, id.0)))
+        .bind((LAST_INTERACTION_UTC, Datetime::default()))
         .await
         .and_then(|mut response| response.take::<Option<Self>>(0))
     }

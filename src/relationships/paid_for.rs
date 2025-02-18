@@ -1,20 +1,21 @@
 use {
     crate::db::db,
     serde::{Deserialize, Serialize},
-    surrealdb::sql::Thing,
+    surrealdb::RecordId,
     travel_rs_derive::Table,
 };
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Table)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Table)]
 pub struct PaidFor {
-    pub r#in: Thing,
-    pub out: Thing,
+    pub id: RecordId,
+    pub r#in: RecordId,
+    pub out: RecordId,
 }
 
 impl PaidFor {
     pub async fn db_relate(
-        traveler: Thing,
-        expense: Thing,
+        traveler: RecordId,
+        expense: RecordId,
     ) -> Result<Option<Self>, surrealdb::Error> {
         let db = db().await;
         db.query(format!("RELATE ${IN}->{TABLE}->${OUT}",))

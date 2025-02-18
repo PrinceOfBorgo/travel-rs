@@ -5,8 +5,12 @@ use {
         errors::NameValidationError,
     },
     serde::{Deserialize, Serialize},
-    std::{fmt::Debug, fmt::Display, ops::Deref, str::FromStr},
-    surrealdb::sql::Thing,
+    std::{
+        fmt::{Debug, Display},
+        ops::Deref,
+        str::FromStr,
+    },
+    surrealdb::RecordId,
     teloxide::types::ChatId,
     travel_rs_derive::Table,
 };
@@ -58,16 +62,16 @@ impl Deref for Name {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash, Table)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Table)]
 pub struct Traveler {
-    pub id: Thing,
-    pub chat: Thing,
+    pub id: RecordId,
+    pub chat: RecordId,
     pub name: Name,
 }
 
 impl Traveler {
     pub async fn db_create(chat_id: ChatId, name: &Name) -> Result<Option<Self>, surrealdb::Error> {
-        use crate::chat::{ID as CHAT_ID, TABLE as CHAT_TB};
+        use super::chat::{ID as CHAT_ID, TABLE as CHAT_TB};
 
         let db = db().await;
         db.query(format!(
@@ -77,20 +81,14 @@ impl Traveler {
                 {NAME}: ${NAME},
             }}",
         ))
-        .bind((
-            CHAT_ID,
-            Thing {
-                tb: CHAT_TB.to_owned(),
-                id: chat_id.0.into(),
-            },
-        ))
+        .bind((CHAT_ID, RecordId::from_table_key(CHAT_TB, chat_id.0)))
         .bind((NAME, name.clone()))
         .await
         .and_then(|mut response| response.take::<Option<Self>>(0))
     }
 
     pub async fn db_count(chat_id: ChatId, name: &Name) -> Result<Option<Count>, surrealdb::Error> {
-        use crate::chat::{ID as CHAT_ID, TABLE as CHAT_TB};
+        use super::chat::{ID as CHAT_ID, TABLE as CHAT_TB};
 
         let db = db().await;
         db.query(format!(
@@ -101,20 +99,14 @@ impl Traveler {
                 && {NAME} = ${NAME}
             GROUP BY count",
         ))
-        .bind((
-            CHAT_ID,
-            Thing {
-                tb: CHAT_TB.to_owned(),
-                id: chat_id.0.into(),
-            },
-        ))
+        .bind((CHAT_ID, RecordId::from_table_key(CHAT_TB, chat_id.0)))
         .bind((NAME, name.clone()))
         .await
         .and_then(|mut response| response.take::<Option<Count>>(0))
     }
 
     pub async fn db_delete(chat_id: ChatId, name: &Name) -> Result<(), surrealdb::Error> {
-        use crate::chat::{ID as CHAT_ID, TABLE as CHAT_TB};
+        use super::chat::{ID as CHAT_ID, TABLE as CHAT_TB};
 
         let db = db().await;
         db.query(format!(
@@ -123,23 +115,14 @@ impl Traveler {
                 {CHAT} = ${CHAT_ID}
                 && {NAME} = ${NAME}",
         ))
-        .bind((
-            CHAT_ID,
-            Thing {
-                tb: CHAT_TB.to_owned(),
-                id: chat_id.0.into(),
-            },
-        ))
+        .bind((CHAT_ID, RecordId::from_table_key(CHAT_TB, chat_id.0)))
         .bind((NAME, name.clone()))
         .await
         .map(|_| {})
     }
 
-    pub async fn db_select<Out>(chat_id: ChatId) -> Result<Vec<Out>, surrealdb::Error>
-    where
-        Out: for<'de> Deserialize<'de>,
-    {
-        use crate::chat::{ID as CHAT_ID, TABLE as CHAT_TB};
+    pub async fn db_select(chat_id: ChatId) -> Result<Vec<Self>, surrealdb::Error> {
+        use super::chat::{ID as CHAT_ID, TABLE as CHAT_TB};
 
         let db = db().await;
         db.query(format!(
@@ -147,25 +130,16 @@ impl Traveler {
             FROM {TABLE}
             WHERE {CHAT} = ${CHAT_ID}",
         ))
-        .bind((
-            CHAT_ID,
-            Thing {
-                tb: CHAT_TB.to_owned(),
-                id: chat_id.0.into(),
-            },
-        ))
+        .bind((CHAT_ID, RecordId::from_table_key(CHAT_TB, chat_id.0)))
         .await
-        .and_then(|mut response| response.take::<Vec<Out>>(0))
+        .and_then(|mut response| response.take::<Vec<Self>>(0))
     }
 
-    pub async fn db_select_by_name<Out>(
+    pub async fn db_select_by_name(
         chat_id: ChatId,
-        name: &Name,
-    ) -> Result<Vec<Out>, surrealdb::Error>
-    where
-        Out: for<'de> Deserialize<'de>,
-    {
-        use crate::chat::{ID as CHAT_ID, TABLE as CHAT_TB};
+        name: Name,
+    ) -> Result<Vec<Self>, surrealdb::Error> {
+        use super::chat::{ID as CHAT_ID, TABLE as CHAT_TB};
 
         let db = db().await;
         db.query(format!(
@@ -175,15 +149,9 @@ impl Traveler {
                 {CHAT} = ${CHAT_ID}
                 && {NAME} = ${NAME}",
         ))
-        .bind((
-            CHAT_ID,
-            Thing {
-                tb: CHAT_TB.to_owned(),
-                id: chat_id.0.into(),
-            },
-        ))
+        .bind((CHAT_ID, RecordId::from_table_key(CHAT_TB, chat_id.0)))
         .bind((NAME, name))
         .await
-        .and_then(|mut response| response.take::<Vec<Out>>(0))
+        .and_then(|mut response| response.take::<Vec<Self>>(0))
     }
 }

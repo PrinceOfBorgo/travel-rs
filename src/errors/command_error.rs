@@ -1,15 +1,30 @@
-use {crate::traveler::Name, std::fmt::Display};
+use {crate::traveler::Name, rust_decimal::Decimal, std::fmt::Display};
 
 #[derive(Debug, Clone)]
 pub enum CommandError {
     EmptyInput,
-    Help { command: String },
-    AddTraveler { name: Name },
-    DeleteTraveler { name: Name },
+    Help {
+        command: String,
+    },
+    AddTraveler {
+        name: Name,
+    },
+    DeleteTraveler {
+        name: Name,
+    },
     ListTravelers,
-    DeleteExpense { number: i64 },
+    DeleteExpense {
+        number: i64,
+    },
     ListExpenses,
-    FindExpenses { description: String },
+    FindExpenses {
+        description: String,
+    },
+    Transfer {
+        from: Name,
+        to: Name,
+        amount: Decimal,
+    },
 }
 
 impl Display for CommandError {
@@ -33,6 +48,12 @@ impl Display for CommandError {
                 f,
                 "Couldn't find expenses matching the specified description (~ \"{description}\")."
             ),
+            Transfer { from, to, amount } => {
+                write!(
+                    f,
+                    "Couldn't transfer {amount} from traveler \"{from}\" to \"{to}\"."
+                )
+            }
         }
     }
 }

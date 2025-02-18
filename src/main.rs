@@ -1,25 +1,28 @@
 #[macro_use]
 mod macros;
 mod add_expense_dialogue;
-mod chat;
 mod command;
+mod config;
 mod consts;
 mod db;
+mod debt;
 mod errors;
-mod expense;
-mod paid_for;
-mod split;
-mod traveler;
+mod relationships;
+mod tables;
 mod utils;
+
+pub(crate) use relationships::*;
+pub(crate) use tables::*;
 
 use {
     add_expense_dialogue::AddExpenseState,
     chat::Chat,
     command::*,
-    config::Config,
+    consts::MIN_SIMILARITY_SCORE,
     dptree::{case, deps},
     macro_rules_attribute::apply,
-    std::sync::{Arc, LazyLock},
+    rust_fuzzy_search::fuzzy_search_best_n,
+    std::sync::Arc,
     teloxide::{
         dispatching::dialogue::{InMemStorage, Storage},
         prelude::*,
@@ -30,13 +33,6 @@ use {
     },
     utils::*,
 };
-
-static CONFIG: LazyLock<Config> = LazyLock::new(|| {
-    Config::builder()
-        .add_source(config::File::with_name("config.toml"))
-        .build()
-        .unwrap() // Panics if configurations cannot be loaded
-});
 
 pub type HandlerResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
 
@@ -57,7 +53,7 @@ async fn main() -> anyhow::Result<()> {
         .init();
 
     tracing::info!("Starting TravelRS bot...");
-    let token = CONFIG.get::<String>("token").unwrap();
+    let token = config::get_token();
     let bot = Bot::new(token);
     tracing::info!("TravelRS bot started.");
     // Initialize the database connection
@@ -193,8 +189,24 @@ pub async fn update_chat_db(msg: Message) -> HandlerResult {
 pub async fn unknown_command(bot: Bot, msg: Message) -> HandlerResult {
     match msg.text() {
         Some(text) if text.starts_with('/') => {
-            bot.send_message(msg.chat.id, format!("Unknown command: {}", text))
-                .await?;
+            let command = text[1..]
+                .split_once(char::is_whitespace)
+                .map(|(command, _)| command)
+                .unwrap_or_else(|| &text[1..]);
+            let available_commands = &COMMANDS.iter().map(String::as_ref).collect::<Vec<&str>>();
+            let (best_match, best_score) = fuzzy_search_best_n(command, available_commands, 1)[0];
+            tracing::debug!(
+                "Input command: {command}, best match: {best_match}, score: {best_score}."
+            );
+            if best_score >= MIN_SIMILARITY_SCORE {
+                bot.send_message(
+                    msg.chat.id,
+                    format!("Unknown command: {text}.\nDid you mean: /{best_match}?"),
+                )
+            } else {
+                bot.send_message(msg.chat.id, format!("Unknown command: {text}."))
+            }
+            .await?;
         }
         _ => {}
     }

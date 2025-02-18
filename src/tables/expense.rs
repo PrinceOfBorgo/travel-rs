@@ -3,18 +3,18 @@ use {
     rust_decimal::prelude::*,
     serde::{Deserialize, Serialize},
     std::fmt::{Display, Formatter},
-    surrealdb::sql::{
-        statements::{BeginStatement, CommitStatement},
-        Thing,
+    surrealdb::{
+        sql::statements::{BeginStatement, CommitStatement},
+        RecordId,
     },
     teloxide::types::ChatId,
     travel_rs_derive::Table,
 };
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash, Table)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Table)]
 pub struct Expense {
-    pub id: Thing,
-    pub chat: Thing,
+    pub id: RecordId,
+    pub chat: RecordId,
     pub number: i64,
     pub description: String,
     pub amount: Decimal,
@@ -23,13 +23,13 @@ pub struct Expense {
 impl Expense {
     pub async fn db_create(
         chat_id: ChatId,
-        description: &str,
+        description: String,
         amount: Decimal,
     ) -> Result<Option<Self>, surrealdb::Error> {
-        use crate::chat::{ID as CHAT_ID, TABLE as CHAT_TB};
+        use super::chat::{ID as CHAT_ID, TABLE as CHAT_TB};
 
         let db = db().await;
-        db.query(BeginStatement)
+        db.query(BeginStatement::default())
             .query(format!(
                 "LET $max = math::max(
                     SELECT VALUE {NUMBER} 
@@ -46,14 +46,8 @@ impl Expense {
                     {NUMBER}: $max + 1,
                 }}",
             ))
-            .query(CommitStatement)
-            .bind((
-                CHAT_ID,
-                Thing {
-                    tb: CHAT_TB.to_owned(),
-                    id: chat_id.0.into(),
-                },
-            ))
+            .query(CommitStatement::default())
+            .bind((CHAT_ID, RecordId::from_table_key(CHAT_TB, chat_id.0)))
             .bind((DESCRIPTION, description))
             .bind((AMOUNT, amount))
             .await
@@ -61,7 +55,7 @@ impl Expense {
     }
 
     pub async fn db_count(chat_id: ChatId, number: i64) -> Result<Option<Count>, surrealdb::Error> {
-        use crate::chat::{ID as CHAT_ID, TABLE as CHAT_TB};
+        use super::chat::{ID as CHAT_ID, TABLE as CHAT_TB};
 
         let db = db().await;
         db.query(format!(
@@ -72,20 +66,14 @@ impl Expense {
                 && {NUMBER} = ${NUMBER}
             GROUP BY count",
         ))
-        .bind((
-            CHAT_ID,
-            Thing {
-                tb: CHAT_TB.to_owned(),
-                id: chat_id.0.into(),
-            },
-        ))
+        .bind((CHAT_ID, RecordId::from_table_key(CHAT_TB, chat_id.0)))
         .bind((NUMBER, number))
         .await
         .and_then(|mut response| response.take::<Option<Count>>(0))
     }
 
     pub async fn db_delete(chat_id: ChatId, number: i64) -> Result<(), surrealdb::Error> {
-        use crate::chat::{ID as CHAT_ID, TABLE as CHAT_TB};
+        use super::chat::{ID as CHAT_ID, TABLE as CHAT_TB};
 
         let db = db().await;
         db.query(format!(
@@ -94,23 +82,14 @@ impl Expense {
                 {CHAT} = ${CHAT_ID}
                 && {NUMBER} = ${NUMBER}",
         ))
-        .bind((
-            CHAT_ID,
-            Thing {
-                tb: CHAT_TB.to_owned(),
-                id: chat_id.0.into(),
-            },
-        ))
+        .bind((CHAT_ID, RecordId::from_table_key(CHAT_TB, chat_id.0)))
         .bind((NUMBER, number))
         .await
         .map(|_| {})
     }
 
-    pub async fn db_select<Out>(chat_id: ChatId) -> Result<Vec<Out>, surrealdb::Error>
-    where
-        Out: for<'de> Deserialize<'de>,
-    {
-        use crate::chat::{ID as CHAT_ID, TABLE as CHAT_TB};
+    pub async fn db_select(chat_id: ChatId) -> Result<Vec<Self>, surrealdb::Error> {
+        use super::chat::{ID as CHAT_ID, TABLE as CHAT_TB};
 
         let db = db().await;
         db.query(format!(
@@ -119,25 +98,17 @@ impl Expense {
             WHERE {CHAT} = ${CHAT_ID}
             ORDER BY {NUMBER} ASC",
         ))
-        .bind((
-            CHAT_ID,
-            Thing {
-                tb: CHAT_TB.to_owned(),
-                id: chat_id.0.into(),
-            },
-        ))
+        .bind((CHAT_ID, RecordId::from_table_key(CHAT_TB, chat_id.0)))
         .await
-        .and_then(|mut response| response.take::<Vec<Out>>(0))
+        .and_then(|mut response| response.take::<Vec<Self>>(0))
     }
 
-    pub async fn db_select_by_descr<Out>(
+    pub async fn db_select_by_descr(
         chat_id: ChatId,
-        fuzzy_descr: &str,
-    ) -> Result<Vec<Out>, surrealdb::Error>
-    where
-        Out: for<'de> Deserialize<'de>,
-    {
-        use crate::chat::{ID as CHAT_ID, TABLE as CHAT_TB};
+        fuzzy_descr: String,
+    ) -> Result<Vec<Self>, surrealdb::Error> {
+        use super::chat::{ID as CHAT_ID, TABLE as CHAT_TB};
+        const FUZZY_DESCR: &str = "fuzzy_descr";
 
         let db = db().await;
         db.query(format!(
@@ -145,18 +116,12 @@ impl Expense {
             FROM {TABLE}
             WHERE
                 {CHAT} = ${CHAT_ID}
-                && {DESCRIPTION} ~ $fuzzy_descr",
+                && {DESCRIPTION} ~ ${FUZZY_DESCR}",
         ))
-        .bind((
-            CHAT_ID,
-            Thing {
-                tb: CHAT_TB.to_owned(),
-                id: chat_id.0.into(),
-            },
-        ))
-        .bind(("fuzzy_descr", fuzzy_descr))
+        .bind((CHAT_ID, RecordId::from_table_key(CHAT_TB, chat_id.0)))
+        .bind((FUZZY_DESCR, fuzzy_descr))
         .await
-        .and_then(|mut response| response.take::<Vec<Out>>(0))
+        .and_then(|mut response| response.take::<Vec<Self>>(0))
     }
 }
 

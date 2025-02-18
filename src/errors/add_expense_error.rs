@@ -43,7 +43,7 @@ impl Display for AddExpenseError {
                 tot_amount,
             } => write!(
                 f,
-                "The expense ({expense}) is lower than the total amount: {tot_amount}."
+                "The expense ({expense}) is less than the total amount: {tot_amount}."
             ),
             InvalidFormat { input } => write!(f, "Invalid format: `{input}`"),
             NoTravelersSpecified => write!(f, "No travelers have been specified."),
