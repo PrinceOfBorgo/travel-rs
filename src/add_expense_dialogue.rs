@@ -1,30 +1,28 @@
-use {
-    crate::{
-        consts::*,
-        db::db,
-        errors::{AddExpenseError, EndError},
-        expense::Expense,
-        trace_state,
-        traveler::{Name, Traveler},
-        update_debts, HandlerResult,
-    },
-    macro_rules_attribute::apply,
-    regex::Regex,
-    rust_decimal::Decimal,
-    std::{collections::BTreeMap, fmt::Debug, str::FromStr, sync::LazyLock},
-    surrealdb::{
-        sql::statements::{BeginStatement, CommitStatement},
-        RecordId,
-    },
-    teloxide::{
-        dispatching::dialogue::InMemStorage,
-        prelude::Dialogue,
-        requests::Requester,
-        types::{ChatId, Message},
-        Bot,
-    },
-    tracing::Level,
+use crate::{
+    consts::*,
+    db::db,
+    errors::{AddExpenseError, EndError},
+    expense::Expense,
+    trace_state,
+    traveler::{Name, Traveler},
+    update_debts, HandlerResult,
 };
+use macro_rules_attribute::apply;
+use regex::Regex;
+use rust_decimal::Decimal;
+use std::{collections::BTreeMap, fmt::Debug, str::FromStr, sync::LazyLock};
+use surrealdb::{
+    sql::statements::{BeginStatement, CommitStatement},
+    RecordId,
+};
+use teloxide::{
+    dispatching::dialogue::InMemStorage,
+    prelude::Dialogue,
+    requests::Requester,
+    types::{ChatId, Message},
+    Bot,
+};
+use tracing::Level;
 
 type AddExpenseDialogue = Dialogue<AddExpenseState, InMemStorage<AddExpenseState>>;
 static SPLIT_AMONG_REGEX: LazyLock<Regex> = LazyLock::new(|| {

@@ -1,14 +1,12 @@
-use {
-    crate::config::*,
-    serde::{Deserialize, Serialize},
-    std::ops::Deref,
-    surrealdb::{
-        engine::remote::ws::{Client, Ws},
-        opt::auth::Root,
-        Surreal,
-    },
-    tokio::sync::OnceCell,
+use crate::config::*;
+use serde::{Deserialize, Serialize};
+use std::ops::Deref;
+use surrealdb::{
+    engine::remote::ws::{Client, Ws},
+    opt::auth::Root,
+    Surreal,
 };
+use tokio::sync::OnceCell;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Count {

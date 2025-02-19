@@ -1,4 +1,6 @@
-use {crate::traveler::Name, rust_decimal::Decimal, std::fmt::Display};
+use crate::traveler::Name;
+use rust_decimal::Decimal;
+use std::fmt::Display;
 
 #[derive(Debug)]
 pub enum AddExpenseError {

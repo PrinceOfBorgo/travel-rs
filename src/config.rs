@@ -1,4 +1,5 @@
-use {config::Config, std::sync::LazyLock};
+use config::Config;
+use std::sync::LazyLock;
 
 pub const TOKEN_MODE: &str = "token_mode";
 pub const TOKEN: &str = "token";

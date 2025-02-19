@@ -1,7 +1,7 @@
 #[macro_use]
 mod macros;
 mod add_expense_dialogue;
-mod command;
+mod commands;
 mod config;
 mod consts;
 mod db;
@@ -14,25 +14,22 @@ mod utils;
 pub(crate) use relationships::*;
 pub(crate) use tables::*;
 
-use {
-    add_expense_dialogue::AddExpenseState,
-    chat::Chat,
-    command::*,
-    consts::MIN_SIMILARITY_SCORE,
-    dptree::{case, deps},
-    macro_rules_attribute::apply,
-    rust_fuzzy_search::fuzzy_search_best_n,
-    std::sync::Arc,
-    teloxide::{
-        dispatching::dialogue::{InMemStorage, Storage},
-        prelude::*,
-    },
-    tracing::Level,
-    tracing_subscriber::{
-        fmt::time::LocalTime, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter,
-    },
-    utils::*,
+use std::sync::Arc;
+
+use add_expense_dialogue::AddExpenseState;
+use chat::Chat;
+use commands::*;
+use dptree::{case, deps};
+use macro_rules_attribute::apply;
+use teloxide::{
+    dispatching::dialogue::{InMemStorage, Storage},
+    prelude::*,
 };
+use tracing::Level;
+use tracing_subscriber::{
+    fmt::time::LocalTime, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter,
+};
+use utils::*;
 
 pub type HandlerResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
 
@@ -128,25 +125,6 @@ async fn main() -> anyhow::Result<()> {
 }
 
 #[apply(trace_skip_all)]
-pub async fn cancel<S, D>(bot: Bot, storage: Arc<S>, msg: Message) -> HandlerResult
-where
-    S: Storage<D> + ?Sized + Send + Sync + 'static,
-    <S as Storage<D>>::Error: std::error::Error + Send + Sync,
-    D: Default + Send + Sync + 'static,
-{
-    let chat_id = msg.chat.id;
-    if Arc::clone(&storage).get_dialogue(chat_id).await?.is_some() {
-        Dialogue::new(storage, chat_id).exit().await?;
-        bot.send_message(chat_id, "The process was cancelled.")
-            .await?;
-    } else {
-        bot.send_message(chat_id, "There is no process to cancel.")
-            .await?;
-    }
-    Ok(())
-}
-
-#[apply(trace_skip_all)]
 pub async fn process_already_running<S, D>(bot: Bot, storage: Arc<S>, msg: Message) -> HandlerResult
 where
     S: Storage<D> + ?Sized + Send + Sync + 'static,
@@ -181,34 +159,6 @@ pub async fn update_chat_db(msg: Message) -> HandlerResult {
         }
     } else {
         tracing::debug!("Chat with id: {} created on db", msg.chat.id);
-    }
-    Ok(())
-}
-
-#[apply(trace_skip_all)]
-pub async fn unknown_command(bot: Bot, msg: Message) -> HandlerResult {
-    match msg.text() {
-        Some(text) if text.starts_with('/') => {
-            let command = text[1..]
-                .split_once(char::is_whitespace)
-                .map(|(command, _)| command)
-                .unwrap_or_else(|| &text[1..]);
-            let available_commands = &COMMANDS.iter().map(String::as_ref).collect::<Vec<&str>>();
-            let (best_match, best_score) = fuzzy_search_best_n(command, available_commands, 1)[0];
-            tracing::debug!(
-                "Input command: {command}, best match: {best_match}, score: {best_score}."
-            );
-            if best_score >= MIN_SIMILARITY_SCORE {
-                bot.send_message(
-                    msg.chat.id,
-                    format!("Unknown command: {text}.\nDid you mean: /{best_match}?"),
-                )
-            } else {
-                bot.send_message(msg.chat.id, format!("Unknown command: {text}."))
-            }
-            .await?;
-        }
-        _ => {}
     }
     Ok(())
 }

@@ -1,19 +1,17 @@
-use {
-    crate::{
-        consts::{INVALID_CHARS, RESERVED_KWORDS},
-        db::{db, Count},
-        errors::NameValidationError,
-    },
-    serde::{Deserialize, Serialize},
-    std::{
-        fmt::{Debug, Display},
-        ops::Deref,
-        str::FromStr,
-    },
-    surrealdb::RecordId,
-    teloxide::types::ChatId,
-    travel_rs_derive::Table,
+use crate::{
+    consts::{INVALID_CHARS, RESERVED_KWORDS},
+    db::{db, Count},
+    errors::NameValidationError,
 };
+use serde::{Deserialize, Serialize};
+use std::{
+    fmt::{Debug, Display},
+    ops::Deref,
+    str::FromStr,
+};
+use surrealdb::RecordId;
+use teloxide::types::ChatId;
+use travel_rs_derive::Table;
 
 #[derive(Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Name(String);

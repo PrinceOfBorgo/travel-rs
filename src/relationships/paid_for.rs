@@ -1,9 +1,7 @@
-use {
-    crate::db::db,
-    serde::{Deserialize, Serialize},
-    surrealdb::RecordId,
-    travel_rs_derive::Table,
-};
+use crate::db::db;
+use serde::{Deserialize, Serialize};
+use surrealdb::RecordId;
+use travel_rs_derive::Table;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Table)]
 pub struct PaidFor {

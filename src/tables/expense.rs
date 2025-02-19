@@ -1,15 +1,13 @@
-use {
-    crate::db::{db, Count},
-    rust_decimal::prelude::*,
-    serde::{Deserialize, Serialize},
-    std::fmt::{Display, Formatter},
-    surrealdb::{
-        sql::statements::{BeginStatement, CommitStatement},
-        RecordId,
-    },
-    teloxide::types::ChatId,
-    travel_rs_derive::Table,
+use crate::db::{db, Count};
+use rust_decimal::prelude::*;
+use serde::{Deserialize, Serialize};
+use std::fmt::{Display, Formatter};
+use surrealdb::{
+    sql::statements::{BeginStatement, CommitStatement},
+    RecordId,
 };
+use teloxide::types::ChatId;
+use travel_rs_derive::Table;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Table)]
 pub struct Expense {

@@ -1,15 +1,12 @@
+use crate::{db::db, debt::Debt};
+use macro_rules_attribute::attribute_alias;
+use rust_decimal::Decimal;
 use std::collections::HashMap;
-
-use {
-    crate::{db::db, debt::Debt},
-    macro_rules_attribute::attribute_alias,
-    rust_decimal::Decimal,
-    surrealdb::{
-        sql::statements::{BeginStatement, CommitStatement},
-        RecordId,
-    },
-    teloxide::types::ChatId,
+use surrealdb::{
+    sql::statements::{BeginStatement, CommitStatement},
+    RecordId,
 };
+use teloxide::types::ChatId;
 
 attribute_alias! {
     #[apply(trace_skip_all)] =

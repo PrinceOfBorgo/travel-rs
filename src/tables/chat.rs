@@ -1,10 +1,8 @@
-use {
-    crate::db::db,
-    serde::{Deserialize, Serialize},
-    surrealdb::{sql::Datetime, RecordId},
-    teloxide::types::ChatId,
-    travel_rs_derive::Table,
-};
+use crate::db::db;
+use serde::{Deserialize, Serialize};
+use surrealdb::{sql::Datetime, RecordId};
+use teloxide::types::ChatId;
+use travel_rs_derive::Table;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Table)]
 pub struct Chat {

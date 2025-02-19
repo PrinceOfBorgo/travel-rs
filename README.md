@@ -13,15 +13,15 @@
 - [ ] Refactor code to make it more readable and maintainable.
 - [ ] Add tests (not sure what to test).
 - [ ] Add assertion/events to check if `in.chat = out.chat` for `split` and `paid_for` tables.
-- [ ] Handle `unknown_command` when command name is right but arguments are incomplete/wrong.
-- [ ] Add dedicated help messages for all commands
-  - [ ] Help
-  - [ ] AddTraveler
-  - [ ] DeleteTraveler
-  - [ ] ListTravelers
+- [x] Handle `unknown_command` when command name is right but arguments are incomplete.
+- [x] Add dedicated help messages for all commands
+  - [x] Help
+  - [x] AddTraveler
+  - [x] DeleteTraveler
+  - [x] ListTravelers
   - [x] AddExpense
-  - [ ] DeleteExpense
-  - [ ] ListExpenses
-  - [ ] FindExpenses
-  - [ ] Transfer
-  - [ ] Cancel
+  - [x] DeleteExpense
+  - [x] ListExpenses
+  - [x] FindExpenses
+  - [x] Transfer
+  - [x] Cancel
