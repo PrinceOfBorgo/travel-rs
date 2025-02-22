@@ -47,27 +47,4 @@ impl Owes {
         .await
         .and_then(|mut response| response.take::<Vec<Self>>(0))
     }
-
-    pub async fn db_select_by_name(
-        chat_id: ChatId,
-        name: Name,
-    ) -> Result<Vec<Self>, surrealdb::Error> {
-        use crate::{
-            chat::{ID as CHAT_ID, TABLE as CHAT_TB},
-            traveler::{CHAT, NAME},
-        };
-
-        let db = db().await;
-        db.query(format!(
-            "SELECT *
-            FROM {TABLE}
-            WHERE
-                {IN}.{CHAT}.{CHAT_ID} = ${CHAT_ID}
-                && ({IN}.{NAME} = ${NAME} || {OUT}.{NAME} = ${NAME})",
-        ))
-        .bind((CHAT_ID, RecordId::from_table_key(CHAT_TB, chat_id.0)))
-        .bind((NAME, name))
-        .await
-        .and_then(|mut response| response.take::<Vec<Self>>(0))
-    }
 }

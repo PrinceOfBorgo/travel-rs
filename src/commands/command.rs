@@ -1,8 +1,8 @@
 use crate::{
+    HandlerResult,
     commands::{show_balance, show_balances},
     consts::{ALL_KWORD, SPLIT_AMONG_ENTRIES_SEP, SPLIT_AMONG_NAME_AMOUNT_SEP},
     traveler::Name,
-    HandlerResult,
 };
 use rust_decimal::Decimal;
 use std::sync::LazyLock;
@@ -10,8 +10,8 @@ use strum::{AsRefStr, EnumIter, EnumString, IntoEnumIterator};
 use teloxide::{prelude::*, utils::command::BotCommands};
 
 use crate::commands::{
-    add_traveler, delete_expense, delete_traveler, find_expenses, help, list_expenses,
-    list_travelers, transfer, HelpMessage,
+    HelpMessage, add_traveler, delete_expense, delete_traveler, find_expenses, help, list_expenses,
+    list_travelers, transfer,
 };
 
 pub static COMMANDS: LazyLock<Vec<String>> = LazyLock::new(|| {
@@ -163,7 +163,7 @@ Usage: /{cmd_name}",
 pub async fn commands_handler(bot: Bot, msg: Message, cmd: Command) -> HandlerResult {
     use Command::*;
 
-    let result = match cmd {
+    let result = match cmd.clone() {
         Help { command } => help(&msg, &command),
         AddTraveler { name } => add_traveler(&msg, name).await,
         DeleteTraveler { name } => delete_traveler(&msg, name).await,
@@ -184,7 +184,8 @@ pub async fn commands_handler(bot: Bot, msg: Message, cmd: Command) -> HandlerRe
             bot.send_message(msg.chat.id, reply).await?;
         }
         Err(err) => {
-            bot.send_message(msg.chat.id, err.to_string()).await?;
+            let err_msg = format!("{err}\n\n{help_message}", help_message = cmd.help_message());
+            bot.send_message(msg.chat.id, err_msg).await?;
         }
     }
 

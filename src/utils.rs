@@ -3,8 +3,8 @@ use macro_rules_attribute::attribute_alias;
 use rust_decimal::Decimal;
 use std::collections::HashMap;
 use surrealdb::{
-    sql::statements::{BeginStatement, CommitStatement},
     RecordId,
+    sql::statements::{BeginStatement, CommitStatement},
 };
 use teloxide::types::ChatId;
 
@@ -98,7 +98,7 @@ fn simplify_balances(debts: &mut Vec<Debt>) {
     debts.clear();
 
     // Simplify the balances by creating new debt transactions
-    while let (Some((ref debtor, debtor_amount)), Some((ref creditor, creditor_amount))) =
+    while let (Some((debtor, debtor_amount)), Some((creditor, creditor_amount))) =
         (debtors.last(), creditors.last())
     {
         // Determine the amount to be transferred
@@ -123,14 +123,14 @@ fn simplify_balances(debts: &mut Vec<Debt>) {
         // Update the debtor's balance
         if debtor_amount + amount == Decimal::ZERO {
             debtors.pop();
-        } else if let Some((_, ref mut amt)) = debtors.last_mut() {
+        } else if let Some((_, amt)) = debtors.last_mut() {
             *amt += amount;
         }
 
         // Update the creditor's balance
         if creditor_amount - amount == Decimal::ZERO {
             creditors.pop();
-        } else if let Some((_, ref mut amt)) = creditors.last_mut() {
+        } else if let Some((_, amt)) = creditors.last_mut() {
             *amt -= amount;
         }
     }

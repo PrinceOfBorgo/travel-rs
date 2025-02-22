@@ -1,13 +1,16 @@
 # Changelog
 
-## [0.1.2-SNAPSHOT]
+## [0.1.2] - 2025-02-22
 ### Added
 - `ShowBalance` and `ShowBalances` commands.
 - Dedicated help messages for all commands.
 - Handle `unknown_command` when command name is right but arguments are incomplete.
 
 ### Changed
-- Refactored commands structure on project tree.
+- Updated to `2024` edition.
+- Updated dependencies.
+- Improved unknown command and error handling.
+- Refactored and improved the project structure.
 - Refactored imports.
 
 ### Fixed

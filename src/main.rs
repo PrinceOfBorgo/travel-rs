@@ -19,7 +19,6 @@ use std::sync::Arc;
 
 use chat::Chat;
 use commands::*;
-use consts::BOT_NAME;
 use dialogues::add_expense_dialogue::AddExpenseState;
 use dialogues::*;
 use dptree::{case, deps};
@@ -30,7 +29,7 @@ use teloxide::{
 };
 use tracing::Level;
 use tracing_subscriber::{
-    fmt::time::LocalTime, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter,
+    EnvFilter, fmt::time::LocalTime, layer::SubscriberExt, util::SubscriberInitExt,
 };
 use utils::*;
 
@@ -60,7 +59,6 @@ async fn main() -> anyhow::Result<()> {
     db::db().await;
 
     let handler = Update::filter_message()
-        //.map(remove_bot_name)
         .map_async(update_chat_db)  // Create chat record on db if it does not exist yet or update it
         .branch(
             dptree::entry()
@@ -165,46 +163,4 @@ pub async fn update_chat_db(msg: Message) -> HandlerResult {
         tracing::debug!("Chat with id: {} created on db", msg.chat.id);
     }
     Ok(())
-}
-
-pub fn remove_bot_name(msg: Message) -> Option<Message> {
-    use teloxide::types::{MediaKind, MediaText, MessageCommon, MessageKind};
-    if let Message {
-        kind:
-            MessageKind::Common(
-                ref msg_common @ MessageCommon {
-                    media_kind: MediaKind::Text(ref media_text @ MediaText { ref text, .. }),
-                    ..
-                },
-            ),
-        ..
-    } = msg
-    {
-        tracing::debug!("text before removal: {text}");
-        if text.starts_with('/')
-            && text
-                .split_whitespace()
-                .next()
-                .expect("Command is not empty")
-                .ends_with(format!("@{BOT_NAME}").as_str())
-        {
-            let new_text = text.replace(format!("@{BOT_NAME}").as_str(), "");
-
-            let new_msg = Message {
-                kind: MessageKind::Common(MessageCommon {
-                    media_kind: MediaKind::Text(MediaText {
-                        text: new_text,
-                        ..media_text.clone()
-                    }),
-                    ..msg_common.clone()
-                }),
-                ..msg
-            };
-
-            tracing::debug!("text after removal: {}", new_msg.text().unwrap());
-
-            return Some(new_msg);
-        }
-    }
-    Some(msg)
 }
