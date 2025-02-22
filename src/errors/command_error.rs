@@ -27,6 +27,10 @@ pub enum CommandError {
         to: Name,
         amount: Decimal,
     },
+    ShowBalance {
+        name: Name,
+    },
+    ShowBalances,
 }
 
 impl Display for CommandError {
@@ -56,6 +60,10 @@ impl Display for CommandError {
                     "Couldn't transfer {amount} from traveler \"{from}\" to \"{to}\"."
                 )
             }
+            ShowBalance { name } => {
+                write!(f, "Couldn't show balance for traveler \"{name}\".")
+            }
+            ShowBalances => write!(f, "Couldn't show balances."),
         }
     }
 }

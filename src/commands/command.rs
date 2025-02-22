@@ -1,4 +1,5 @@
 use crate::{
+    commands::{show_balance, show_balances},
     consts::{ALL_KWORD, SPLIT_AMONG_ENTRIES_SEP, SPLIT_AMONG_NAME_AMOUNT_SEP},
     traveler::Name,
     HandlerResult,
@@ -53,6 +54,10 @@ pub enum Command {
         to: Name,
         amount: Decimal,
     },
+    #[command(description = "show the simplified balance of the specified traveler.")]
+    ShowBalance { name: Name },
+    #[command(description = "show the simplified balances of all travelers.")]
+    ShowBalances,
     #[command(description = "cancel the currently running interactive command.")]
     Cancel,
 }
@@ -133,6 +138,18 @@ Usage: /{cmd_name} <description>",
 Usage: /{cmd_name} <from> <to> <amount>",
                 cmd_name = variant_to_string!(Command::Transfer)
             ),
+            ShowBalance { name: _ } => format!(
+"/{cmd_name} — Show the simplified balance of the specified traveler.
+
+Usage: /{cmd_name} <name>",
+                cmd_name = variant_to_string!(Command::ShowBalance)
+            ),
+            ShowBalances => format!(
+"/{cmd_name} — Show the simplified  balances of all travelers.
+
+Usage: /{cmd_name}",
+                cmd_name = variant_to_string!(Command::ShowBalances)
+            ),
             Cancel => format!(
 "/{cmd_name} — Cancel the currently running interactive command.
 
@@ -155,6 +172,8 @@ pub async fn commands_handler(bot: Bot, msg: Message, cmd: Command) -> HandlerRe
         ListExpenses => list_expenses(&msg).await,
         FindExpenses { description } => find_expenses(&msg, &description).await,
         Transfer { from, to, amount } => transfer(&msg, from, to, amount).await,
+        ShowBalance { name } => show_balance(&msg, name).await,
+        ShowBalances => show_balances(&msg).await,
         Cancel | AddExpense => {
             unreachable!("This command is handled before calling this function.")
         }

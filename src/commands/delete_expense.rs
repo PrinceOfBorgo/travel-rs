@@ -1,11 +1,16 @@
-use crate::{errors::CommandError, expense::Expense, trace_command};
+use crate::{
+    consts::{DEBUG_START, DEBUG_SUCCESS},
+    errors::CommandError,
+    expense::Expense,
+    trace_command,
+};
 use macro_rules_attribute::apply;
 use teloxide::prelude::*;
 use tracing::Level;
 
 #[apply(trace_command)]
 pub async fn delete_expense(msg: &Message, number: i64) -> Result<String, CommandError> {
-    tracing::debug!("START");
+    tracing::debug!(DEBUG_START);
 
     // Check if expense exists on db
     let count_res = Expense::db_count(msg.chat.id, number).await;
@@ -15,7 +20,7 @@ pub async fn delete_expense(msg: &Message, number: i64) -> Result<String, Comman
             let delete_res = Expense::db_delete(msg.chat.id, number).await;
             match delete_res {
                 Ok(_) => {
-                    tracing::debug!("SUCCESS");
+                    tracing::debug!(DEBUG_SUCCESS);
                     Ok(format!("Expense #{number} deleted successfully."))
                 }
                 Err(err) => {

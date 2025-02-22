@@ -1,4 +1,5 @@
 use crate::{
+    consts::{DEBUG_START, DEBUG_SUCCESS},
     errors::CommandError,
     trace_command,
     traveler::{Name, Traveler},
@@ -9,7 +10,7 @@ use tracing::Level;
 
 #[apply(trace_command)]
 pub async fn add_traveler(msg: &Message, name: Name) -> Result<String, CommandError> {
-    tracing::debug!("START");
+    tracing::debug!(DEBUG_START);
     if name.is_empty() {
         return Err(CommandError::EmptyInput);
     }
@@ -28,7 +29,7 @@ pub async fn add_traveler(msg: &Message, name: Name) -> Result<String, CommandEr
             let create_res = Traveler::db_create(msg.chat.id, &name).await;
             match create_res {
                 Ok(_) => {
-                    tracing::debug!("SUCCESS");
+                    tracing::debug!(DEBUG_SUCCESS);
                     Ok(format!("Traveler {name} added successfully."))
                 }
                 Err(err) => {

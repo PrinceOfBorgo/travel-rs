@@ -7,7 +7,7 @@
   - [ ] Add languages.
   - [ ] Add currency formatting (decimal separators).
 - [ ] Logs with span_id/trace_id.
-- [ ] Formatting of bot responses (bold, italic, etc.).
+- [ ] Formatting of bot responses (bold, italic, etc.). https://docs.rs/teloxide/latest/teloxide/types/enum.ParseMode.html
 - [ ] Improve error handling: distinguish errors resulting from DB queries.
   - [x] Delete from DB always returns OK even if the entry doesn't exist. Should return WARN with a dedicated message.
 - [ ] Refactor code to make it more readable and maintainable.

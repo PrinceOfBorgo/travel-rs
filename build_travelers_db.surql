@@ -102,7 +102,6 @@ DEFINE TABLE chat TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;
 DEFINE FIELD last_interaction_utc ON chat TYPE datetime PERMISSIONS FOR select, create, update WHERE FULL;
 
 
-
 -- ------------------------------
 -- TABLE: expense
 -- ------------------------------
@@ -166,7 +165,6 @@ DEFINE FIELD in ON transferred_to TYPE record<traveler> PERMISSIONS FULL;
 DEFINE FIELD out ON transferred_to TYPE record<traveler> PERMISSIONS FULL;
 
 
-
 -- ------------------------------
 -- TABLE: traveler
 -- ------------------------------
@@ -177,5 +175,12 @@ DEFINE FIELD chat ON traveler TYPE record<chat> PERMISSIONS FOR select, create, 
 DEFINE FIELD name ON traveler TYPE string ASSERT string::len($value) > 0 PERMISSIONS FOR select, create, update WHERE FULL;
 
 DEFINE INDEX chat_name_index ON traveler FIELDS chat, name UNIQUE;
+
+
+-- ------------------------------
+-- TABLE: v_balances
+-- ------------------------------
+
+DEFINE TABLE v_balances TYPE ANY SCHEMALESS AS SELECT in.name AS debtor_name, out.name AS creditor_name, amount AS debt, in.chat AS chat FROM owes PERMISSIONS NONE;
 
 

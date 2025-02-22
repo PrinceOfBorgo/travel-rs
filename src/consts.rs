@@ -1,3 +1,5 @@
+pub const BOT_NAME: &str = "TravelRS_bot";
+
 pub const DECIMAL_SEP: char = '.';
 pub const SPLIT_AMONG_ENTRIES_SEP: char = ';';
 pub const SPLIT_AMONG_NAME_AMOUNT_SEP: char = ':';
@@ -12,3 +14,6 @@ pub const RESERVED_KWORDS: [&str; 2] = [ALL_KWORD, END_KWORD];
 pub const INVALID_CHARS: [char; 3] = [SPLIT_AMONG_ENTRIES_SEP, SPLIT_AMONG_NAME_AMOUNT_SEP, ','];
 
 pub const MIN_SIMILARITY_SCORE: f32 = 0.25;
+
+pub const DEBUG_START: &str = "START";
+pub const DEBUG_SUCCESS: &str = "SUCCESS";

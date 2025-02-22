@@ -136,7 +136,7 @@ impl Traveler {
     pub async fn db_select_by_name(
         chat_id: ChatId,
         name: Name,
-    ) -> Result<Vec<Self>, surrealdb::Error> {
+    ) -> Result<Option<Self>, surrealdb::Error> {
         use super::chat::{ID as CHAT_ID, TABLE as CHAT_TB};
 
         let db = db().await;
@@ -150,6 +150,6 @@ impl Traveler {
         .bind((CHAT_ID, RecordId::from_table_key(CHAT_TB, chat_id.0)))
         .bind((NAME, name))
         .await
-        .and_then(|mut response| response.take::<Vec<Self>>(0))
+        .and_then(|mut response| response.take::<Option<Self>>(0))
     }
 }

@@ -74,7 +74,7 @@ pub enum AmountEnum {
 
 #[apply(trace_state)]
 pub async fn start(bot: Bot, dialogue: AddExpenseDialogue, msg: Message) -> HandlerResult {
-    tracing::debug!("START");
+    tracing::debug!(DEBUG_START);
     bot.send_message(
         msg.chat.id,
         format!("The process can be interrupt at any time by sending `/{cancel}`.\nHow would you describe this expense?", 
@@ -83,7 +83,7 @@ pub async fn start(bot: Bot, dialogue: AddExpenseDialogue, msg: Message) -> Hand
     )
     .await?;
     dialogue.update(AddExpenseState::ReceiveDescription).await?;
-    tracing::debug!("SUCCESS");
+    tracing::debug!(DEBUG_SUCCESS);
     Ok(())
 }
 
@@ -93,7 +93,7 @@ pub async fn receive_description(
     dialogue: AddExpenseDialogue,
     msg: Message,
 ) -> HandlerResult {
-    tracing::debug!("START");
+    tracing::debug!(DEBUG_START);
     match msg.text() {
         Some(text) => {
             bot.send_message(msg.chat.id, "How much is the expense?")
@@ -103,7 +103,7 @@ pub async fn receive_description(
                     description: text.to_owned(),
                 })
                 .await?;
-            tracing::debug!("SUCCESS");
+            tracing::debug!(DEBUG_SUCCESS);
         }
         None => {
             tracing::warn!("Invalid description: received `None`.");
@@ -122,7 +122,7 @@ pub async fn receive_amount(
     description: String, // Available from `AddExpenseState::ReceiveAmount`.
     msg: Message,
 ) -> HandlerResult {
-    tracing::debug!("START");
+    tracing::debug!(DEBUG_START);
     let parsed_text = msg.text().map(|text| text.parse::<Decimal>());
     match parsed_text {
         Some(Ok(amount)) => {
@@ -133,7 +133,7 @@ pub async fn receive_amount(
                     amount,
                 })
                 .await?;
-            tracing::debug!("SUCCESS");
+            tracing::debug!(DEBUG_SUCCESS);
         }
         _ => {
             tracing::warn!("Invalid amount: received `{parsed_text:?}`.");
@@ -152,7 +152,7 @@ pub async fn receive_paid_by(
     (description, amount): (String, Decimal), // Available from `AddExpenseState::ReceivePaidBy`.
     msg: Message,
 ) -> HandlerResult {
-    tracing::debug!("START");
+    tracing::debug!(DEBUG_START);
     let text = msg.text();
 
     let Some(name) = text.and_then(|text| Name::from_str(text).ok()) else {
@@ -165,7 +165,7 @@ pub async fn receive_paid_by(
     // Select traveler from db
     let select_res = Traveler::db_select_by_name(msg.chat.id, name.clone()).await;
     match select_res {
-        Ok(travelers) if !travelers.is_empty() => {
+        Ok(Some(traveler)) => {
             bot.send_message(
                 msg.chat.id,
                 format!(
@@ -178,12 +178,12 @@ pub async fn receive_paid_by(
                 .update(AddExpenseState::StartSplitAmong {
                     description,
                     amount,
-                    paid_by: travelers[0].clone(),
+                    paid_by: traveler,
                 })
                 .await?;
-            tracing::debug!("SUCCESS");
+            tracing::debug!(DEBUG_SUCCESS);
         }
-        Ok(_) => {
+        Ok(None) => {
             tracing::warn!("Invalid traveler: received {name}.");
             bot.send_message(msg.chat.id, format!("Couldn't find traveler {name}. Specify the traveler who paid for this expense.")).await?;
         }
@@ -207,14 +207,14 @@ pub async fn start_split_among(
     (description, amount, paid_by): (String, Decimal, Traveler), // Available from `AddExpenseState::StartSplitAmong`.
     msg: Message,
 ) -> HandlerResult {
-    tracing::debug!("START");
+    tracing::debug!(DEBUG_START);
     match msg.text() {
         Some(text) => {
             tracing::debug!("Received text: `{text}`.");
             let split_res = parse_split_among(text, msg.chat.id, BTreeMap::new()).await;
             match split_res {
                 Ok((SplitAmongEnum::All, split_among)) => {
-                    tracing::debug!("SUCCESS");
+                    tracing::debug!(DEBUG_SUCCESS);
                     match end(
                         dialogue,
                         (description, amount, paid_by, split_among),
@@ -272,7 +272,7 @@ pub async fn start_split_among(
                             split_among,
                         })
                         .await?;
-                    tracing::debug!("SUCCESS");
+                    tracing::debug!(DEBUG_SUCCESS);
                 }
                 Ok((SplitAmongEnum::End, _)) => {
                     unreachable!() // This branch already returns an error in parse_split_among
@@ -314,7 +314,7 @@ pub async fn receive_split_among(
     ), // Available from `AddExpenseState::ReceiveSplitAmong`.
     msg: Message,
 ) -> HandlerResult {
-    tracing::debug!("START");
+    tracing::debug!(DEBUG_START);
     match msg.text() {
         Some(text) => {
             tracing::debug!("Received text: `{text}`.");
@@ -337,10 +337,10 @@ pub async fn receive_split_among(
                             split_among,
                         })
                         .await?;
-                    tracing::debug!("SUCCESS");
+                    tracing::debug!(DEBUG_SUCCESS);
                 }
                 Ok((SplitAmongEnum::End, split_among)) => {
-                    tracing::debug!("SUCCESS");
+                    tracing::debug!(DEBUG_SUCCESS);
                     match end(
                         dialogue,
                         (description, amount, paid_by, split_among),
@@ -424,7 +424,7 @@ pub async fn end(
     ),
     chat_id: ChatId,
 ) -> Result<Expense, EndError> {
-    tracing::debug!("START");
+    tracing::debug!(DEBUG_START);
     match compute_shares(amount, split_among) {
         Ok(shares) => {
             let create_res = Expense::db_create(chat_id, description.clone(), amount).await;
@@ -442,7 +442,7 @@ pub async fn end(
                         }
                         match dialogue.exit().await {
                             Ok(_) => {
-                                tracing::debug!("SUCCESS - id: {}", expense.id);
+                                tracing::debug!("{DEBUG_SUCCESS} - id: {}", expense.id);
                                 Ok(expense)
                             }
                             Err(err_closing) => {

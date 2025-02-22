@@ -1,5 +1,6 @@
 use crate::{
     commands::{Command, HelpMessage},
+    consts::{DEBUG_START, DEBUG_SUCCESS},
     errors::CommandError,
     trace_command,
 };
@@ -10,10 +11,10 @@ use tracing::Level;
 
 #[apply(trace_command)]
 pub fn help(msg: &Message, command: &str) -> Result<String, CommandError> {
-    tracing::debug!("START");
+    tracing::debug!(DEBUG_START);
     let command = command.trim();
     if command.is_empty() {
-        tracing::debug!("SUCCESS");
+        tracing::debug!(DEBUG_SUCCESS);
         return Ok(Command::descriptions().to_string());
     }
 
@@ -22,7 +23,7 @@ pub fn help(msg: &Message, command: &str) -> Result<String, CommandError> {
         .map(|variant| variant.help_message())
     {
         Some(help) => {
-            tracing::debug!("SUCCESS");
+            tracing::debug!(DEBUG_SUCCESS);
             Ok(help.to_string())
         }
         None => {

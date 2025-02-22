@@ -1,11 +1,16 @@
-use crate::{errors::CommandError, expense::Expense, trace_command};
+use crate::{
+    consts::{DEBUG_START, DEBUG_SUCCESS},
+    errors::CommandError,
+    expense::Expense,
+    trace_command,
+};
 use macro_rules_attribute::apply;
 use teloxide::prelude::*;
 use tracing::Level;
 
 #[apply(trace_command)]
 pub async fn list_expenses(msg: &Message) -> Result<String, CommandError> {
-    tracing::debug!("START");
+    tracing::debug!(DEBUG_START);
     let list_res = Expense::db_select(msg.chat.id).await;
     match list_res {
         Ok(expenses) => {
@@ -21,7 +26,7 @@ pub async fn list_expenses(msg: &Message) -> Result<String, CommandError> {
                     .collect::<Vec<_>>()
                     .join("\n")
             };
-            tracing::debug!("SUCCESS");
+            tracing::debug!(DEBUG_SUCCESS);
             Ok(reply)
         }
         Err(err) => {

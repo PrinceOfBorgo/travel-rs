@@ -1,4 +1,5 @@
 use crate::{
+    consts::{DEBUG_START, DEBUG_SUCCESS},
     errors::CommandError,
     trace_command,
     traveler::{Name, Traveler},
@@ -9,7 +10,7 @@ use tracing::Level;
 
 #[apply(trace_command)]
 pub async fn delete_traveler(msg: &Message, name: Name) -> Result<String, CommandError> {
-    tracing::debug!("START");
+    tracing::debug!(DEBUG_START);
     if name.is_empty() {
         return Err(CommandError::EmptyInput);
     }
@@ -22,7 +23,7 @@ pub async fn delete_traveler(msg: &Message, name: Name) -> Result<String, Comman
             let delete_res = Traveler::db_delete(msg.chat.id, &name).await;
             match delete_res {
                 Ok(_) => {
-                    tracing::debug!("SUCCESS");
+                    tracing::debug!(DEBUG_SUCCESS);
                     Ok(format!("Traveler {name} deleted successfully."))
                 }
                 Err(err) => {

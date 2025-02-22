@@ -1,4 +1,5 @@
 use crate::{
+    consts::{DEBUG_START, DEBUG_SUCCESS},
     errors::CommandError,
     trace_command,
     transferred_to::TransferredTo,
@@ -17,7 +18,7 @@ pub async fn transfer(
     to: Name,
     amount: Decimal,
 ) -> Result<String, CommandError> {
-    tracing::debug!("START");
+    tracing::debug!(DEBUG_START);
     if from.is_empty() || to.is_empty() {
         return Err(CommandError::EmptyInput);
     }
@@ -26,24 +27,19 @@ pub async fn transfer(
     // Get sender from db
     let select_from_res = Traveler::db_select_by_name(chat_id, from.clone()).await;
     match select_from_res {
-        Ok(senders) if !senders.is_empty() => {
+        Ok(Some(sender)) => {
             // Get receiver from db
             let select_to_res = Traveler::db_select_by_name(chat_id, to.clone()).await;
             match select_to_res {
-                Ok(recvs) if !recvs.is_empty() => {
+                Ok(Some(recv)) => {
                     // Record the new transfer on db
-                    let relate_res = TransferredTo::db_relate(
-                        amount,
-                        senders[0].id.clone(),
-                        recvs[0].id.clone(),
-                    )
-                    .await;
+                    let relate_res = TransferredTo::db_relate(amount, sender.id, recv.id).await;
                     match relate_res {
                         Ok(Some(transfer)) => {
                             if let Err(err_update) = update_debts(chat_id).await {
                                 tracing::warn!("{err_update}");
                             }
-                            tracing::debug!("SUCCESS - id: {}", transfer.id);
+                            tracing::debug!("{DEBUG_SUCCESS} - id: {}", transfer.id);
                             Ok(String::from("Transfer recorded successfully."))
                         }
                         Ok(None) => {

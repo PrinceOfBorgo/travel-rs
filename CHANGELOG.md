@@ -2,6 +2,7 @@
 
 ## [0.1.2-SNAPSHOT]
 ### Added
+- `ShowBalance` and `ShowBalances` commands.
 - Dedicated help messages for all commands.
 - Handle `unknown_command` when command name is right but arguments are incomplete.
 
