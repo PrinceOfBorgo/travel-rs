@@ -1,10 +1,10 @@
-use crate::config::*;
+use crate::settings::*;
 use serde::{Deserialize, Serialize};
 use std::ops::Deref;
 use surrealdb::{
+    Surreal,
     engine::remote::ws::{Client, Ws},
     opt::auth::Root,
-    Surreal,
 };
 use tokio::sync::OnceCell;
 
@@ -24,16 +24,18 @@ impl Deref for Count {
 async fn connect_to_db() -> Result<Surreal<Client>, surrealdb::Error> {
     tracing::info!("Connecting to database...");
 
-    let host = CONFIG.get::<String>(DB_HOST).unwrap();
-    let port = CONFIG.get::<usize>(DB_PORT).unwrap();
-    let username = &CONFIG.get::<String>(DB_USERNAME).unwrap();
-    let password = &CONFIG.get::<String>(DB_PASSWORD).unwrap();
-    let db_namespace = CONFIG.get::<String>(DB_NAMESPACE).unwrap();
-    let db_database = CONFIG.get::<String>(DB_DATABASE).unwrap();
+    let Database {
+        host,
+        port,
+        username,
+        password,
+        namespace,
+        database,
+    } = &SETTINGS.database;
 
     let db = Surreal::new::<Ws>(format!("{host}:{port}")).await?;
     db.signin(Root { username, password }).await?;
-    db.use_ns(db_namespace).use_db(db_database).await?;
+    db.use_ns(namespace).use_db(database).await?;
 
     tracing::info!("Connected to database.");
 

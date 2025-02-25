@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.1.4-SNAPSHOT]
+### Added
+- N/A
+
+### Changed
+- Improved settings: now supporting dedicated profile settings files.
+
+### Fixed
+- N/A
+
 ## [0.1.3] - 2025-02-25
 ### Added
 - `ShowExpense` command.

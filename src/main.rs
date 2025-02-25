@@ -1,7 +1,6 @@
 #[macro_use]
 mod macros;
 mod commands;
-mod config;
 mod consts;
 mod db;
 mod debt;
@@ -9,11 +8,13 @@ mod dialogues;
 mod errors;
 mod expense_details;
 mod relationships;
+mod settings;
 mod tables;
 mod utils;
 mod views;
 
 pub(crate) use relationships::*;
+use settings::SETTINGS;
 pub(crate) use tables::*;
 
 use std::sync::Arc;
@@ -53,7 +54,7 @@ async fn main() -> anyhow::Result<()> {
         .init();
 
     tracing::info!("Starting TravelRS bot...");
-    let token = config::get_token();
+    let token = SETTINGS.token_value();
     let bot = Bot::new(token);
     tracing::info!("TravelRS bot started.");
     // Initialize the database connection
