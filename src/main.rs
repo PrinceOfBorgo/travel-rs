@@ -7,6 +7,7 @@ mod db;
 mod debt;
 mod dialogues;
 mod errors;
+mod expense_details;
 mod relationships;
 mod tables;
 mod utils;

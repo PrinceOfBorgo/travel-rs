@@ -22,6 +22,9 @@ pub enum CommandError {
     FindExpenses {
         description: String,
     },
+    ShowExpense {
+        number: i64,
+    },
     Transfer {
         from: Name,
         to: Name,
@@ -54,6 +57,9 @@ impl Display for CommandError {
                 f,
                 "Couldn't find expenses matching the specified description (~ \"{description}\")."
             ),
+            ShowExpense { number } => {
+                write!(f, "Couldn't show expense #{number}.")
+            }
             Transfer { from, to, amount } => {
                 write!(
                     f,

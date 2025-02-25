@@ -1,26 +1,27 @@
 use crate::{
+    HandlerResult,
     consts::*,
     db::db,
     errors::{AddExpenseError, EndError},
     expense::Expense,
     trace_state,
     traveler::{Name, Traveler},
-    update_debts, HandlerResult,
+    update_debts,
 };
 use macro_rules_attribute::apply;
 use regex::Regex;
 use rust_decimal::Decimal;
 use std::{collections::BTreeMap, fmt::Debug, str::FromStr, sync::LazyLock};
 use surrealdb::{
-    sql::statements::{BeginStatement, CommitStatement},
     RecordId,
+    sql::statements::{BeginStatement, CommitStatement},
 };
 use teloxide::{
+    Bot,
     dispatching::dialogue::InMemStorage,
     prelude::Dialogue,
     requests::Requester,
     types::{ChatId, Message},
-    Bot,
 };
 use tracing::Level;
 
@@ -60,7 +61,6 @@ pub enum AddExpenseState {
 }
 #[derive(Debug, Clone)]
 pub enum SplitAmongEnum {
-    All,
     List,
     End,
 }
@@ -77,7 +77,7 @@ pub async fn start(bot: Bot, dialogue: AddExpenseDialogue, msg: Message) -> Hand
     tracing::debug!(DEBUG_START);
     bot.send_message(
         msg.chat.id,
-        format!("The process can be interrupt at any time by sending `/{cancel}`.\nHow would you describe this expense?", 
+        format!("The process can be interrupted at any time by sending `/{cancel}`.\nHow would you describe this expense?", 
             cancel = variant_to_string!(Command::Cancel),
         )
     )
@@ -185,7 +185,13 @@ pub async fn receive_paid_by(
         }
         Ok(None) => {
             tracing::warn!("Invalid traveler: received {name}.");
-            bot.send_message(msg.chat.id, format!("Couldn't find traveler {name}. Specify the traveler who paid for this expense.")).await?;
+            bot.send_message(
+                msg.chat.id,
+                format!(
+                    "Couldn't find traveler {name}. Specify the traveler who paid for this expense."
+                ),
+            )
+            .await?;
         }
         Err(err) => {
             tracing::error!("{err}");
@@ -213,7 +219,23 @@ pub async fn start_split_among(
             tracing::debug!("Received text: `{text}`.");
             let split_res = parse_split_among(text, msg.chat.id, BTreeMap::new()).await;
             match split_res {
-                Ok((SplitAmongEnum::All, split_among)) => {
+                Ok((SplitAmongEnum::List, split_among)) => {
+                    bot.send_message(
+                        msg.chat.id,
+                        format!("Continue splitting or type `{END_KWORD}` to end the process.",),
+                    )
+                    .await?;
+                    dialogue
+                        .update(AddExpenseState::ReceiveSplitAmong {
+                            description,
+                            amount,
+                            paid_by,
+                            split_among,
+                        })
+                        .await?;
+                    tracing::debug!(DEBUG_SUCCESS);
+                }
+                Ok((SplitAmongEnum::End, split_among)) => {
                     tracing::debug!(DEBUG_SUCCESS);
                     match end(
                         dialogue,
@@ -225,7 +247,7 @@ pub async fn start_split_among(
                         Ok(expense) => {
                             bot.send_message(
                                 msg.chat.id,
-                                format!("Expense added successfully!\n{expense}"),
+                                format!("Expense added successfully!\n\n{expense}"),
                             )
                             .await?;
                         }
@@ -257,25 +279,6 @@ pub async fn start_split_among(
                             }
                         },
                     }
-                }
-                Ok((SplitAmongEnum::List, split_among)) => {
-                    bot.send_message(
-                        msg.chat.id,
-                        format!("Continue splitting or type `{END_KWORD}` to end the process.",),
-                    )
-                    .await?;
-                    dialogue
-                        .update(AddExpenseState::ReceiveSplitAmong {
-                            description,
-                            amount,
-                            paid_by,
-                            split_among,
-                        })
-                        .await?;
-                    tracing::debug!(DEBUG_SUCCESS);
-                }
-                Ok((SplitAmongEnum::End, _)) => {
-                    unreachable!() // This branch already returns an error in parse_split_among
                 }
                 Err(err) => {
                     tracing::error!("{err}");
@@ -320,9 +323,6 @@ pub async fn receive_split_among(
             tracing::debug!("Received text: `{text}`.");
             let split_res = parse_split_among(text, msg.chat.id, split_among).await;
             match split_res {
-                Ok((SplitAmongEnum::All, _)) => {
-                    unreachable!() // This branch already returns an error in parse_split_among
-                }
                 Ok((SplitAmongEnum::List, split_among)) => {
                     bot.send_message(
                         msg.chat.id,
@@ -498,7 +498,7 @@ async fn parse_split_among(
                 .map(|traveler| (traveler.name, AmountEnum::Dynamic))
                 .collect(),
         );
-        Ok((SplitAmongEnum::All, split_among))
+        Ok((SplitAmongEnum::End, split_among))
     }
     // If the user specified a list of travelers
     else {
@@ -522,7 +522,8 @@ async fn parse_split_among(
             if let Some(amount) = caps.name(SPLIT_AMONG_REGEX_AMOUNT_GRP) {
                 let amount = amount.as_str().replace(DECIMAL_SEP, "."); // Replace decimal separator with '.' so Decimal::from_str won't fail
                 let amount = amount.trim_end_matches(|c: char| c.is_whitespace() || c == '%'); // Remove whitespaces and '%' at the end of the amount
-                let amount = Decimal::from_str(amount).unwrap(); // Can unwrap since the regex only matches positive numbers
+                let amount = Decimal::from_str(amount)
+                    .expect("The string should represent a positive number"); // Can unwrap since the regex only matches positive numbers
 
                 if caps.name(SPLIT_AMONG_REGEX_PERCENTAGE_GRP).is_some() {
                     split_among.insert(name, AmountEnum::Percentage(amount));
@@ -564,7 +565,9 @@ async fn parse_split_among(
                         let not_found = split_among
                             .keys()
                             .find(|name| !travelers.iter().any(|traveler| traveler.name == **name))
-                            .unwrap(); // Can unwrap because there must be at least one travler that has not been found on db
+                            .expect(
+                                "There must be at least one traveler that has not been found on db",
+                            );
                         return Err(AddExpenseError::TravelerNotFound {
                             name: not_found.to_owned(),
                         });
@@ -620,8 +623,8 @@ fn compute_shares(
                 name,
                 match share {
                     AmountEnum::Fixed(amount) => amount,
-                    AmountEnum::Dynamic => split_residual.unwrap(), // Can unwrap because count_blanks > 0
-                    AmountEnum::Percentage(_) => unreachable!(), // Already converted to fixed amounts
+                    AmountEnum::Dynamic => split_residual.expect("count_blanks should be positive"),
+                    AmountEnum::Percentage(_) => unreachable!("Already converted to fixed amounts"),
                 },
             )
         })

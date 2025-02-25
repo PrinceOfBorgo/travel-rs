@@ -10,6 +10,7 @@ mod list_expenses;
 mod list_travelers;
 mod show_balance;
 mod show_balances;
+mod show_expense;
 mod transfer;
 mod unknown_command;
 
@@ -25,5 +26,6 @@ pub use list_expenses::list_expenses;
 pub use list_travelers::list_travelers;
 pub use show_balance::show_balance;
 pub use show_balances::show_balances;
+pub use show_expense::show_expense;
 pub use transfer::transfer;
 pub use unknown_command::unknown_command;
