@@ -1,4 +1,4 @@
-use crate::{db::db, traveler::Name};
+use crate::db::db;
 use rust_decimal::prelude::*;
 use serde::{Deserialize, Serialize};
 use surrealdb::RecordId;

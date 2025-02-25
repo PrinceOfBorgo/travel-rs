@@ -1,6 +1,6 @@
 use crate::{
     HandlerResult,
-    commands::{show_balance, show_balances},
+    commands::{show_balance, show_balances, show_expense},
     consts::{ALL_KWORD, SPLIT_AMONG_ENTRIES_SEP, SPLIT_AMONG_NAME_AMOUNT_SEP},
     traveler::Name,
 };
@@ -39,14 +39,20 @@ pub enum Command {
     ListTravelers,
     #[command(description = "add a new expense to the travel plan.")]
     AddExpense,
-    #[command(description = "delete the expense with specified number from the travel plan.")]
+    #[command(
+        description = "delete the expense with the specified identifying number from the travel plan."
+    )]
     DeleteExpense { number: i64 },
     #[command(description = "show the expenses in the travel plan.")]
     ListExpenses,
     #[command(description = "find the expenses matching the specified description.")]
     FindExpenses { description: String },
     #[command(
-        description = "transfer the specified amount to the specified traveler.",
+        description = "show the details of the expense with the specified identifying number."
+    )]
+    ShowExpense { number: i64 },
+    #[command(
+        description = "transfer the specified amount from one traveler to another.",
         parse_with = "split"
     )]
     Transfer {
@@ -101,18 +107,28 @@ Usage: /{cmd_name}",
             AddExpense => format!(
 "/{cmd_name} — Start a new interactive session to add an expense to the travel plan.
 
+In the session, you will be asked to:
+- Send a message with the description of the expense.
+- Send a message with the amount of the expense.
+- Send a message with the name of the traveler who paid the expense.
+- Send a message with the travelers who share the expense and the amount they share.
+
+The process can be interrupted at any time by sending `/{cancel}`. 
+
+To split the expense among multiple travelers you can:
 - Send a message for each traveler you want to share the expense with, or specify multiple travelers separating them by `{SPLIT_AMONG_ENTRIES_SEP}`.
 - Use the format `<name>{SPLIT_AMONG_NAME_AMOUNT_SEP} <amount>` where `<amount>` can be followed by `%` if it is a percentage of the residual amount.
 > Example: `Alice{SPLIT_AMONG_NAME_AMOUNT_SEP} 50`, `Bob{SPLIT_AMONG_NAME_AMOUNT_SEP} 20%`, `Charles`, `John{SPLIT_AMONG_NAME_AMOUNT_SEP} 30{SPLIT_AMONG_ENTRIES_SEP} Jane{SPLIT_AMONG_NAME_AMOUNT_SEP} 10%` are all valid syntaxes.
 > Example: If the total is `100`, typing `Alice{SPLIT_AMONG_NAME_AMOUNT_SEP} 40{SPLIT_AMONG_ENTRIES_SEP} Bob{SPLIT_AMONG_NAME_AMOUNT_SEP} 40%{SPLIT_AMONG_ENTRIES_SEP} Charles{SPLIT_AMONG_NAME_AMOUNT_SEP} 60%` means that Alice will pay `40` so the residual is `60`, Bob will pay `24` (i.e. 40% of 60) and Charles will pay `36` (i.e. 60% of 60).
 
-- You can omit `{SPLIT_AMONG_NAME_AMOUNT_SEP} <amount>` if you want to evenly split the residual expense among the travelers.
+- Omit `{SPLIT_AMONG_NAME_AMOUNT_SEP} <amount>` if you want to evenly split the residual expense among the travelers.
 > Example: If the total is `100`, the input `Alice{SPLIT_AMONG_NAME_AMOUNT_SEP} 40{SPLIT_AMONG_ENTRIES_SEP} Bob{SPLIT_AMONG_NAME_AMOUNT_SEP} 40%{SPLIT_AMONG_ENTRIES_SEP} Charles{SPLIT_AMONG_ENTRIES_SEP} David` is equivalent to set both Charles and David amounts to 30%.
 
-- You can enter `{ALL_KWORD}` to split it evenly among all travelers.
+- Enter `{ALL_KWORD}` to split it evenly among all travelers.
 
 Usage: /{cmd_name}",
-                cmd_name = variant_to_string!(Command::AddExpense)
+                cmd_name = variant_to_string!(Command::AddExpense),
+                cancel = variant_to_string!(Command::Cancel),
             ),
             DeleteExpense { number: _ } => format!(
 "/{cmd_name} — Delete the expense with the specified identifying number from the travel plan.
@@ -132,10 +148,16 @@ Usage: /{cmd_name}",
 Usage: /{cmd_name} <description>",
                 cmd_name = variant_to_string!(Command::FindExpenses)
             ),
-            Transfer { from: _, to: _, amount: _ } => format!(
-"/{cmd_name} — Transfer the specified amount to the specified traveler.
+            ShowExpense { number: _ } => format!(
+"/{cmd_name} — Show the details of the expense with the specified identifying number.
 
-Usage: /{cmd_name} <from> <to> <amount>",
+Usage: /{cmd_name} <number>",
+                cmd_name = variant_to_string!(Command::ShowExpense)
+            ),
+            Transfer { from: _, to: _, amount: _ } => format!(
+"/{cmd_name} — Transfer the specified amount from one traveler to another.
+
+Usage: /{cmd_name} <sender> <receiver> <amount>",
                 cmd_name = variant_to_string!(Command::Transfer)
             ),
             ShowBalance { name: _ } => format!(
@@ -145,7 +167,7 @@ Usage: /{cmd_name} <name>",
                 cmd_name = variant_to_string!(Command::ShowBalance)
             ),
             ShowBalances => format!(
-"/{cmd_name} — Show the simplified  balances of all travelers.
+"/{cmd_name} — Show the simplified balances of all travelers.
 
 Usage: /{cmd_name}",
                 cmd_name = variant_to_string!(Command::ShowBalances)
@@ -171,6 +193,7 @@ pub async fn commands_handler(bot: Bot, msg: Message, cmd: Command) -> HandlerRe
         DeleteExpense { number } => delete_expense(&msg, number).await,
         ListExpenses => list_expenses(&msg).await,
         FindExpenses { description } => find_expenses(&msg, &description).await,
+        ShowExpense { number } => show_expense(&msg, number).await,
         Transfer { from, to, amount } => transfer(&msg, from, to, amount).await,
         ShowBalance { name } => show_balance(&msg, name).await,
         ShowBalances => show_balances(&msg).await,

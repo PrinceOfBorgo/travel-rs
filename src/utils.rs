@@ -50,6 +50,9 @@ attribute_alias! {
     ];
 }
 
+const FN_CALC_DEBTS: &str = "fn::calc_debts";
+const FN_CLEAR_DEBTS: &str = "fn::clear_debts";
+
 fn simplify_balances(debts: &mut Vec<Debt>) {
     // Create a HashMap to store the original RecordId for each participant
     // This avoids interior mutability issues by using String as the key
@@ -147,7 +150,7 @@ pub async fn update_debts(chat_id: ChatId) -> Result<(), surrealdb::Error> {
     let mut debts = db
         .query(format!(
             "SELECT {DEBTOR}, {CREDITOR}, {DEBT} 
-            FROM fn::calc_debts(${CHAT_ID})"
+            FROM {FN_CALC_DEBTS}(${CHAT_ID})"
         ))
         .bind((CHAT_ID, RecordId::from_table_key(CHAT_TB, chat_id.0)))
         .await
@@ -155,7 +158,7 @@ pub async fn update_debts(chat_id: ChatId) -> Result<(), surrealdb::Error> {
 
     let mut query = db
         .query(BeginStatement::default())
-        .query(format!("fn::clear_debts(${CHAT_ID})"))
+        .query(format!("{FN_CLEAR_DEBTS}(${CHAT_ID})"))
         .bind((CHAT_ID, RecordId::from_table_key(CHAT_TB, chat_id.0)));
 
     simplify_balances(&mut debts);

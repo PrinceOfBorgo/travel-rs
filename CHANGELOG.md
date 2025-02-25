@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.1.3] - 2025-02-25
+### Added
+- `ShowExpense` command.
+
+### Changed
+- Updated some help messages.
+
+### Fixed
+- An error returned passing `all` when asked to continue splitting an expense.
+
 ## [0.1.2] - 2025-02-22
 ### Added
 - `ShowBalance` and `ShowBalances` commands.
