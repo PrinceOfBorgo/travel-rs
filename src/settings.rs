@@ -2,7 +2,7 @@ use config::Config;
 use serde::Deserialize;
 use std::sync::LazyLock;
 
-pub static CONFIG: LazyLock<Config> = LazyLock::new(|| {
+static CONFIG: LazyLock<Config> = LazyLock::new(|| {
     Config::builder()
         .add_source(config::File::with_name("config/config"))
         .build()

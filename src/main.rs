@@ -7,17 +7,17 @@ mod debt;
 mod dialogues;
 mod errors;
 mod expense_details;
+mod i18n;
 mod relationships;
 mod settings;
 mod tables;
 mod utils;
 mod views;
 
+use consts::DEFAULT_LANG;
+use i18n::translate;
 pub(crate) use relationships::*;
-use settings::SETTINGS;
 pub(crate) use tables::*;
-
-use std::sync::Arc;
 
 use chat::Chat;
 use commands::*;
@@ -25,6 +25,8 @@ use dialogues::add_expense_dialogue::AddExpenseState;
 use dialogues::*;
 use dptree::{case, deps};
 use macro_rules_attribute::apply;
+use settings::SETTINGS;
+use std::sync::Arc;
 use teloxide::{
     dispatching::dialogue::{InMemStorage, Storage},
     prelude::*,
@@ -139,10 +141,7 @@ where
     if Arc::clone(&storage).get_dialogue(chat_id).await?.is_some() {
         bot.send_message(
             chat_id,
-            format!(
-                "Another process is already running, please cancel it first sending /{cancel}.",
-                cancel = variant_to_string!(Command::Cancel)
-            ),
+            translate(chat_id, "i18n-process-already-running").await,
         )
         .await?;
     }
@@ -151,7 +150,10 @@ where
 
 #[apply(trace_skip_all)]
 pub async fn update_chat_db(msg: Message) -> HandlerResult {
-    if Chat::db_create(msg.chat.id).await.is_err() {
+    if Chat::db_create(msg.chat.id, DEFAULT_LANG.to_owned())
+        .await
+        .is_err()
+    {
         match Chat::db_update(msg.chat.id).await {
             Ok(Some(chat)) => {
                 tracing::debug!("Chat updated on db: {chat:?}")

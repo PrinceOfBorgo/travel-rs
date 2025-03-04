@@ -1,10 +1,10 @@
-use crate::db::{db, Count};
+use crate::db::{Count, db};
 use rust_decimal::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
 use surrealdb::{
-    sql::statements::{BeginStatement, CommitStatement},
     RecordId,
+    sql::statements::{BeginStatement, CommitStatement},
 };
 use teloxide::types::ChatId;
 use travel_rs_derive::Table;
@@ -132,9 +132,6 @@ impl Display for Expense {
             ..
         } = self;
 
-        write!(
-            f,
-            "Number: {number} - Description: {description}\nAmount: {amount}\n",
-        )
+        write!(f, "#{number} - {description}: {amount}\n",)
     }
 }

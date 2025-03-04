@@ -1,6 +1,6 @@
 use crate::{
     consts::{INVALID_CHARS, RESERVED_KWORDS},
-    db::{db, Count},
+    db::{Count, db},
     errors::NameValidationError,
 };
 use serde::{Deserialize, Serialize};
@@ -57,6 +57,12 @@ impl Deref for Name {
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl From<Name> for fluent::FluentValue<'_> {
+    fn from(name: Name) -> Self {
+        name.0.into()
     }
 }
 

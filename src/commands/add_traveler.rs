@@ -1,10 +1,12 @@
 use crate::{
     consts::{DEBUG_START, DEBUG_SUCCESS},
     errors::CommandError,
+    i18n::translate_with_args,
     trace_command,
     traveler::{Name, Traveler},
 };
 use macro_rules_attribute::apply;
+use maplit::hashmap;
 use teloxide::prelude::*;
 use tracing::Level;
 
@@ -20,9 +22,12 @@ pub async fn add_traveler(msg: &Message, name: Name) -> Result<String, CommandEr
     match count_res {
         Ok(Some(count)) if *count > 0 => {
             tracing::warn!("Traveler {name} has already been added to the travel plan.");
-            Ok(format!(
-                "Traveler {name} has already been added to the travel plan."
-            ))
+            Ok(translate_with_args(
+                msg.chat.id,
+                "i18n-add-traveler-already-added",
+                &hashmap!["name".into() => name.into()],
+            )
+            .await)
         }
         Ok(_) => {
             // Create traveler on db
@@ -30,7 +35,12 @@ pub async fn add_traveler(msg: &Message, name: Name) -> Result<String, CommandEr
             match create_res {
                 Ok(_) => {
                     tracing::debug!(DEBUG_SUCCESS);
-                    Ok(format!("Traveler {name} added successfully."))
+                    Ok(translate_with_args(
+                        msg.chat.id,
+                        "i18n-add-traveler-ok",
+                        &hashmap!["name".into() => name.into()],
+                    )
+                    .await)
                 }
                 Err(err) => {
                     tracing::error!("{err}");

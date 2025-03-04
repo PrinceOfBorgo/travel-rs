@@ -1,10 +1,12 @@
 use crate::{
     consts::{DEBUG_START, DEBUG_SUCCESS},
     errors::CommandError,
+    i18n::translate_with_args,
     trace_command,
     traveler::{Name, Traveler},
 };
 use macro_rules_attribute::apply;
+use maplit::hashmap;
 use teloxide::prelude::*;
 use tracing::Level;
 
@@ -24,7 +26,12 @@ pub async fn delete_traveler(msg: &Message, name: Name) -> Result<String, Comman
             match delete_res {
                 Ok(_) => {
                     tracing::debug!(DEBUG_SUCCESS);
-                    Ok(format!("Traveler {name} deleted successfully."))
+                    Ok(translate_with_args(
+                        msg.chat.id,
+                        "i18n-delete-traveler-ok",
+                        &hashmap!["name".into() => name.into()],
+                    )
+                    .await)
                 }
                 Err(err) => {
                     tracing::error!("{err}");
@@ -34,7 +41,12 @@ pub async fn delete_traveler(msg: &Message, name: Name) -> Result<String, Comman
         }
         Ok(_) => {
             tracing::warn!("Couldn't find traveler {name} to delete.");
-            Ok(format!("Couldn't find traveler {name} to delete."))
+            Ok(translate_with_args(
+                msg.chat.id,
+                "i18n-delete-traveler-not-found",
+                &hashmap!["name".into() => name.into()],
+            )
+            .await)
         }
         Err(err) => {
             tracing::error!("{err}");

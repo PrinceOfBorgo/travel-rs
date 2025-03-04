@@ -3,9 +3,11 @@ use crate::{
     errors::CommandError,
     expense::Expense,
     expense_details::{ExpenseDetails, ShareDetails},
+    i18n::translate_with_args,
     trace_command,
 };
 use macro_rules_attribute::apply;
+use maplit::hashmap;
 use teloxide::prelude::*;
 use tracing::Level;
 
@@ -28,29 +30,40 @@ pub async fn show_expense(msg: &Message, number: i64) -> Result<String, CommandE
                     shares,
                     ..
                 })) => {
-                    let reply = format!(
-                        "Number: {expense_number} - Description: {expense_description}\nAmount: {expense_amount}\nPayed by: {creditor_name}\nSplit among:\n{}",
-                        shares
-                            .into_iter()
-                            .map(
-                                |ShareDetails {
-                                     traveler_name,
-                                     amount,
-                                 }| {
-                                    format!("- {traveler_name}: {amount}")
-                                },
-                            )
-                            .collect::<Vec<_>>()
-                            .join("\n")
-                    );
+                    let reply = translate_with_args(
+                        msg.chat.id,
+                        "i18n-show-expense-ok",
+                        &hashmap![
+                            "number".into() => expense_number.to_string().into(),
+                            "description".into() => expense_description.to_string().into(),
+                            "amount".into() => expense_amount.to_string().into(),
+                            "creditor".into() => creditor_name.to_string().into(),
+                            "shares".into() => shares
+                                .into_iter()
+                                .map(
+                                    |ShareDetails {
+                                        traveler_name,
+                                        amount,
+                                    }| {
+                                        format!("- {traveler_name}: {amount}")
+                                    },
+                                )
+                                .collect::<Vec<_>>()
+                                .join("\n").into(),
+                        ],
+                    )
+                    .await;
                     tracing::debug!(DEBUG_SUCCESS);
                     Ok(reply)
                 }
                 Ok(_) => {
                     tracing::warn!("Couldn't find expense #{number} to show the details.");
-                    Ok(format!(
-                        "Couldn't find expense #{number} to show the details."
-                    ))
+                    Ok(translate_with_args(
+                        msg.chat.id,
+                        "i18n-show-expense-not-found",
+                        &hashmap!["number".into() => number.into()],
+                    )
+                    .await)
                 }
                 Err(err) => {
                     tracing::error!("{err}");
@@ -60,9 +73,12 @@ pub async fn show_expense(msg: &Message, number: i64) -> Result<String, CommandE
         }
         Ok(_) => {
             tracing::warn!("Couldn't find expense #{number} to show the details.");
-            Ok(format!(
-                "Couldn't find expense #{number} to show the details."
-            ))
+            Ok(translate_with_args(
+                msg.chat.id,
+                "i18n-show-expense-not-found",
+                &hashmap!["number".into() => number.into()],
+            )
+            .await)
         }
         Err(err) => {
             tracing::error!("{err}");

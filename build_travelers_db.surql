@@ -100,6 +100,7 @@ DEFINE FUNCTION fn::get_expense_details($chat: record<chat>, $expense_number: in
 
 DEFINE TABLE chat TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;
 
+DEFINE FIELD lang ON chat TYPE string PERMISSIONS FOR select, create, update WHERE FULL;
 DEFINE FIELD last_interaction_utc ON chat TYPE datetime PERMISSIONS FOR select, create, update WHERE FULL;
 
 

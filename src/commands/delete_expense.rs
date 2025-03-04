@@ -2,9 +2,11 @@ use crate::{
     consts::{DEBUG_START, DEBUG_SUCCESS},
     errors::CommandError,
     expense::Expense,
+    i18n::translate_with_args,
     trace_command,
 };
 use macro_rules_attribute::apply;
+use maplit::hashmap;
 use teloxide::prelude::*;
 use tracing::Level;
 
@@ -21,7 +23,12 @@ pub async fn delete_expense(msg: &Message, number: i64) -> Result<String, Comman
             match delete_res {
                 Ok(_) => {
                     tracing::debug!(DEBUG_SUCCESS);
-                    Ok(format!("Expense #{number} deleted successfully."))
+                    Ok(translate_with_args(
+                        msg.chat.id,
+                        "i18n-delete-expense-ok",
+                        &hashmap!["number".into() => number.into()],
+                    )
+                    .await)
                 }
                 Err(err) => {
                     tracing::error!("{err}");
@@ -31,7 +38,12 @@ pub async fn delete_expense(msg: &Message, number: i64) -> Result<String, Comman
         }
         Ok(_) => {
             tracing::warn!("Couldn't find expense #{number} to delete.");
-            Ok(format!("Couldn't find expense #{number} to delete."))
+            Ok(translate_with_args(
+                msg.chat.id,
+                "i18n-delete-expense-not-found",
+                &hashmap!["number".into() => number.into()],
+            )
+            .await)
         }
         Err(err) => {
             tracing::error!("{err}");

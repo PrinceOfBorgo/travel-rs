@@ -1,6 +1,7 @@
 use crate::{
     consts::{DEBUG_START, DEBUG_SUCCESS},
     errors::CommandError,
+    i18n::translate,
     trace_command,
     views::balance::Balance,
 };
@@ -15,7 +16,7 @@ pub async fn show_balances(msg: &Message) -> Result<String, CommandError> {
     match list_res {
         Ok(balances) => {
             let reply = if balances.is_empty() {
-                String::from("All travelers are settled up with everyone.")
+                translate(msg.chat.id, "i18n-show-balances-settled-up").await
             } else {
                 balances
                     .into_iter()

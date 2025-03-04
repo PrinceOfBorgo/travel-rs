@@ -1,6 +1,7 @@
 use crate::{
     consts::{DEBUG_START, DEBUG_SUCCESS},
     errors::CommandError,
+    i18n::translate,
     trace_command,
     traveler::Traveler,
 };
@@ -15,10 +16,7 @@ pub async fn list_travelers(msg: &Message) -> Result<String, CommandError> {
     match list_res {
         Ok(travelers) => {
             let reply = if travelers.is_empty() {
-                format!(
-                    "No travelers found. Use `/{add_traveler} <name>` to add one.",
-                    add_traveler = variant_to_string!(Command::AddTraveler)
-                )
+                translate(msg.chat.id, "i18n-list-travelers-not-found").await
             } else {
                 travelers
                     .into_iter()

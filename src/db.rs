@@ -45,6 +45,6 @@ async fn connect_to_db() -> Result<Surreal<Client>, surrealdb::Error> {
 /// Panics if couldn't connect to database.
 pub async fn db() -> &'static Surreal<Client> {
     static DB: OnceCell<Surreal<Client>> = OnceCell::const_new();
-    DB.get_or_init(|| async { connect_to_db().await.unwrap() })
+    DB.get_or_init(async || connect_to_db().await.unwrap())
         .await
 }

@@ -2,6 +2,7 @@ use crate::{
     consts::{DEBUG_START, DEBUG_SUCCESS},
     errors::CommandError,
     expense::Expense,
+    i18n::translate,
     trace_command,
 };
 use macro_rules_attribute::apply;
@@ -15,10 +16,7 @@ pub async fn list_expenses(msg: &Message) -> Result<String, CommandError> {
     match list_res {
         Ok(expenses) => {
             let reply = if expenses.is_empty() {
-                format!(
-                    "No expenses found. Use `/{add_expense}` to add one.",
-                    add_expense = variant_to_string!(Command::AddExpense)
-                )
+                translate(msg.chat.id, "i18n-list-expenses-not-found").await
             } else {
                 expenses
                     .into_iter()

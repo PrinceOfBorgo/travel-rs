@@ -2,9 +2,11 @@ use crate::{
     HandlerResult,
     commands::{COMMANDS, Command, HelpMessage},
     consts::{BOT_NAME, MIN_SIMILARITY_SCORE},
+    i18n::translate_with_args,
     utils::trace_skip_all,
 };
 use macro_rules_attribute::apply;
+use maplit::hashmap;
 use rust_fuzzy_search::fuzzy_search_best_n;
 use std::str::FromStr;
 use teloxide::prelude::*;
@@ -35,16 +37,27 @@ pub async fn unknown_command(bot: Bot, msg: Message) -> HandlerResult {
 
         bot.send_message(
             msg.chat.id,
-            format!("Invalid usage of command: {command}.\n\n{help_message}",),
+            translate_with_args(
+                msg.chat.id,
+                "i18n-invalid-command-usage",
+                &hashmap![
+                    "command".into() => command.into(), 
+                    "help_message".into() => help_message.into()],
+            )
+            .await,
         )
         .await?;
     } else if available_cmd_names.contains(&cmd_name.to_lowercase().as_str()) {
         bot.send_message(
             msg.chat.id,
-            format!(
-                "Unknown command: {text}.\nDid you mean: /{}?",
-                cmd_name.to_lowercase()
-            ),
+            translate_with_args(
+                msg.chat.id,
+                "i18n-unknown-command-best-match",
+                &hashmap![
+                    "command".into() => text.into(), 
+                    "best-match".into() => cmd_name.to_lowercase().into()],
+            )
+            .await,
         )
         .await?;
     } else {
@@ -57,12 +70,28 @@ pub async fn unknown_command(bot: Bot, msg: Message) -> HandlerResult {
         if best_score >= MIN_SIMILARITY_SCORE {
             bot.send_message(
                 msg.chat.id,
-                format!("Unknown command: {text}.\nDid you mean: /{best_match}?"),
+                translate_with_args(
+                    msg.chat.id,
+                    "i18n-unknown-command-best-match",
+                    &hashmap![
+                    "command".into() => text.into(),
+                    "best-match".into() => best_match.into()
+                    ],
+                )
+                .await,
             )
             .await?;
         } else {
-            bot.send_message(msg.chat.id, format!("Unknown command: {text}."))
-                .await?;
+            bot.send_message(
+                msg.chat.id,
+                translate_with_args(
+                    msg.chat.id,
+                    "i18n-unknown-command",
+                    &hashmap!["command".into() => text.into()],
+                )
+                .await,
+            )
+            .await?;
         }
     }
 
