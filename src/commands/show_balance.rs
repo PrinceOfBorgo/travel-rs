@@ -31,7 +31,7 @@ pub async fn show_balance(msg: &Message, name: Name) -> Result<String, CommandEr
                         translate_with_args(
                             msg.chat.id,
                             "i18n-show-balance-settled-up",
-                            &hashmap!["name".into() => name.into()],
+                            &hashmap! {"name".into() => name.into()},
                         )
                         .await
                     } else {
@@ -47,12 +47,12 @@ pub async fn show_balance(msg: &Message, name: Name) -> Result<String, CommandEr
                                     translate_with_args(
                                         msg.chat.id,
                                         "i18n-show-balance-ok",
-                                        &hashmap![
+                                        &hashmap!{
                                             "traveler-name".into() => name.clone().into(),
                                             "traveler-is".into() => if debtor_name == name { "debtor" } else { "creditor" }.into(),
                                             "debt".into() => debt.to_string().into(),
                                             "other_traveler_name".into() => if debtor_name == name { creditor_name } else { debtor_name }.into(),
-                                        ],
+                                        },
                                     )
                                     .await
                                 },
@@ -75,7 +75,7 @@ pub async fn show_balance(msg: &Message, name: Name) -> Result<String, CommandEr
             Ok(translate_with_args(
                 msg.chat.id,
                 "i18n-show-balance-traveler-not-found",
-                &hashmap!["name".into() => name.into()],
+                &hashmap! {"name".into() => name.into()},
             )
             .await)
         }

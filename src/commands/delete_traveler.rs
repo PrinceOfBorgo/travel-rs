@@ -29,7 +29,7 @@ pub async fn delete_traveler(msg: &Message, name: Name) -> Result<String, Comman
                     Ok(translate_with_args(
                         msg.chat.id,
                         "i18n-delete-traveler-ok",
-                        &hashmap!["name".into() => name.into()],
+                        &hashmap! {"name".into() => name.into()},
                     )
                     .await)
                 }
@@ -44,7 +44,7 @@ pub async fn delete_traveler(msg: &Message, name: Name) -> Result<String, Comman
             Ok(translate_with_args(
                 msg.chat.id,
                 "i18n-delete-traveler-not-found",
-                &hashmap!["name".into() => name.into()],
+                &hashmap! {"name".into() => name.into()},
             )
             .await)
         }

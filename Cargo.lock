@@ -4814,7 +4814,6 @@ name = "travel-rs"
 version = "0.1.4-SNAPSHOT"
 dependencies = [
  "anyhow",
- "chrono",
  "config",
  "fluent",
  "fluent-templates",

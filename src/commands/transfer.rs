@@ -67,7 +67,7 @@ pub async fn transfer(
                     Ok(translate_with_args(
                         chat_id,
                         "i18n-transfer-receiver-not-found",
-                        &hashmap!["name".into() => to.into()],
+                        &hashmap! {"name".into() => to.into()},
                     )
                     .await)
                 }
@@ -86,7 +86,7 @@ pub async fn transfer(
             Ok(translate_with_args(
                 chat_id,
                 "i18n-transfer-sender-not-found",
-                &hashmap!["name".into() => from.into()],
+                &hashmap! {"name".into() => from.into()},
             )
             .await)
         }

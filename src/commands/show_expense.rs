@@ -33,7 +33,7 @@ pub async fn show_expense(msg: &Message, number: i64) -> Result<String, CommandE
                     let reply = translate_with_args(
                         msg.chat.id,
                         "i18n-show-expense-ok",
-                        &hashmap![
+                        &hashmap! {
                             "number".into() => expense_number.to_string().into(),
                             "description".into() => expense_description.to_string().into(),
                             "amount".into() => expense_amount.to_string().into(),
@@ -50,7 +50,7 @@ pub async fn show_expense(msg: &Message, number: i64) -> Result<String, CommandE
                                 )
                                 .collect::<Vec<_>>()
                                 .join("\n").into(),
-                        ],
+                        },
                     )
                     .await;
                     tracing::debug!(DEBUG_SUCCESS);
@@ -61,7 +61,7 @@ pub async fn show_expense(msg: &Message, number: i64) -> Result<String, CommandE
                     Ok(translate_with_args(
                         msg.chat.id,
                         "i18n-show-expense-not-found",
-                        &hashmap!["number".into() => number.into()],
+                        &hashmap! {"number".into() => number.into()},
                     )
                     .await)
                 }
@@ -76,7 +76,7 @@ pub async fn show_expense(msg: &Message, number: i64) -> Result<String, CommandE
             Ok(translate_with_args(
                 msg.chat.id,
                 "i18n-show-expense-not-found",
-                &hashmap!["number".into() => number.into()],
+                &hashmap! {"number".into() => number.into()},
             )
             .await)
         }

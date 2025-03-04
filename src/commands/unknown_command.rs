@@ -40,9 +40,9 @@ pub async fn unknown_command(bot: Bot, msg: Message) -> HandlerResult {
             translate_with_args(
                 msg.chat.id,
                 "i18n-invalid-command-usage",
-                &hashmap![
-                    "command".into() => command.into(), 
-                    "help_message".into() => help_message.into()],
+                &hashmap! {
+                "command".into() => command.into(),
+                "help_message".into() => help_message.into()},
             )
             .await,
         )
@@ -53,9 +53,9 @@ pub async fn unknown_command(bot: Bot, msg: Message) -> HandlerResult {
             translate_with_args(
                 msg.chat.id,
                 "i18n-unknown-command-best-match",
-                &hashmap![
-                    "command".into() => text.into(), 
-                    "best-match".into() => cmd_name.to_lowercase().into()],
+                &hashmap! {
+                "command".into() => text.into(),
+                "best-match".into() => cmd_name.to_lowercase().into()},
             )
             .await,
         )
@@ -73,10 +73,10 @@ pub async fn unknown_command(bot: Bot, msg: Message) -> HandlerResult {
                 translate_with_args(
                     msg.chat.id,
                     "i18n-unknown-command-best-match",
-                    &hashmap![
+                    &hashmap! {
                     "command".into() => text.into(),
                     "best-match".into() => best_match.into()
-                    ],
+                    },
                 )
                 .await,
             )
@@ -87,7 +87,7 @@ pub async fn unknown_command(bot: Bot, msg: Message) -> HandlerResult {
                 translate_with_args(
                     msg.chat.id,
                     "i18n-unknown-command",
-                    &hashmap!["command".into() => text.into()],
+                    &hashmap! {"command".into() => text.into()},
                 )
                 .await,
             )

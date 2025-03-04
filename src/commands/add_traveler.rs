@@ -25,7 +25,7 @@ pub async fn add_traveler(msg: &Message, name: Name) -> Result<String, CommandEr
             Ok(translate_with_args(
                 msg.chat.id,
                 "i18n-add-traveler-already-added",
-                &hashmap!["name".into() => name.into()],
+                &hashmap! {"name".into() => name.into()},
             )
             .await)
         }
@@ -38,7 +38,7 @@ pub async fn add_traveler(msg: &Message, name: Name) -> Result<String, CommandEr
                     Ok(translate_with_args(
                         msg.chat.id,
                         "i18n-add-traveler-ok",
-                        &hashmap!["name".into() => name.into()],
+                        &hashmap! {"name".into() => name.into()},
                     )
                     .await)
                 }

@@ -26,7 +26,7 @@ pub async fn delete_expense(msg: &Message, number: i64) -> Result<String, Comman
                     Ok(translate_with_args(
                         msg.chat.id,
                         "i18n-delete-expense-ok",
-                        &hashmap!["number".into() => number.into()],
+                        &hashmap! {"number".into() => number.into()},
                     )
                     .await)
                 }
@@ -41,7 +41,7 @@ pub async fn delete_expense(msg: &Message, number: i64) -> Result<String, Comman
             Ok(translate_with_args(
                 msg.chat.id,
                 "i18n-delete-expense-not-found",
-                &hashmap!["number".into() => number.into()],
+                &hashmap! {"number".into() => number.into()},
             )
             .await)
         }

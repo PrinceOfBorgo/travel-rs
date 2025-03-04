@@ -24,7 +24,7 @@ pub async fn find_expenses(msg: &Message, description: &str) -> Result<String, C
                 translate_with_args(
                     msg.chat.id,
                     "i18n-find-expenses-not-found",
-                    &hashmap!["description".into() => description.into()],
+                    &hashmap! {"description".into() => description.into()},
                 )
                 .await
             } else {
