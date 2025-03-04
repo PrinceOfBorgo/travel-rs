@@ -1,4 +1,5 @@
 use crate::{
+    Context,
     consts::{DEBUG_START, DEBUG_SUCCESS},
     errors::CommandError,
     i18n::translate,
@@ -6,17 +7,21 @@ use crate::{
     views::balance::Balance,
 };
 use macro_rules_attribute::apply;
+use std::sync::{Arc, Mutex};
 use teloxide::prelude::*;
 use tracing::Level;
 
 #[apply(trace_command)]
-pub async fn show_balances(msg: &Message) -> Result<String, CommandError> {
+pub async fn show_balances(
+    msg: &Message,
+    ctx: Arc<Mutex<Context>>,
+) -> Result<String, CommandError> {
     tracing::debug!(DEBUG_START);
     let list_res = Balance::db_select(msg.chat.id).await;
     match list_res {
         Ok(balances) => {
             let reply = if balances.is_empty() {
-                translate(msg.chat.id, "i18n-show-balances-settled-up").await
+                translate(ctx, "i18n-show-balances-settled-up")
             } else {
                 balances
                     .into_iter()

@@ -4817,7 +4817,6 @@ dependencies = [
  "config",
  "fluent",
  "fluent-templates",
- "futures",
  "log",
  "macro_rules_attribute",
  "maplit",

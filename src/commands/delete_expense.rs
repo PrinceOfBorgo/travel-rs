@@ -1,4 +1,5 @@
 use crate::{
+    Context,
     consts::{DEBUG_START, DEBUG_SUCCESS},
     errors::CommandError,
     expense::Expense,
@@ -7,11 +8,16 @@ use crate::{
 };
 use macro_rules_attribute::apply;
 use maplit::hashmap;
+use std::sync::{Arc, Mutex};
 use teloxide::prelude::*;
 use tracing::Level;
 
 #[apply(trace_command)]
-pub async fn delete_expense(msg: &Message, number: i64) -> Result<String, CommandError> {
+pub async fn delete_expense(
+    msg: &Message,
+    number: i64,
+    ctx: Arc<Mutex<Context>>,
+) -> Result<String, CommandError> {
     tracing::debug!(DEBUG_START);
 
     // Check if expense exists on db
@@ -24,11 +30,10 @@ pub async fn delete_expense(msg: &Message, number: i64) -> Result<String, Comman
                 Ok(_) => {
                     tracing::debug!(DEBUG_SUCCESS);
                     Ok(translate_with_args(
-                        msg.chat.id,
+                        ctx,
                         "i18n-delete-expense-ok",
                         &hashmap! {"number".into() => number.into()},
-                    )
-                    .await)
+                    ))
                 }
                 Err(err) => {
                     tracing::error!("{err}");
@@ -39,11 +44,10 @@ pub async fn delete_expense(msg: &Message, number: i64) -> Result<String, Comman
         Ok(_) => {
             tracing::warn!("Couldn't find expense #{number} to delete.");
             Ok(translate_with_args(
-                msg.chat.id,
+                ctx,
                 "i18n-delete-expense-not-found",
                 &hashmap! {"number".into() => number.into()},
-            )
-            .await)
+            ))
         }
         Err(err) => {
             tracing::error!("{err}");

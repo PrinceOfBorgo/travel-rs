@@ -1,4 +1,5 @@
 use crate::{
+    Context,
     consts::{DEBUG_START, DEBUG_SUCCESS},
     errors::CommandError,
     i18n::translate_with_args,
@@ -7,11 +8,16 @@ use crate::{
 };
 use macro_rules_attribute::apply;
 use maplit::hashmap;
+use std::sync::{Arc, Mutex};
 use teloxide::prelude::*;
 use tracing::Level;
 
 #[apply(trace_command)]
-pub async fn delete_traveler(msg: &Message, name: Name) -> Result<String, CommandError> {
+pub async fn delete_traveler(
+    msg: &Message,
+    name: Name,
+    ctx: Arc<Mutex<Context>>,
+) -> Result<String, CommandError> {
     tracing::debug!(DEBUG_START);
     if name.is_empty() {
         return Err(CommandError::EmptyInput);
@@ -27,11 +33,10 @@ pub async fn delete_traveler(msg: &Message, name: Name) -> Result<String, Comman
                 Ok(_) => {
                     tracing::debug!(DEBUG_SUCCESS);
                     Ok(translate_with_args(
-                        msg.chat.id,
+                        ctx,
                         "i18n-delete-traveler-ok",
                         &hashmap! {"name".into() => name.into()},
-                    )
-                    .await)
+                    ))
                 }
                 Err(err) => {
                     tracing::error!("{err}");
@@ -42,11 +47,10 @@ pub async fn delete_traveler(msg: &Message, name: Name) -> Result<String, Comman
         Ok(_) => {
             tracing::warn!("Couldn't find traveler {name} to delete.");
             Ok(translate_with_args(
-                msg.chat.id,
+                ctx,
                 "i18n-delete-traveler-not-found",
                 &hashmap! {"name".into() => name.into()},
-            )
-            .await)
+            ))
         }
         Err(err) => {
             tracing::error!("{err}");

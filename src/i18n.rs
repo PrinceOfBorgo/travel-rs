@@ -3,12 +3,9 @@ use fluent_templates::Loader;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::hash::RandomState;
-use std::sync::LazyLock;
-use teloxide::types::ChatId;
-use unic_langid::LanguageIdentifier;
+use std::sync::{Arc, LazyLock, Mutex};
 
-use crate::chat::Chat;
-use crate::consts::DEFAULT_LANG;
+use crate::Context;
 
 fluent_templates::static_loader! {
     static LOCALES = {
@@ -34,37 +31,20 @@ add_traveler = variant_to_string!(Command::AddTraveler)
     };
 }
 
-async fn get_lang_from_db(chat_id: ChatId) -> LanguageIdentifier {
-    let mut lang = DEFAULT_LANG.to_owned();
-    match Chat::db_select_by_id(chat_id).await {
-        Ok(Some(chat)) => {
-            lang = chat.lang;
-        }
-        Ok(None) => {
-            tracing::error!("Error while loading chat with id: {chat_id}")
-        }
-        Err(err) => tracing::error!("{err}"),
-    }
-    tracing::debug!("Language for chat {chat_id} is {lang}");
-    lang.parse().unwrap_or_else(|_| {
-        DEFAULT_LANG
-            .parse()
-            .unwrap_or_else(|_| panic!("Failed to parse default language {DEFAULT_LANG}"))
-    })
+pub fn translate(ctx: Arc<Mutex<Context>>, input: &str) -> String {
+    let langid = &ctx.lock().expect("Failed to lock context").langid;
+    LOCALES
+        .try_lookup(langid, input)
+        .unwrap_or(input.to_owned())
 }
 
-pub async fn translate(chat_id: ChatId, input: &str) -> String {
-    let lang = get_lang_from_db(chat_id).await;
-    LOCALES.try_lookup(&lang, input).unwrap_or(input.to_owned())
-}
-
-pub async fn translate_with_args(
-    chat_id: ChatId,
+pub fn translate_with_args(
+    ctx: Arc<Mutex<Context>>,
     input: &str,
     args: &HashMap<Cow<'static, str>, FluentValue<'_>, RandomState>,
 ) -> String {
-    let lang = get_lang_from_db(chat_id).await;
+    let langid = &ctx.lock().expect("Failed to lock context").langid;
     LOCALES
-        .try_lookup_with_args(&lang, input, args)
+        .try_lookup_with_args(langid, input, args)
         .unwrap_or(input.to_owned())
 }

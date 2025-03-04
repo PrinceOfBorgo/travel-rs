@@ -1,4 +1,5 @@
 use crate::{
+    Context,
     consts::{DEBUG_START, DEBUG_SUCCESS},
     errors::CommandError,
     expense::Expense,
@@ -8,11 +9,16 @@ use crate::{
 };
 use macro_rules_attribute::apply;
 use maplit::hashmap;
+use std::sync::{Arc, Mutex};
 use teloxide::prelude::*;
 use tracing::Level;
 
 #[apply(trace_command)]
-pub async fn show_expense(msg: &Message, number: i64) -> Result<String, CommandError> {
+pub async fn show_expense(
+    msg: &Message,
+    number: i64,
+    ctx: Arc<Mutex<Context>>,
+) -> Result<String, CommandError> {
     tracing::debug!(DEBUG_START);
 
     // Check if expense exists on db
@@ -31,7 +37,7 @@ pub async fn show_expense(msg: &Message, number: i64) -> Result<String, CommandE
                     ..
                 })) => {
                     let reply = translate_with_args(
-                        msg.chat.id,
+                        ctx,
                         "i18n-show-expense-ok",
                         &hashmap! {
                             "number".into() => expense_number.to_string().into(),
@@ -51,19 +57,17 @@ pub async fn show_expense(msg: &Message, number: i64) -> Result<String, CommandE
                                 .collect::<Vec<_>>()
                                 .join("\n").into(),
                         },
-                    )
-                    .await;
+                    );
                     tracing::debug!(DEBUG_SUCCESS);
                     Ok(reply)
                 }
                 Ok(_) => {
                     tracing::warn!("Couldn't find expense #{number} to show the details.");
                     Ok(translate_with_args(
-                        msg.chat.id,
+                        ctx,
                         "i18n-show-expense-not-found",
                         &hashmap! {"number".into() => number.into()},
-                    )
-                    .await)
+                    ))
                 }
                 Err(err) => {
                     tracing::error!("{err}");
@@ -74,11 +78,10 @@ pub async fn show_expense(msg: &Message, number: i64) -> Result<String, CommandE
         Ok(_) => {
             tracing::warn!("Couldn't find expense #{number} to show the details.");
             Ok(translate_with_args(
-                msg.chat.id,
+                ctx,
                 "i18n-show-expense-not-found",
                 &hashmap! {"number".into() => number.into()},
-            )
-            .await)
+            ))
         }
         Err(err) => {
             tracing::error!("{err}");

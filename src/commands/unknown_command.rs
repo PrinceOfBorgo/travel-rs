@@ -1,5 +1,5 @@
 use crate::{
-    HandlerResult,
+    Context, HandlerResult,
     commands::{COMMANDS, Command, HelpMessage},
     consts::{BOT_NAME, MIN_SIMILARITY_SCORE},
     i18n::translate_with_args,
@@ -9,11 +9,12 @@ use macro_rules_attribute::apply;
 use maplit::hashmap;
 use rust_fuzzy_search::fuzzy_search_best_n;
 use std::str::FromStr;
+use std::sync::{Arc, Mutex};
 use teloxide::prelude::*;
 use tracing::Level;
 
 #[apply(trace_skip_all)]
-pub async fn unknown_command(bot: Bot, msg: Message) -> HandlerResult {
+pub async fn unknown_command(bot: Bot, msg: Message, ctx: Arc<Mutex<Context>>) -> HandlerResult {
     let Some(text) = msg.text() else {
         return Ok(());
     };
@@ -38,26 +39,24 @@ pub async fn unknown_command(bot: Bot, msg: Message) -> HandlerResult {
         bot.send_message(
             msg.chat.id,
             translate_with_args(
-                msg.chat.id,
+                ctx,
                 "i18n-invalid-command-usage",
                 &hashmap! {
                 "command".into() => command.into(),
-                "help_message".into() => help_message.into()},
-            )
-            .await,
+                "help-message".into() => help_message.into()},
+            ),
         )
         .await?;
     } else if available_cmd_names.contains(&cmd_name.to_lowercase().as_str()) {
         bot.send_message(
             msg.chat.id,
             translate_with_args(
-                msg.chat.id,
+                ctx,
                 "i18n-unknown-command-best-match",
                 &hashmap! {
                 "command".into() => text.into(),
                 "best-match".into() => cmd_name.to_lowercase().into()},
-            )
-            .await,
+            ),
         )
         .await?;
     } else {
@@ -71,25 +70,23 @@ pub async fn unknown_command(bot: Bot, msg: Message) -> HandlerResult {
             bot.send_message(
                 msg.chat.id,
                 translate_with_args(
-                    msg.chat.id,
+                    ctx,
                     "i18n-unknown-command-best-match",
                     &hashmap! {
                     "command".into() => text.into(),
                     "best-match".into() => best_match.into()
                     },
-                )
-                .await,
+                ),
             )
             .await?;
         } else {
             bot.send_message(
                 msg.chat.id,
                 translate_with_args(
-                    msg.chat.id,
+                    ctx,
                     "i18n-unknown-command",
                     &hashmap! {"command".into() => text.into()},
-                )
-                .await,
+                ),
             )
             .await?;
         }

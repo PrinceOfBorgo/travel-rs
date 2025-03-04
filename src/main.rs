@@ -26,7 +26,7 @@ use dialogues::*;
 use dptree::{case, deps};
 use macro_rules_attribute::apply;
 use settings::SETTINGS;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use teloxide::{
     dispatching::dialogue::{InMemStorage, Storage},
     prelude::*,
@@ -35,9 +35,15 @@ use tracing::Level;
 use tracing_subscriber::{
     EnvFilter, fmt::time::LocalTime, layer::SubscriberExt, util::SubscriberInitExt,
 };
+use unic_langid::LanguageIdentifier;
 use utils::*;
 
 pub type HandlerResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
+
+#[derive(Debug, Clone)]
+pub struct Context {
+    langid: LanguageIdentifier,
+}
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -122,7 +128,14 @@ async fn main() -> anyhow::Result<()> {
             "An error has occurred in the dispatcher",
         ))
         .enable_ctrlc_handler()
-        .dependencies(deps![InMemStorage::<AddExpenseState>::new()])
+        .dependencies(deps![
+            InMemStorage::<AddExpenseState>::new(),
+            Arc::new(Mutex::new(Context {
+                langid: DEFAULT_LANG
+                    .parse()
+                    .unwrap_or_else(|_| panic!("Failed to parse default language {DEFAULT_LANG}"))
+            }))
+        ])
         .build()
         .dispatch()
         .await;
@@ -131,7 +144,12 @@ async fn main() -> anyhow::Result<()> {
 }
 
 #[apply(trace_skip_all)]
-pub async fn process_already_running<S, D>(bot: Bot, storage: Arc<S>, msg: Message) -> HandlerResult
+pub async fn process_already_running<S, D>(
+    bot: Bot,
+    storage: Arc<S>,
+    msg: Message,
+    ctx: Arc<Mutex<Context>>,
+) -> HandlerResult
 where
     S: Storage<D> + ?Sized + Send + Sync + 'static,
     <S as Storage<D>>::Error: std::error::Error + Send + Sync,
@@ -139,32 +157,38 @@ where
 {
     let chat_id = msg.chat.id;
     if Arc::clone(&storage).get_dialogue(chat_id).await?.is_some() {
-        bot.send_message(
-            chat_id,
-            translate(chat_id, "i18n-process-already-running").await,
-        )
-        .await?;
+        bot.send_message(chat_id, translate(ctx, "i18n-process-already-running"))
+            .await?;
     }
     Ok(())
 }
 
 #[apply(trace_skip_all)]
-pub async fn update_chat_db(msg: Message) -> HandlerResult {
-    if Chat::db_create(msg.chat.id, DEFAULT_LANG.to_owned())
-        .await
-        .is_err()
-    {
-        match Chat::db_update(msg.chat.id).await {
-            Ok(Some(chat)) => {
+pub async fn update_chat_db(msg: Message, ctx: Arc<Mutex<Context>>) -> HandlerResult {
+    let mut chat = Chat::db_create(msg.chat.id, DEFAULT_LANG.to_owned()).await;
+    if chat.is_err() {
+        chat = Chat::db_update(msg.chat.id).await;
+        match chat {
+            Ok(Some(ref chat)) => {
                 tracing::debug!("Chat updated on db: {chat:?}")
             }
             Ok(None) => {
                 tracing::error!("Error while updating chat with id: {}", msg.chat.id)
             }
-            Err(err) => tracing::error!("{err}"),
+            Err(ref err) => tracing::error!("{err}"),
         }
     } else {
         tracing::debug!("Chat with id: {} created on db", msg.chat.id);
     }
+
+    if let Ok(Some(chat)) = chat {
+        let mut ctx = ctx.lock().expect("Failed to lock context");
+        ctx.langid = chat.lang.parse().unwrap_or_else(|_| {
+            DEFAULT_LANG
+                .parse()
+                .unwrap_or_else(|_| panic!("Failed to parse default language {DEFAULT_LANG}"))
+        });
+    }
+
     Ok(())
 }

@@ -1,11 +1,12 @@
 use crate::{
-    HandlerResult,
+    Context, HandlerResult,
     commands::{show_balance, show_balances, show_expense},
     consts::{ALL_KWORD, SPLIT_AMONG_ENTRIES_SEP, SPLIT_AMONG_NAME_AMOUNT_SEP},
     traveler::Name,
 };
 use rust_decimal::Decimal;
 use std::sync::LazyLock;
+use std::sync::{Arc, Mutex};
 use strum::{AsRefStr, EnumIter, EnumString, IntoEnumIterator};
 use teloxide::{prelude::*, utils::command::BotCommands};
 
@@ -182,21 +183,26 @@ Usage: /{cmd_name}",
     }
 }
 
-pub async fn commands_handler(bot: Bot, msg: Message, cmd: Command) -> HandlerResult {
+pub async fn commands_handler(
+    bot: Bot,
+    msg: Message,
+    cmd: Command,
+    ctx: Arc<Mutex<Context>>,
+) -> HandlerResult {
     use Command::*;
 
     let result = match cmd.clone() {
         Help { command } => help(&msg, &command),
-        AddTraveler { name } => add_traveler(&msg, name).await,
-        DeleteTraveler { name } => delete_traveler(&msg, name).await,
-        ListTravelers => list_travelers(&msg).await,
-        DeleteExpense { number } => delete_expense(&msg, number).await,
-        ListExpenses => list_expenses(&msg).await,
-        FindExpenses { description } => find_expenses(&msg, &description).await,
-        ShowExpense { number } => show_expense(&msg, number).await,
-        Transfer { from, to, amount } => transfer(&msg, from, to, amount).await,
-        ShowBalance { name } => show_balance(&msg, name).await,
-        ShowBalances => show_balances(&msg).await,
+        AddTraveler { name } => add_traveler(&msg, name, ctx).await,
+        DeleteTraveler { name } => delete_traveler(&msg, name, ctx).await,
+        ListTravelers => list_travelers(&msg, ctx).await,
+        DeleteExpense { number } => delete_expense(&msg, number, ctx).await,
+        ListExpenses => list_expenses(&msg, ctx).await,
+        FindExpenses { description } => find_expenses(&msg, &description, ctx).await,
+        ShowExpense { number } => show_expense(&msg, number, ctx).await,
+        Transfer { from, to, amount } => transfer(&msg, from, to, amount, ctx).await,
+        ShowBalance { name } => show_balance(&msg, name, ctx).await,
+        ShowBalances => show_balances(&msg, ctx).await,
         Cancel | AddExpense => {
             unreachable!("This command is handled before calling this function.")
         }

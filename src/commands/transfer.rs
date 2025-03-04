@@ -1,4 +1,5 @@
 use crate::{
+    Context,
     consts::{DEBUG_START, DEBUG_SUCCESS},
     errors::CommandError,
     i18n::{translate, translate_with_args},
@@ -10,6 +11,7 @@ use crate::{
 use macro_rules_attribute::apply;
 use maplit::hashmap;
 use rust_decimal::Decimal;
+use std::sync::{Arc, Mutex};
 use teloxide::prelude::*;
 use tracing::Level;
 
@@ -19,6 +21,7 @@ pub async fn transfer(
     from: Name,
     to: Name,
     amount: Decimal,
+    ctx: Arc<Mutex<Context>>,
 ) -> Result<String, CommandError> {
     tracing::debug!(DEBUG_START);
     if from.is_empty() || to.is_empty() {
@@ -42,7 +45,7 @@ pub async fn transfer(
                                 tracing::warn!("{err_update}");
                             }
                             tracing::debug!("{DEBUG_SUCCESS} - id: {}", transfer.id);
-                            Ok(translate(chat_id, "i18n-transfer-ok").await)
+                            Ok(translate(ctx, "i18n-transfer-ok"))
                         }
                         Ok(None) => {
                             tracing::warn!("Couldn't record the transfer.");
@@ -65,11 +68,10 @@ pub async fn transfer(
                 Ok(_) => {
                     tracing::warn!("Couldn't find traveler \"{to}\" to transfer money to.");
                     Ok(translate_with_args(
-                        chat_id,
+                        ctx,
                         "i18n-transfer-receiver-not-found",
                         &hashmap! {"name".into() => to.into()},
-                    )
-                    .await)
+                    ))
                 }
                 Err(err) => {
                     tracing::error!("{err}");
@@ -84,11 +86,10 @@ pub async fn transfer(
         Ok(_) => {
             tracing::warn!("Couldn't find traveler \"{from}\" to transfer money from.");
             Ok(translate_with_args(
-                chat_id,
+                ctx,
                 "i18n-transfer-sender-not-found",
                 &hashmap! {"name".into() => from.into()},
-            )
-            .await)
+            ))
         }
         Err(err) => {
             tracing::error!("{err}");

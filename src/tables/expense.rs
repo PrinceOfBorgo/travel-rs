@@ -132,6 +132,6 @@ impl Display for Expense {
             ..
         } = self;
 
-        write!(f, "#{number} - {description}: {amount}\n",)
+        writeln!(f, "#{number} - {description}: {amount}",)
     }
 }

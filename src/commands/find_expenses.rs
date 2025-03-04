@@ -1,4 +1,5 @@
 use crate::{
+    Context,
     consts::{DEBUG_START, DEBUG_SUCCESS},
     errors::CommandError,
     expense::Expense,
@@ -7,11 +8,16 @@ use crate::{
 };
 use macro_rules_attribute::apply;
 use maplit::hashmap;
+use std::sync::{Arc, Mutex};
 use teloxide::prelude::*;
 use tracing::Level;
 
 #[apply(trace_command)]
-pub async fn find_expenses(msg: &Message, description: &str) -> Result<String, CommandError> {
+pub async fn find_expenses(
+    msg: &Message,
+    description: &str,
+    ctx: Arc<Mutex<Context>>,
+) -> Result<String, CommandError> {
     tracing::debug!(DEBUG_START);
     if description.is_empty() {
         return Err(CommandError::EmptyInput);
@@ -22,11 +28,10 @@ pub async fn find_expenses(msg: &Message, description: &str) -> Result<String, C
         Ok(expenses) => {
             let reply = if expenses.is_empty() {
                 translate_with_args(
-                    msg.chat.id,
+                    ctx,
                     "i18n-find-expenses-not-found",
                     &hashmap! {"description".into() => description.into()},
                 )
-                .await
             } else {
                 expenses
                     .into_iter()

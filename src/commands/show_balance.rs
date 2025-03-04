@@ -1,4 +1,5 @@
 use crate::{
+    Context,
     consts::{DEBUG_START, DEBUG_SUCCESS},
     errors::CommandError,
     i18n::translate_with_args,
@@ -6,14 +7,18 @@ use crate::{
     traveler::{Name, Traveler},
     views::balance::Balance,
 };
-use futures::future;
 use macro_rules_attribute::apply;
 use maplit::hashmap;
 use teloxide::prelude::*;
 use tracing::Level;
+use std::sync::{Arc, Mutex};
 
 #[apply(trace_command)]
-pub async fn show_balance(msg: &Message, name: Name) -> Result<String, CommandError> {
+pub async fn show_balance(
+    msg: &Message,
+    name: Name,
+    ctx: Arc<Mutex<Context>>,
+) -> Result<String, CommandError> {
     tracing::debug!(DEBUG_START);
     if name.is_empty() {
         return Err(CommandError::EmptyInput);
@@ -29,37 +34,35 @@ pub async fn show_balance(msg: &Message, name: Name) -> Result<String, CommandEr
                 Ok(balances) => {
                     let reply = if balances.is_empty() {
                         translate_with_args(
-                            msg.chat.id,
+                            ctx,
                             "i18n-show-balance-settled-up",
                             &hashmap! {"name".into() => name.into()},
                         )
-                        .await
                     } else {
-                        future::join_all(balances
+                        balances
                             .into_iter()
                             .map(
-                                async |Balance {
+                                |Balance {
                                      debtor_name,
                                      creditor_name,
                                      debt,
                                      ..
                                  }| {
                                     translate_with_args(
-                                        msg.chat.id,
+                                        ctx.clone(),
                                         "i18n-show-balance-ok",
                                         &hashmap!{
                                             "traveler-name".into() => name.clone().into(),
                                             "traveler-is".into() => if debtor_name == name { "debtor" } else { "creditor" }.into(),
                                             "debt".into() => debt.to_string().into(),
-                                            "other_traveler_name".into() => if debtor_name == name { creditor_name } else { debtor_name }.into(),
+                                            "other-traveler-name".into() => if debtor_name == name { creditor_name } else { debtor_name }.into(),
                                         },
                                     )
-                                    .await
+                                    
                                 },
                             )
                             .collect::<Vec<_>>()
-                        ).await
-                        .join("\n")
+                            .join("\n")
                     };
                     tracing::debug!(DEBUG_SUCCESS);
                     Ok(reply)
@@ -73,11 +76,10 @@ pub async fn show_balance(msg: &Message, name: Name) -> Result<String, CommandEr
         Ok(_) => {
             tracing::warn!("Couldn't find traveler {name} to show the balance.");
             Ok(translate_with_args(
-                msg.chat.id,
+                ctx,
                 "i18n-show-balance-traveler-not-found",
                 &hashmap! {"name".into() => name.into()},
-            )
-            .await)
+            ))
         }
         Err(err) => {
             tracing::error!("{err}");

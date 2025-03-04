@@ -69,7 +69,7 @@ i18n-transfer-receiver-not-found = Couldn't find traveler \"{$name}\" to transfe
 i18n-invalid-command-usage = 
     Invalid usage of command: {$command}.
 
-    {$help_message}
+    {$help-message}
 i18n-unknown-command = 
     Unknown command: {$command}.
 i18n-unknown-command-best-match = 
