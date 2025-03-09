@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.1.4-SNAPSHOT]
+## [0.1.4] - 2025-03-09
 ### Added
 - Support for i18n.
 - `en-US`, `it-IT` locales.
