@@ -9,6 +9,7 @@ pub const DESCRIPTION: &str = "description";
 pub const EXPENSE: &str = "expense";
 pub const HELP_MESSAGE: &str = "help-message";
 pub const INPUT: &str = "input";
+pub const LANGID: &str = "langid";
 pub const NAME: &str = "name";
 pub const NUMBER: &str = "number";
 pub const OTHER_TRAVELER_NAME: &str = "other-traveler-name";

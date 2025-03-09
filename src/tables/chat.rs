@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use surrealdb::{RecordId, sql::Datetime};
 use teloxide::types::ChatId;
 use travel_rs_derive::Table;
+use unic_langid::LanguageIdentifier;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Table)]
 pub struct Chat {
@@ -33,7 +34,9 @@ impl Chat {
         .and_then(|mut response| response.take::<Option<Self>>(0))
     }
 
-    pub async fn db_update(id: ChatId) -> Result<Option<Self>, surrealdb::Error> {
+    pub async fn db_update_last_interaction_utc(
+        id: ChatId,
+    ) -> Result<Option<Self>, surrealdb::Error> {
         let db = db().await;
         db.query(format!(
             "UPDATE ${ID}
@@ -41,6 +44,21 @@ impl Chat {
         ))
         .bind((ID, RecordId::from_table_key(TABLE, id.0)))
         .bind((LAST_INTERACTION_UTC, Datetime::default()))
+        .await
+        .and_then(|mut response| response.take::<Option<Self>>(0))
+    }
+
+    pub async fn db_update_lang(
+        id: ChatId,
+        langid: &LanguageIdentifier,
+    ) -> Result<Option<Self>, surrealdb::Error> {
+        let db = db().await;
+        db.query(format!(
+            "UPDATE ${ID}
+            SET {LANG} = ${LANG}",
+        ))
+        .bind((ID, RecordId::from_table_key(TABLE, id.0)))
+        .bind((LANG, langid.to_string()))
         .await
         .and_then(|mut response| response.take::<Option<Self>>(0))
     }

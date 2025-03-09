@@ -12,12 +12,16 @@ use std::{
     fmt::Display,
     sync::{Arc, Mutex},
 };
+use unic_langid::LanguageIdentifier;
 
 #[derive(Debug, Clone)]
 pub enum CommandError {
     EmptyInput,
     Help {
         command: String,
+    },
+    SetLanguage {
+        langid: LanguageIdentifier,
     },
     AddTraveler {
         name: Name,
@@ -56,6 +60,11 @@ impl Translatable for CommandError {
                 ctx,
                 i18n::errors::COMMAND_ERROR_HELP,
                 &hashmap! {i18n::args::COMMAND.into() => command.into()},
+            ),
+            SetLanguage { langid } => translate_with_args(
+                ctx,
+                i18n::errors::COMMAND_ERROR_SET_LANGUAGE,
+                &hashmap! {i18n::args::LANGID.into() => langid.to_string().into()},
             ),
             AddTraveler { name } => translate_with_args(
                 ctx,
@@ -113,6 +122,10 @@ impl Translatable for CommandError {
             Help { command } => translate_with_args_default(
                 i18n::errors::COMMAND_ERROR_HELP,
                 &hashmap! {i18n::args::COMMAND.into() => command.into()},
+            ),
+            SetLanguage { langid } => translate_with_args_default(
+                i18n::errors::COMMAND_ERROR_SET_LANGUAGE,
+                &hashmap! {i18n::args::LANGID.into() => langid.to_string().into()},
             ),
             AddTraveler { name } => translate_with_args_default(
                 i18n::errors::COMMAND_ERROR_ADD_TRAVELER,

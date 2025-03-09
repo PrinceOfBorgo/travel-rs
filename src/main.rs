@@ -167,7 +167,7 @@ where
 pub async fn update_chat_db(msg: Message, ctx: Arc<Mutex<Context>>) -> HandlerResult {
     let mut chat = Chat::db_create(msg.chat.id, SETTINGS.i18n.default_locale.to_string()).await;
     if chat.is_err() {
-        chat = Chat::db_update(msg.chat.id).await;
+        chat = Chat::db_update_last_interaction_utc(msg.chat.id).await;
         match chat {
             Ok(Some(ref chat)) => {
                 tracing::debug!("Chat updated on db: {chat:?}")

@@ -2,6 +2,7 @@
 
 command-error-empty-input = No input provided.
 command-error-help = No help available for command /{$command}.
+command-error-set-language = Couldn't set language "{$langid}".
 command-error-add-traveler = Couldn't add traveler named "{$name}".
 command-error-delete-traveler = Couldn't delete traveler named "{$name}".
 command-error-list-travelers = Couldn't list travelers.

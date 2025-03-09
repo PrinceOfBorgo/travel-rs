@@ -10,6 +10,14 @@ help-help =
 
     Usage: /{-help-command} [command]
 
+## /setlanguage
+
+descr-set-language = Set the default language of the bot for this chat.
+help-set-language =
+    /{-set-language-command} — {descr-set-language}
+
+    Usage: /{-set-language-command} [language]
+
 ## /addtraveler
 
 descr-add-traveler = Add a traveler with the specified name to the travel plan.

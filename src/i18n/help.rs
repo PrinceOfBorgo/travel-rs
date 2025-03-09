@@ -1,4 +1,5 @@
 pub const HELP_HELP: &str = "help-help";
+pub const HELP_SET_LANGUAGE: &str = "help-set-language";
 pub const HELP_ADD_TRAVELER: &str = "help-add-traveler";
 pub const HELP_DELETE_TRAVELER: &str = "help-delete-traveler";
 pub const HELP_LIST_TRAVELERS: &str = "help-list-travelers";

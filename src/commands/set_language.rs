@@ -1,0 +1,54 @@
+use crate::{
+    Context,
+    chat::Chat,
+    consts::{DEBUG_START, DEBUG_SUCCESS},
+    errors::CommandError,
+    i18n::{self, translate_with_args},
+    trace_command,
+};
+use macro_rules_attribute::apply;
+use maplit::hashmap;
+use std::sync::{Arc, Mutex};
+use teloxide::prelude::*;
+use tracing::Level;
+use unic_langid::LanguageIdentifier;
+
+#[apply(trace_command)]
+pub async fn set_language(
+    msg: &Message,
+    langid: LanguageIdentifier,
+    ctx: Arc<Mutex<Context>>,
+) -> Result<String, CommandError> {
+    tracing::debug!(DEBUG_START);
+    // Check if language is available
+    if !i18n::is_lang_available(&langid) {
+        tracing::debug!(DEBUG_SUCCESS);
+        return Ok(translate_with_args(
+            ctx,
+            i18n::commands::SET_LANGUAGE_NOT_AVAILABLE,
+            &hashmap! {i18n::args::LANGID.into() => langid.to_string().into()},
+        ));
+    }
+
+    // Update chat language on db
+    let update_res = Chat::db_update_lang(msg.chat.id, &langid).await;
+    match update_res {
+        Ok(_) => {
+            tracing::debug!(DEBUG_SUCCESS);
+            {
+                let mut ctx_guard = ctx.lock().expect("Failed to lock context");
+                ctx_guard.langid = langid.clone();
+            }
+
+            Ok(translate_with_args(
+                ctx.clone(),
+                i18n::commands::SET_LANGUAGE_OK,
+                &hashmap! {i18n::args::LANGID.into() => langid.to_string().into()},
+            ))
+        }
+        Err(err) => {
+            tracing::error!("{err}");
+            Err(CommandError::SetLanguage { langid })
+        }
+    }
+}

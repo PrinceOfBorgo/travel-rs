@@ -2,6 +2,9 @@ pub const COMMAND_DESCRIPTIONS: &str = "command-descriptions";
 
 pub const PROCESS_ALREADY_RUNNING: &str = "process-already-running";
 
+pub const SET_LANGUAGE_NOT_AVAILABLE: &str = "set-language-not-available";
+pub const SET_LANGUAGE_OK: &str = "set-language-ok";
+
 pub const ADD_TRAVELER_ALREADY_ADDED: &str = "add-traveler-already-added";
 pub const ADD_TRAVELER_OK: &str = "add-traveler-ok";
 

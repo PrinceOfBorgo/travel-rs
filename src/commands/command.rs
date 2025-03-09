@@ -1,6 +1,6 @@
 use crate::{
     Context, HandlerResult,
-    commands::{show_balance, show_balances, show_expense},
+    commands::{set_language, show_balance, show_balances, show_expense},
     i18n::{Translatable, help::*, translate},
     traveler::Name,
 };
@@ -9,6 +9,7 @@ use std::sync::LazyLock;
 use std::sync::{Arc, Mutex};
 use strum::{AsRefStr, EnumIter, EnumString, IntoEnumIterator};
 use teloxide::{prelude::*, utils::command::BotCommands};
+use unic_langid::LanguageIdentifier;
 
 use crate::commands::{
     HelpMessage, add_traveler, delete_expense, delete_traveler, find_expenses, help, list_expenses,
@@ -27,6 +28,8 @@ pub static COMMANDS: LazyLock<Vec<String>> = LazyLock::new(|| {
 pub enum Command {
     #[command(description = "{descr-help}")]
     Help { command: String },
+    #[command(description = "{descr-set-language}")]
+    SetLanguage { langid: LanguageIdentifier },
     #[command(description = "{descr-add-traveler}")]
     AddTraveler { name: Name },
     #[command(description = "{descr-delete-traveler}")]
@@ -70,6 +73,7 @@ impl HelpMessage for Command {
         use Command::*;
         match self {
             Help { command: _ } => translate(ctx, HELP_HELP),
+            SetLanguage { langid: _ } => translate(ctx, HELP_SET_LANGUAGE),
             AddTraveler { name: _ } => translate(ctx, HELP_ADD_TRAVELER),
             DeleteTraveler { name: _ } => translate(ctx, HELP_DELETE_TRAVELER),
             ListTravelers => translate(ctx, HELP_LIST_TRAVELERS),
@@ -100,6 +104,7 @@ pub async fn commands_handler(
 
     let result = match cmd.clone() {
         Help { command } => help(&msg, &command, ctx.clone()),
+        SetLanguage { langid } => set_language(&msg, langid, ctx.clone()).await,
         AddTraveler { name } => add_traveler(&msg, name, ctx.clone()).await,
         DeleteTraveler { name } => delete_traveler(&msg, name, ctx.clone()).await,
         ListTravelers => list_travelers(&msg, ctx.clone()).await,

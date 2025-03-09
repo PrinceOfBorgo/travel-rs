@@ -5,6 +5,7 @@
 - Support for i18n.
 - `en-US` locale.
 - `[i18n]` section in (profile) settings files.
+- `SetLanguage` command.
 
 ### Changed
 - Improved settings: now supporting dedicated profile settings files.

@@ -20,6 +20,7 @@ use std::{
 use teloxide::utils::command::BotCommands;
 use terms::*;
 pub use translatable::Translatable;
+use unic_langid::LanguageIdentifier;
 
 static LOCALES: LazyLock<ArcLoader> = LazyLock::new(|| {
     let location = &SETTINGS.i18n.locales_path;
@@ -38,6 +39,7 @@ static LOCALES: LazyLock<ArcLoader> = LazyLock::new(|| {
 {HELP_COMMAND} = {help}
 {LIST_EXPENSES_COMMAND} = {list_expenses}
 {LIST_TRAVELERS_COMMAND} = {list_travelers}
+{SET_LANGUAGE_COMMAND} = {set_language}
 {SHOW_BALANCE_COMMAND} = {show_balance}
 {SHOW_BALANCES_COMMAND} = {show_balances}
 {SHOW_EXPENSE_COMMAND} = {show_expense}
@@ -52,6 +54,7 @@ static LOCALES: LazyLock<ArcLoader> = LazyLock::new(|| {
                 help = variant_to_string!(Command::Help),
                 list_expenses = variant_to_string!(Command::ListExpenses),
                 list_travelers = variant_to_string!(Command::ListTravelers),
+                set_language = variant_to_string!(Command::SetLanguage),
                 show_balance = variant_to_string!(Command::ShowBalance),
                 show_balances = variant_to_string!(Command::ShowBalances),
                 show_expense = variant_to_string!(Command::ShowExpense),
@@ -144,4 +147,8 @@ pub fn translate_with_args_default(
     LOCALES
         .try_lookup_with_args(langid, input, args)
         .unwrap_or(input.to_owned())
+}
+
+pub fn is_lang_available(langid: &LanguageIdentifier) -> bool {
+    LOCALES.locales().any(|locale| locale == langid)
 }

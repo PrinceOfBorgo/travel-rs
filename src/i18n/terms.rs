@@ -7,6 +7,7 @@ pub const FIND_EXPENSES_COMMAND: &str = "-find-expenses-command";
 pub const HELP_COMMAND: &str = "-help-command";
 pub const LIST_EXPENSES_COMMAND: &str = "-list-expenses-command";
 pub const LIST_TRAVELERS_COMMAND: &str = "-list-travelers-command";
+pub const SET_LANGUAGE_COMMAND: &str = "-set-language-command";
 pub const SHOW_BALANCE_COMMAND: &str = "-show-balance-command";
 pub const SHOW_BALANCES_COMMAND: &str = "-show-balances-command";
 pub const SHOW_EXPENSE_COMMAND: &str = "-show-expense-command";

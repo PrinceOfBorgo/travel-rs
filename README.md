@@ -8,7 +8,7 @@
     - [x] en-US
     - [ ] it-IT
   - [ ] Add currency formatting (decimal separators).
-  - [ ] Add `SetLanguage` command.
+  - [x] Add `SetLanguage` command.
 - [ ] Logs with span_id/trace_id.
 - [ ] Formatting of bot responses (bold, italic, etc.). https://docs.rs/teloxide/latest/teloxide/types/enum.ParseMode.html
 - [ ] Improve error handling: distinguish errors resulting from DB queries.
