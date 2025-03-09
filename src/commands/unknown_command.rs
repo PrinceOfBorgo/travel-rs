@@ -21,15 +21,12 @@ pub async fn unknown_command(bot: Bot, msg: Message, ctx: Arc<Mutex<Context>>) -
     };
 
     let command = text.split_whitespace().next().unwrap_or("");
-
-    let Some(mut cmd_name) = text.strip_prefix('/') else {
+    let Some(mut cmd_name) = command.strip_prefix('/') else {
         return Ok(());
     };
-
     cmd_name = cmd_name
         .strip_suffix(&format!("@{BOT_NAME}"))
         .unwrap_or(cmd_name);
-
     let available_cmd_names: Vec<&str> = COMMANDS.iter().map(String::as_ref).collect();
 
     if available_cmd_names.contains(&cmd_name) {

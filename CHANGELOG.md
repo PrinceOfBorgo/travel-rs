@@ -12,7 +12,7 @@
 - Updated dependencies.
 
 ### Fixed
-- N/A
+- `unknown_command` didn't return the "Invalid usage" message when arguments were specified.
 
 ## [0.1.3] - 2025-02-25
 ### Added
