@@ -2,7 +2,7 @@ use crate::{
     Context,
     consts::{DEBUG_START, DEBUG_SUCCESS},
     errors::CommandError,
-    i18n::translate_with_args,
+    i18n::{self, translate_with_args, translate_with_args_default},
     trace_command,
     traveler::{Name, Traveler},
 };
@@ -34,8 +34,8 @@ pub async fn delete_traveler(
                     tracing::debug!(DEBUG_SUCCESS);
                     Ok(translate_with_args(
                         ctx,
-                        "i18n-delete-traveler-ok",
-                        &hashmap! {"name".into() => name.into()},
+                        i18n::commands::DELETE_TRAVELER_OK,
+                        &hashmap! {i18n::args::NAME.into() => name.into()},
                     ))
                 }
                 Err(err) => {
@@ -45,11 +45,17 @@ pub async fn delete_traveler(
             }
         }
         Ok(_) => {
-            tracing::warn!("Couldn't find traveler {name} to delete.");
+            tracing::warn!(
+                "{}",
+                translate_with_args_default(
+                    i18n::commands::DELETE_TRAVELER_NOT_FOUND,
+                    &hashmap! {i18n::args::NAME.into() => name.clone().into()},
+                )
+            );
             Ok(translate_with_args(
                 ctx,
-                "i18n-delete-traveler-not-found",
-                &hashmap! {"name".into() => name.into()},
+                i18n::commands::DELETE_TRAVELER_NOT_FOUND,
+                &hashmap! {i18n::args::NAME.into() => name.into()},
             ))
         }
         Err(err) => {

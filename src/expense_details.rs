@@ -1,6 +1,15 @@
-use crate::{db::db, traveler::Name};
+use crate::{
+    db::db,
+    i18n::{
+        self, Translatable, translate_with_args, translate_with_args_default,
+        types::FORMAT_SHARE_DETAILS,
+    },
+    traveler::Name,
+};
+use maplit::hashmap;
 use rust_decimal::prelude::*;
 use serde::{Deserialize, Serialize};
+use std::fmt::Display;
 use surrealdb::RecordId;
 use teloxide::types::ChatId;
 use travel_rs_derive::Table;
@@ -11,6 +20,35 @@ const FN_GET_EXPENSE_DETAILS: &str = "fn::get_expense_details";
 pub struct ShareDetails {
     pub traveler_name: Name,
     pub amount: Decimal,
+}
+
+impl Translatable for ShareDetails {
+    fn translate(&self, ctx: std::sync::Arc<std::sync::Mutex<crate::Context>>) -> String {
+        translate_with_args(
+            ctx,
+            FORMAT_SHARE_DETAILS,
+            &hashmap! {
+                i18n::args::TRAVELER_NAME.into() => self.traveler_name.clone().into(),
+                i18n::args::AMOUNT.into() => self.amount.to_string().into()
+            },
+        )
+    }
+
+    fn translate_default(&self) -> String {
+        translate_with_args_default(
+            FORMAT_SHARE_DETAILS,
+            &hashmap! {
+                i18n::args::TRAVELER_NAME.into() => self.traveler_name.clone().into(),
+                i18n::args::AMOUNT.into() => self.amount.to_string().into()
+            },
+        )
+    }
+}
+
+impl Display for ShareDetails {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.translate_default())
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Table)]

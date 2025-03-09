@@ -12,7 +12,7 @@ log = "0.4.25"
 tokio = { version =  "1.43.0", features = ["rt-multi-thread", "macros"] }
 rust_decimal = "1.36.0"
 surrealdb = "2.2.1"
-config = "0.15.8"
+config = "0.15.9"
 anyhow = "1.0.97"
 serde = "1.0.217"
 tracing = "0.1.41"
@@ -23,6 +23,6 @@ strum = { version = "0.27.1", features = ["derive"] }
 rust-fuzzy-search = "0.1.1"
 travel-rs-derive = { version = "0.1.0", path = "travel-rs-derive" }
 fluent = "0.16.1"
-unic-langid = "0.9.5"
+unic-langid = { version="0.9.5", features = ["serde"] }
 fluent-templates = "0.13.0"
 maplit = "1.0.2"

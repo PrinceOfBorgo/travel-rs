@@ -4,8 +4,11 @@
 - [x] Use stable channel when `std::sync::LazyLock` will be stabilized (1.80 - 25 July, 2024).
 - [ ] Currency support: exchange using external APIs.
 - [ ] Add localization
-  - [ ] Add languages.
+  - [ ] Add languages:
+    - [x] en-US
+    - [ ] it-IT
   - [ ] Add currency formatting (decimal separators).
+  - [ ] Add `SetLanguage` command.
 - [ ] Logs with span_id/trace_id.
 - [ ] Formatting of bot responses (bold, italic, etc.). https://docs.rs/teloxide/latest/teloxide/types/enum.ParseMode.html
 - [ ] Improve error handling: distinguish errors resulting from DB queries.
@@ -16,3 +19,4 @@
 - [x] Handle `unknown_command` when command name is right but arguments are incomplete.
 - [x] Add dedicated help messages for all commands.
 - [ ] Improve user experience (e.g. add buttons).
+- [ ] Find a way to use constants instead of string literals in `#[command(description = "here")]` syntax.

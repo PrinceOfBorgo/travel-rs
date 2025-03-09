@@ -14,7 +14,6 @@ mod tables;
 mod utils;
 mod views;
 
-use consts::DEFAULT_LANG;
 use i18n::translate;
 pub(crate) use relationships::*;
 pub(crate) use tables::*;
@@ -131,9 +130,7 @@ async fn main() -> anyhow::Result<()> {
         .dependencies(deps![
             InMemStorage::<AddExpenseState>::new(),
             Arc::new(Mutex::new(Context {
-                langid: DEFAULT_LANG
-                    .parse()
-                    .unwrap_or_else(|_| panic!("Failed to parse default language {DEFAULT_LANG}"))
+                langid: SETTINGS.i18n.default_locale.clone()
             }))
         ])
         .build()
@@ -157,15 +154,18 @@ where
 {
     let chat_id = msg.chat.id;
     if Arc::clone(&storage).get_dialogue(chat_id).await?.is_some() {
-        bot.send_message(chat_id, translate(ctx, "i18n-process-already-running"))
-            .await?;
+        bot.send_message(
+            chat_id,
+            translate(ctx, i18n::commands::PROCESS_ALREADY_RUNNING),
+        )
+        .await?;
     }
     Ok(())
 }
 
 #[apply(trace_skip_all)]
 pub async fn update_chat_db(msg: Message, ctx: Arc<Mutex<Context>>) -> HandlerResult {
-    let mut chat = Chat::db_create(msg.chat.id, DEFAULT_LANG.to_owned()).await;
+    let mut chat = Chat::db_create(msg.chat.id, SETTINGS.i18n.default_locale.to_string()).await;
     if chat.is_err() {
         chat = Chat::db_update(msg.chat.id).await;
         match chat {
@@ -183,11 +183,10 @@ pub async fn update_chat_db(msg: Message, ctx: Arc<Mutex<Context>>) -> HandlerRe
 
     if let Ok(Some(chat)) = chat {
         let mut ctx = ctx.lock().expect("Failed to lock context");
-        ctx.langid = chat.lang.parse().unwrap_or_else(|_| {
-            DEFAULT_LANG
-                .parse()
-                .unwrap_or_else(|_| panic!("Failed to parse default language {DEFAULT_LANG}"))
-        });
+        ctx.langid = chat
+            .lang
+            .parse()
+            .unwrap_or(SETTINGS.i18n.default_locale.clone());
     }
 
     Ok(())

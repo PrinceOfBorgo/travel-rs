@@ -1,11 +1,11 @@
 use crate::{
-    Context,
-    consts::{DEBUG_START, DEBUG_SUCCESS},
-    errors::CommandError,
-    i18n::translate_with_args,
-    trace_command,
-    traveler::{Name, Traveler},
-    views::balance::Balance,
+    consts::{DEBUG_START, DEBUG_SUCCESS}, 
+    errors::CommandError, 
+    i18n::{self, args::{TRAVELER_IS_CASE_CREDITOR, TRAVELER_IS_CASE_DEBTOR}, translate_with_args, translate_with_args_default},
+    trace_command, 
+    traveler::{Name, Traveler}, 
+    views::balance::Balance, 
+    Context
 };
 use macro_rules_attribute::apply;
 use maplit::hashmap;
@@ -35,8 +35,8 @@ pub async fn show_balance(
                     let reply = if balances.is_empty() {
                         translate_with_args(
                             ctx,
-                            "i18n-show-balance-settled-up",
-                            &hashmap! {"name".into() => name.into()},
+                            i18n::commands::SHOW_BALANCE_SETTLED_UP,
+                            &hashmap! {i18n::args::NAME.into() => name.into()},
                         )
                     } else {
                         balances
@@ -47,19 +47,17 @@ pub async fn show_balance(
                                      creditor_name,
                                      debt,
                                      ..
-                                 }| {
-                                    translate_with_args(
-                                        ctx.clone(),
-                                        "i18n-show-balance-ok",
-                                        &hashmap!{
-                                            "traveler-name".into() => name.clone().into(),
-                                            "traveler-is".into() => if debtor_name == name { "debtor" } else { "creditor" }.into(),
-                                            "debt".into() => debt.to_string().into(),
-                                            "other-traveler-name".into() => if debtor_name == name { creditor_name } else { debtor_name }.into(),
-                                        },
-                                    )
-                                    
-                                },
+                                }| 
+                                translate_with_args(
+                                    ctx.clone(),
+                                    i18n::commands::SHOW_BALANCE_OK,
+                                    &hashmap!{
+                                        i18n::args::TRAVELER_NAME.into() => name.clone().into(),
+                                        i18n::args::TRAVELER_IS.into() => if debtor_name == name { TRAVELER_IS_CASE_DEBTOR } else { TRAVELER_IS_CASE_CREDITOR }.into(),
+                                        i18n::args::DEBT.into() => debt.to_string().into(),
+                                        i18n::args::OTHER_TRAVELER_NAME.into() => if debtor_name == name { creditor_name } else { debtor_name }.into(),
+                                    },
+                                )
                             )
                             .collect::<Vec<_>>()
                             .join("\n")
@@ -74,11 +72,14 @@ pub async fn show_balance(
             }
         }
         Ok(_) => {
-            tracing::warn!("Couldn't find traveler {name} to show the balance.");
+            tracing::warn!("{}", translate_with_args_default(
+                i18n::commands::SHOW_BALANCE_TRAVELER_NOT_FOUND,
+                &hashmap! {i18n::args::NAME.into() => name.clone().into()},
+            ));
             Ok(translate_with_args(
                 ctx,
-                "i18n-show-balance-traveler-not-found",
-                &hashmap! {"name".into() => name.into()},
+                i18n::commands::SHOW_BALANCE_TRAVELER_NOT_FOUND,
+                &hashmap! {i18n::args::NAME.into() => name.into()},
             ))
         }
         Err(err) => {

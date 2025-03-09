@@ -2,7 +2,7 @@ use crate::{
     Context,
     consts::{DEBUG_START, DEBUG_SUCCESS},
     errors::CommandError,
-    i18n::{translate, translate_with_args},
+    i18n::{self, translate, translate_with_args, translate_with_args_default},
     trace_command,
     transferred_to::TransferredTo,
     traveler::{Name, Traveler},
@@ -45,57 +45,70 @@ pub async fn transfer(
                                 tracing::warn!("{err_update}");
                             }
                             tracing::debug!("{DEBUG_SUCCESS} - id: {}", transfer.id);
-                            Ok(translate(ctx, "i18n-transfer-ok"))
+                            Ok(translate(ctx, i18n::commands::TRANSFER_OK))
                         }
                         Ok(None) => {
-                            tracing::warn!("Couldn't record the transfer.");
-                            Err(CommandError::Transfer {
-                                from: from.to_owned(),
-                                to: to.to_owned(),
+                            let err = CommandError::Transfer {
+                                sender: from.to_owned(),
+                                receiver: to.to_owned(),
                                 amount,
-                            })
+                            };
+                            tracing::warn!("{err}");
+                            Err(err)
                         }
                         Err(err) => {
                             tracing::error!("{err}");
                             Err(CommandError::Transfer {
-                                from: from.to_owned(),
-                                to: to.to_owned(),
+                                sender: from.to_owned(),
+                                receiver: to.to_owned(),
                                 amount,
                             })
                         }
                     }
                 }
                 Ok(_) => {
-                    tracing::warn!("Couldn't find traveler \"{to}\" to transfer money to.");
+                    tracing::warn!(
+                        "{}",
+                        translate_with_args_default(
+                            i18n::commands::TRANSFER_RECEIVER_NOT_FOUND,
+                            &hashmap! {i18n::args::NAME.into() => to.clone().into()},
+                        )
+                    );
                     Ok(translate_with_args(
                         ctx,
-                        "i18n-transfer-receiver-not-found",
-                        &hashmap! {"name".into() => to.into()},
+                        i18n::commands::TRANSFER_RECEIVER_NOT_FOUND,
+                        &hashmap! {i18n::args::NAME.into() => to.into()},
                     ))
                 }
                 Err(err) => {
                     tracing::error!("{err}");
                     Err(CommandError::Transfer {
-                        from: from.to_owned(),
-                        to: to.to_owned(),
+                        sender: from.to_owned(),
+                        receiver: to.to_owned(),
                         amount,
                     })
                 }
             }
         }
         Ok(_) => {
-            tracing::warn!("Couldn't find traveler \"{from}\" to transfer money from.");
+            tracing::warn!(
+                "{}",
+                translate_with_args_default(
+                    i18n::commands::TRANSFER_SENDER_NOT_FOUND,
+                    &hashmap! {i18n::args::NAME.into() => from.clone().into()},
+                )
+            );
             Ok(translate_with_args(
                 ctx,
-                "i18n-transfer-sender-not-found",
-                &hashmap! {"name".into() => from.into()},
+                i18n::commands::TRANSFER_SENDER_NOT_FOUND,
+                &hashmap! {i18n::args::NAME.into() => from.into()},
             ))
         }
         Err(err) => {
             tracing::error!("{err}");
             Err(CommandError::Transfer {
-                from: from.to_owned(),
-                to: to.to_owned(),
+                sender: from.to_owned(),
+                receiver: to.to_owned(),
                 amount,
             })
         }

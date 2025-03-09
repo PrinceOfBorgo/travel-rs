@@ -1,4 +1,12 @@
-use crate::traveler::Name;
+use super::NameValidationError;
+use crate::{
+    i18n::{
+        self, Translatable, translate, translate_default, translate_with_args,
+        translate_with_args_default,
+    },
+    traveler::Name,
+};
+use maplit::hashmap;
 use rust_decimal::Decimal;
 use std::fmt::Display;
 
@@ -21,36 +29,94 @@ pub enum AddExpenseError {
         input: String,
     },
     NoTravelersSpecified,
+    NameValidation(NameValidationError),
     Generic(Box<dyn std::error::Error + Send + Sync>),
 }
 
-impl Display for AddExpenseError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl Translatable for AddExpenseError {
+    fn translate(&self, ctx: std::sync::Arc<std::sync::Mutex<crate::Context>>) -> String {
         use AddExpenseError::*;
         match self {
-            RepeatedTravelerName { name } => write!(
-                f,
-                "Traveler `{name}` has already been added to the expense."
+            RepeatedTravelerName { name } => translate_with_args(
+                ctx,
+                i18n::errors::ADD_EXPENSE_ERROR_REPEATED_TRAVELER_NAME,
+                &hashmap! {i18n::args::NAME.into() => name.clone().into()},
             ),
-            TravelerNotFound { name } => write!(
-                f,
-                "Cannot find traveler `{name}` in the current travel plan."
+            TravelerNotFound { name } => translate_with_args(
+                ctx,
+                i18n::errors::ADD_EXPENSE_ERROR_TRAVELER_NOT_FOUND,
+                &hashmap! {i18n::args::NAME.into() => name.clone().into()},
             ),
-            ExpenseTooHigh { tot_amount } => write!(
-                f,
-                "The expenses assigned to travelers exceed the total amount: {tot_amount}."
+            ExpenseTooHigh { tot_amount } => translate_with_args(
+                ctx,
+                i18n::errors::ADD_EXPENSE_ERROR_EXPENSE_TOO_HIGH,
+                &hashmap! {i18n::args::AMOUNT.into() => tot_amount.to_string().into()},
             ),
             ExpenseTooLow {
                 expense,
                 tot_amount,
-            } => write!(
-                f,
-                "The expense ({expense}) is less than the total amount: {tot_amount}."
+            } => translate_with_args(
+                ctx,
+                i18n::errors::ADD_EXPENSE_ERROR_EXPENSE_TOO_LOW,
+                &hashmap! {
+                    i18n::args::EXPENSE.into() => expense.to_string().into(),
+                    i18n::args::AMOUNT.into() => tot_amount.to_string().into()
+                },
             ),
-            InvalidFormat { input } => write!(f, "Invalid format: `{input}`"),
-            NoTravelersSpecified => write!(f, "No travelers have been specified."),
-            Generic(err) => err.fmt(f),
+            InvalidFormat { input } => translate_with_args(
+                ctx,
+                i18n::errors::ADD_EXPENSE_ERROR_INVALID_FORMAT,
+                &hashmap! {i18n::args::INPUT.into() => input.clone().into()},
+            ),
+            NoTravelersSpecified => {
+                translate(ctx, i18n::errors::ADD_EXPENSE_ERROR_NO_TRAVELERS_SPECIFIED)
+            }
+            NameValidation(err) => err.translate(ctx),
+            Generic(err) => err.to_string(),
         }
+    }
+
+    fn translate_default(&self) -> String {
+        use AddExpenseError::*;
+        match self {
+            RepeatedTravelerName { name } => translate_with_args_default(
+                i18n::errors::ADD_EXPENSE_ERROR_REPEATED_TRAVELER_NAME,
+                &hashmap! {i18n::args::NAME.into() => name.clone().into()},
+            ),
+            TravelerNotFound { name } => translate_with_args_default(
+                i18n::errors::ADD_EXPENSE_ERROR_TRAVELER_NOT_FOUND,
+                &hashmap! {i18n::args::NAME.into() => name.clone().into()},
+            ),
+            ExpenseTooHigh { tot_amount } => translate_with_args_default(
+                i18n::errors::ADD_EXPENSE_ERROR_EXPENSE_TOO_HIGH,
+                &hashmap! {i18n::args::AMOUNT.into() => tot_amount.to_string().into()},
+            ),
+            ExpenseTooLow {
+                expense,
+                tot_amount,
+            } => translate_with_args_default(
+                i18n::errors::ADD_EXPENSE_ERROR_EXPENSE_TOO_LOW,
+                &hashmap! {
+                    i18n::args::EXPENSE.into() => expense.to_string().into(),
+                    i18n::args::AMOUNT.into() => tot_amount.to_string().into()
+                },
+            ),
+            InvalidFormat { input } => translate_with_args_default(
+                i18n::errors::ADD_EXPENSE_ERROR_INVALID_FORMAT,
+                &hashmap! {i18n::args::INPUT.into() => input.clone().into()},
+            ),
+            NoTravelersSpecified => {
+                translate_default(i18n::errors::ADD_EXPENSE_ERROR_NO_TRAVELERS_SPECIFIED)
+            }
+            NameValidation(err) => err.translate_default(),
+            Generic(err) => err.to_string(),
+        }
+    }
+}
+
+impl Display for AddExpenseError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.translate_default())
     }
 }
 
@@ -64,15 +130,31 @@ pub enum EndError {
     Generic(Box<dyn std::error::Error + Send + Sync>),
 }
 
-impl Display for EndError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl Translatable for EndError {
+    fn translate(&self, ctx: std::sync::Arc<std::sync::Mutex<crate::Context>>) -> String {
         use EndError::*;
         match self {
-            ClosingDialogue => write!(f, "An error occured while closing the process."),
-            NoExpenseCreated => write!(f, "No expense has been created."),
-            AddExpense(err) => err.fmt(f),
-            Generic(err) => err.fmt(f),
+            ClosingDialogue => translate(ctx, i18n::errors::END_ERROR_CLOSING_DIALOGUE),
+            NoExpenseCreated => translate(ctx, i18n::errors::END_ERROR_EXPENSE_CREATED),
+            AddExpense(err) => err.translate(ctx),
+            Generic(err) => err.to_string(),
         }
+    }
+
+    fn translate_default(&self) -> String {
+        use EndError::*;
+        match self {
+            ClosingDialogue => translate_default(i18n::errors::END_ERROR_CLOSING_DIALOGUE),
+            NoExpenseCreated => translate_default(i18n::errors::END_ERROR_EXPENSE_CREATED),
+            AddExpense(err) => err.translate_default(),
+            Generic(err) => err.to_string(),
+        }
+    }
+}
+
+impl Display for EndError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.translate_default())
     }
 }
 

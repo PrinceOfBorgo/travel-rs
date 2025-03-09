@@ -1,4 +1,10 @@
-use crate::db::{Count, db};
+use crate::{
+    db::{Count, db},
+    i18n::{
+        self, Translatable, translate_with_args, translate_with_args_default, types::FORMAT_EXPENSE,
+    },
+};
+use maplit::hashmap;
 use rust_decimal::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
@@ -123,8 +129,8 @@ impl Expense {
     }
 }
 
-impl Display for Expense {
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+impl Translatable for Expense {
+    fn translate(&self, ctx: std::sync::Arc<std::sync::Mutex<crate::Context>>) -> String {
         let Expense {
             number,
             description,
@@ -132,6 +138,38 @@ impl Display for Expense {
             ..
         } = self;
 
-        writeln!(f, "#{number} - {description}: {amount}",)
+        translate_with_args(
+            ctx,
+            FORMAT_EXPENSE,
+            &hashmap! {
+                i18n::args::NUMBER.into() => number.into(),
+                i18n::args::DESCRIPTION.into() => description.into(),
+                i18n::args::AMOUNT.into() => amount.to_string().into(),
+            },
+        )
+    }
+
+    fn translate_default(&self) -> String {
+        let Expense {
+            number,
+            description,
+            amount,
+            ..
+        } = self;
+
+        translate_with_args_default(
+            FORMAT_EXPENSE,
+            &hashmap! {
+                i18n::args::NUMBER.into() => number.into(),
+                i18n::args::DESCRIPTION.into() => description.into(),
+                i18n::args::AMOUNT.into() => amount.to_string().into(),
+            },
+        )
+    }
+}
+
+impl Display for Expense {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.translate_default())
     }
 }

@@ -2,6 +2,7 @@ use crate::{
     Context, HandlerResult,
     commands::{COMMANDS, Command, HelpMessage},
     consts::{BOT_NAME, MIN_SIMILARITY_SCORE},
+    i18n,
     i18n::translate_with_args,
     utils::trace_skip_all,
 };
@@ -34,16 +35,16 @@ pub async fn unknown_command(bot: Bot, msg: Message, ctx: Arc<Mutex<Context>>) -
     if available_cmd_names.contains(&cmd_name) {
         let help_message = Command::from_str(cmd_name)
             .unwrap_or_else(|_| panic!("Command {command} should exist."))
-            .help_message();
+            .help_message(ctx.clone());
 
         bot.send_message(
             msg.chat.id,
             translate_with_args(
                 ctx,
-                "i18n-invalid-command-usage",
+                i18n::commands::INVALID_COMMAND_USAGE,
                 &hashmap! {
-                "command".into() => command.into(),
-                "help-message".into() => help_message.into()},
+                i18n::args::COMMAND.into() => command.into(),
+                i18n::args::HELP_MESSAGE.into() => help_message.into()},
             ),
         )
         .await?;
@@ -52,10 +53,10 @@ pub async fn unknown_command(bot: Bot, msg: Message, ctx: Arc<Mutex<Context>>) -
             msg.chat.id,
             translate_with_args(
                 ctx,
-                "i18n-unknown-command-best-match",
+                i18n::commands::UNKNOWN_COMMAND_BEST_MATCH,
                 &hashmap! {
-                "command".into() => text.into(),
-                "best-match".into() => cmd_name.to_lowercase().into()},
+                i18n::args::COMMAND.into() => text.into(),
+                i18n::args::BEST_MATCH.into() => cmd_name.to_lowercase().into()},
             ),
         )
         .await?;
@@ -71,10 +72,10 @@ pub async fn unknown_command(bot: Bot, msg: Message, ctx: Arc<Mutex<Context>>) -
                 msg.chat.id,
                 translate_with_args(
                     ctx,
-                    "i18n-unknown-command-best-match",
+                    i18n::commands::UNKNOWN_COMMAND_BEST_MATCH,
                     &hashmap! {
-                    "command".into() => text.into(),
-                    "best-match".into() => best_match.into()
+                        i18n::args::COMMAND.into() => text.into(),
+                        i18n::args::BEST_MATCH.into() => best_match.into()
                     },
                 ),
             )
@@ -84,8 +85,8 @@ pub async fn unknown_command(bot: Bot, msg: Message, ctx: Arc<Mutex<Context>>) -
                 msg.chat.id,
                 translate_with_args(
                     ctx,
-                    "i18n-unknown-command",
-                    &hashmap! {"command".into() => text.into()},
+                    i18n::commands::UNKNOWN_COMMAND,
+                    &hashmap! {i18n::args::COMMAND.into() => text.into()},
                 ),
             )
             .await?;

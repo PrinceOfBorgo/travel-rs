@@ -1,0 +1,13 @@
+pub const HELP_HELP: &str = "help-help";
+pub const HELP_ADD_TRAVELER: &str = "help-add-traveler";
+pub const HELP_DELETE_TRAVELER: &str = "help-delete-traveler";
+pub const HELP_LIST_TRAVELERS: &str = "help-list-travelers";
+pub const HELP_ADD_EXPENSE: &str = "help-add-expense";
+pub const HELP_DELETE_EXPENSE: &str = "help-delete-expense";
+pub const HELP_LIST_EXPENSES: &str = "help-list-expenses";
+pub const HELP_FIND_EXPENSES: &str = "help-find-expenses";
+pub const HELP_SHOW_EXPENSE: &str = "help-show-expense";
+pub const HELP_TRANSFER: &str = "help-transfer";
+pub const HELP_SHOW_BALANCE: &str = "help-show-balance";
+pub const HELP_SHOW_BALANCES: &str = "help-show-balances";
+pub const HELP_CANCEL: &str = "help-cancel";

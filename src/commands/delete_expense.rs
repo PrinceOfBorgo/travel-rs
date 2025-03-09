@@ -3,7 +3,7 @@ use crate::{
     consts::{DEBUG_START, DEBUG_SUCCESS},
     errors::CommandError,
     expense::Expense,
-    i18n::translate_with_args,
+    i18n::{self, translate_with_args, translate_with_args_default},
     trace_command,
 };
 use macro_rules_attribute::apply;
@@ -31,8 +31,8 @@ pub async fn delete_expense(
                     tracing::debug!(DEBUG_SUCCESS);
                     Ok(translate_with_args(
                         ctx,
-                        "i18n-delete-expense-ok",
-                        &hashmap! {"number".into() => number.into()},
+                        i18n::commands::DELETE_EXPENSE_OK,
+                        &hashmap! {i18n::args::NUMBER.into() => number.into()},
                     ))
                 }
                 Err(err) => {
@@ -42,11 +42,17 @@ pub async fn delete_expense(
             }
         }
         Ok(_) => {
-            tracing::warn!("Couldn't find expense #{number} to delete.");
+            tracing::warn!(
+                "{}",
+                translate_with_args_default(
+                    i18n::commands::DELETE_EXPENSE_NOT_FOUND,
+                    &hashmap! {i18n::args::NUMBER.into() => number.into()},
+                )
+            );
             Ok(translate_with_args(
                 ctx,
-                "i18n-delete-expense-not-found",
-                &hashmap! {"number".into() => number.into()},
+                i18n::commands::DELETE_EXPENSE_NOT_FOUND,
+                &hashmap! {i18n::args::NUMBER.into() => number.into()},
             ))
         }
         Err(err) => {

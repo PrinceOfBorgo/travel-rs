@@ -3,8 +3,8 @@ use crate::{
     consts::{DEBUG_START, DEBUG_SUCCESS},
     errors::CommandError,
     expense::Expense,
-    expense_details::{ExpenseDetails, ShareDetails},
-    i18n::translate_with_args,
+    expense_details::ExpenseDetails,
+    i18n::{self, Translatable, translate_with_args, translate_with_args_default},
     trace_command,
 };
 use macro_rules_attribute::apply;
@@ -37,23 +37,16 @@ pub async fn show_expense(
                     ..
                 })) => {
                     let reply = translate_with_args(
-                        ctx,
-                        "i18n-show-expense-ok",
+                        ctx.clone(),
+                        i18n::commands::SHOW_EXPENSE_OK,
                         &hashmap! {
-                            "number".into() => expense_number.to_string().into(),
-                            "description".into() => expense_description.to_string().into(),
-                            "amount".into() => expense_amount.to_string().into(),
-                            "creditor".into() => creditor_name.to_string().into(),
-                            "shares".into() => shares
+                            i18n::args::NUMBER.into() => expense_number.to_string().into(),
+                            i18n::args::DESCRIPTION.into() => expense_description.to_string().into(),
+                            i18n::args::AMOUNT.into() => expense_amount.to_string().into(),
+                            i18n::args::CREDITOR.into() => creditor_name.to_string().into(),
+                            i18n::args::SHARES.into() => shares
                                 .into_iter()
-                                .map(
-                                    |ShareDetails {
-                                        traveler_name,
-                                        amount,
-                                    }| {
-                                        format!("- {traveler_name}: {amount}")
-                                    },
-                                )
+                                .map(|share_details| share_details.translate(ctx.clone()))
                                 .collect::<Vec<_>>()
                                 .join("\n").into(),
                         },
@@ -62,11 +55,17 @@ pub async fn show_expense(
                     Ok(reply)
                 }
                 Ok(_) => {
-                    tracing::warn!("Couldn't find expense #{number} to show the details.");
+                    tracing::warn!(
+                        "{}",
+                        translate_with_args_default(
+                            i18n::commands::SHOW_EXPENSE_NOT_FOUND,
+                            &hashmap! {i18n::args::NUMBER.into() => number.into()},
+                        )
+                    );
                     Ok(translate_with_args(
                         ctx,
-                        "i18n-show-expense-not-found",
-                        &hashmap! {"number".into() => number.into()},
+                        i18n::commands::SHOW_EXPENSE_NOT_FOUND,
+                        &hashmap! {i18n::args::NUMBER.into() => number.into()},
                     ))
                 }
                 Err(err) => {
@@ -76,11 +75,17 @@ pub async fn show_expense(
             }
         }
         Ok(_) => {
-            tracing::warn!("Couldn't find expense #{number} to show the details.");
+            tracing::warn!(
+                "{}",
+                translate_with_args_default(
+                    i18n::commands::SHOW_EXPENSE_NOT_FOUND,
+                    &hashmap! {i18n::args::NUMBER.into() => number.into()},
+                )
+            );
             Ok(translate_with_args(
                 ctx,
-                "i18n-show-expense-not-found",
-                &hashmap! {"number".into() => number.into()},
+                i18n::commands::SHOW_EXPENSE_NOT_FOUND,
+                &hashmap! {i18n::args::NUMBER.into() => number.into()},
             ))
         }
         Err(err) => {

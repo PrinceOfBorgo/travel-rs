@@ -2,6 +2,7 @@ use crate::{
     Context,
     consts::{DEBUG_START, DEBUG_SUCCESS},
     errors::CommandError,
+    i18n,
     i18n::translate,
     trace_command,
     traveler::Traveler,
@@ -21,7 +22,7 @@ pub async fn list_travelers(
     match list_res {
         Ok(travelers) => {
             let reply = if travelers.is_empty() {
-                translate(ctx, "i18n-list-travelers-not-found")
+                translate(ctx, i18n::commands::LIST_TRAVELERS_NOT_FOUND)
             } else {
                 travelers
                     .into_iter()

@@ -1,17 +1,24 @@
 use crate::{
-    HandlerResult,
+    Context, HandlerResult,
     consts::*,
     db::db,
     errors::{AddExpenseError, EndError},
     expense::Expense,
+    i18n::{self, Translatable, dialogues::*, translate, translate_with_args},
     trace_state,
     traveler::{Name, Traveler},
     update_debts,
 };
 use macro_rules_attribute::apply;
+use maplit::hashmap;
 use regex::Regex;
 use rust_decimal::Decimal;
-use std::{collections::BTreeMap, fmt::Debug, str::FromStr, sync::LazyLock};
+use std::{
+    collections::BTreeMap,
+    fmt::Debug,
+    str::FromStr,
+    sync::{Arc, LazyLock, Mutex},
+};
 use surrealdb::{
     RecordId,
     sql::statements::{BeginStatement, CommitStatement},
@@ -73,15 +80,19 @@ pub enum AmountEnum {
 }
 
 #[apply(trace_state)]
-pub async fn start(bot: Bot, dialogue: AddExpenseDialogue, msg: Message) -> HandlerResult {
+pub async fn start(
+    bot: Bot,
+    dialogue: AddExpenseDialogue,
+    msg: Message,
+    ctx: Arc<Mutex<Context>>,
+) -> HandlerResult {
     tracing::debug!(DEBUG_START);
-    bot.send_message(
-        msg.chat.id,
-        format!("The process can be interrupted at any time by sending `/{cancel}`.\nHow would you describe this expense?", 
-            cancel = variant_to_string!(Command::Cancel),
-        )
-    )
-    .await?;
+    let reply = format!(
+        "{start}\n\n{ask_description}",
+        start = translate(ctx.clone(), ADD_EXPENSE_START),
+        ask_description = translate(ctx, ADD_EXPENSE_ASK_DESCRIPTION)
+    );
+    bot.send_message(msg.chat.id, reply).await?;
     dialogue.update(AddExpenseState::ReceiveDescription).await?;
     tracing::debug!(DEBUG_SUCCESS);
     Ok(())
@@ -92,11 +103,12 @@ pub async fn receive_description(
     bot: Bot,
     dialogue: AddExpenseDialogue,
     msg: Message,
+    ctx: Arc<Mutex<Context>>,
 ) -> HandlerResult {
     tracing::debug!(DEBUG_START);
     match msg.text() {
         Some(text) => {
-            bot.send_message(msg.chat.id, "How much is the expense?")
+            bot.send_message(msg.chat.id, translate(ctx, ADD_EXPENSE_ASK_AMOUNT))
                 .await?;
             dialogue
                 .update(AddExpenseState::ReceiveAmount {
@@ -107,7 +119,7 @@ pub async fn receive_description(
         }
         None => {
             tracing::warn!("Invalid description: received `None`.");
-            bot.send_message(msg.chat.id, "You sent an invalid text, please retry.")
+            bot.send_message(msg.chat.id, translate(ctx, ADD_EXPENSE_INVALID_DESCRIPTION))
                 .await?;
         }
     }
@@ -121,12 +133,14 @@ pub async fn receive_amount(
     dialogue: AddExpenseDialogue,
     description: String, // Available from `AddExpenseState::ReceiveAmount`.
     msg: Message,
+    ctx: Arc<Mutex<Context>>,
 ) -> HandlerResult {
     tracing::debug!(DEBUG_START);
     let parsed_text = msg.text().map(|text| text.parse::<Decimal>());
     match parsed_text {
         Some(Ok(amount)) => {
-            bot.send_message(msg.chat.id, "Who paid for this?").await?;
+            bot.send_message(msg.chat.id, translate(ctx, ADD_EXPENSE_ASK_PAID_BY))
+                .await?;
             dialogue
                 .update(AddExpenseState::ReceivePaidBy {
                     description,
@@ -137,7 +151,7 @@ pub async fn receive_amount(
         }
         _ => {
             tracing::warn!("Invalid amount: received `{parsed_text:?}`.");
-            bot.send_message(msg.chat.id, "You sent an invalid amount, please retry.")
+            bot.send_message(msg.chat.id, translate(ctx, ADD_EXPENSE_INVALID_AMOUNT))
                 .await?;
         }
     }
@@ -151,29 +165,38 @@ pub async fn receive_paid_by(
     dialogue: AddExpenseDialogue,
     (description, amount): (String, Decimal), // Available from `AddExpenseState::ReceivePaidBy`.
     msg: Message,
+    ctx: Arc<Mutex<Context>>,
 ) -> HandlerResult {
     tracing::debug!(DEBUG_START);
     let text = msg.text();
-
-    let Some(name) = text.and_then(|text| Name::from_str(text).ok()) else {
-        tracing::warn!("Invalid name: received `{text:?}`.");
-        bot.send_message(msg.chat.id, "You sent an invalid name, please retry.")
-            .await?;
-        return Ok(());
+    let name = match text {
+        Some(text) => match Name::from_str(text) {
+            Ok(name) => name,
+            Err(err) => {
+                tracing::warn!("{err}");
+                let reply = format!(
+                    "{invalid_paid_by}\n\n{reason}",
+                    invalid_paid_by = translate(ctx.clone(), ADD_EXPENSE_INVALID_PAID_BY),
+                    reason = err.translate(ctx)
+                );
+                bot.send_message(msg.chat.id, reply).await?;
+                return Ok(());
+            }
+        },
+        None => {
+            tracing::warn!("Invalid name: received `{text:?}`.");
+            bot.send_message(msg.chat.id, translate(ctx, ADD_EXPENSE_INVALID_PAID_BY))
+                .await?;
+            return Ok(());
+        }
     };
 
     // Select traveler from db
     let select_res = Traveler::db_select_by_name(msg.chat.id, name.clone()).await;
     match select_res {
         Ok(Some(traveler)) => {
-            bot.send_message(
-                msg.chat.id,
-                format!(
-                    "How would you like to split the expense? Type `/{help} {add_expense}` for more info.", 
-                    help = variant_to_string!(Command::Help),
-                    add_expense= variant_to_string!(Command::AddExpense)
-                )
-            ).await?;
+            bot.send_message(msg.chat.id, translate(ctx, ADD_EXPENSE_ASK_SHARES))
+                .await?;
             dialogue
                 .update(AddExpenseState::StartSplitAmong {
                     description,
@@ -187,8 +210,10 @@ pub async fn receive_paid_by(
             tracing::warn!("Invalid traveler: received {name}.");
             bot.send_message(
                 msg.chat.id,
-                format!(
-                    "Couldn't find traveler {name}. Specify the traveler who paid for this expense."
+                translate_with_args(
+                    ctx,
+                    ADD_EXPENSE_TRAVELER_NOT_FOUND,
+                    &hashmap! {i18n::args::NAME.into() => name.into()},
                 ),
             )
             .await?;
@@ -197,7 +222,11 @@ pub async fn receive_paid_by(
             tracing::error!("{err}");
             bot.send_message(
                 msg.chat.id,
-                format!("An error occured while looking for traveler {name}. Please retry."),
+                translate_with_args(
+                    ctx,
+                    ADD_EXPENSE_TRAVELER_GENERIC_ERROR,
+                    &hashmap! {i18n::args::NAME.into() => name.into()},
+                ),
             )
             .await?;
         }
@@ -212,6 +241,7 @@ pub async fn start_split_among(
     dialogue: AddExpenseDialogue,
     (description, amount, paid_by): (String, Decimal, Traveler), // Available from `AddExpenseState::StartSplitAmong`.
     msg: Message,
+    ctx: Arc<Mutex<Context>>,
 ) -> HandlerResult {
     tracing::debug!(DEBUG_START);
     match msg.text() {
@@ -220,11 +250,8 @@ pub async fn start_split_among(
             let split_res = parse_split_among(text, msg.chat.id, BTreeMap::new()).await;
             match split_res {
                 Ok((SplitAmongEnum::List, split_among)) => {
-                    bot.send_message(
-                        msg.chat.id,
-                        format!("Continue splitting or type `{END_KWORD}` to end the process.",),
-                    )
-                    .await?;
+                    bot.send_message(msg.chat.id, translate(ctx, ADD_EXPENSE_CONTINUE_SPLIT))
+                        .await?;
                     dialogue
                         .update(AddExpenseState::ReceiveSplitAmong {
                             description,
@@ -245,35 +272,38 @@ pub async fn start_split_among(
                     .await
                     {
                         Ok(expense) => {
-                            bot.send_message(
-                                msg.chat.id,
-                                format!("Expense added successfully!\n\n{expense}"),
-                            )
-                            .await?;
+                            let reply = format!(
+                                "{expense_added}\n\n{format_expense}",
+                                expense_added = translate(ctx.clone(), ADD_EXPENSE_OK),
+                                format_expense = expense.translate(ctx)
+                            );
+                            bot.send_message(msg.chat.id, reply).await?;
                         }
                         Err(err) => match err {
-                            EndError::ClosingDialogue => {
-                                bot.send_message(
-                                    msg.chat.id,
-                                    "An error occured while closing the process.",
-                                )
-                                .await?;
+                            EndError::ClosingDialogue | EndError::NoExpenseCreated => {
+                                bot.send_message(msg.chat.id, err.translate(ctx)).await?;
                             }
-                            EndError::NoExpenseCreated => {
-                                bot.send_message(msg.chat.id, "No expense has been created.")
-                                    .await?;
-                            }
-                            EndError::AddExpense(_) => {
-                                bot.send_message(
-                                    msg.chat.id,
-                                    "An error occured while computing shares.",
-                                )
-                                .await?;
+                            EndError::AddExpense(err) => {
+                                let mut reply =
+                                    translate(ctx.clone(), ADD_EXPENSE_ERROR_ON_COMPUTING_SHARES);
+                                if !matches!(err, AddExpenseError::Generic(_)) {
+                                    reply += "\n";
+                                    reply += &err.translate(ctx.clone());
+                                    if matches!(
+                                        err,
+                                        AddExpenseError::ExpenseTooHigh { tot_amount: _ }
+                                    ) {
+                                        reply += "\n";
+                                        reply += &translate(ctx, ADD_EXPENSE_SHARES_CLEARED);
+                                    }
+                                }
+
+                                bot.send_message(msg.chat.id, reply).await?;
                             }
                             EndError::Generic(_) => {
                                 bot.send_message(
                                     msg.chat.id,
-                                    "An error occured while creating expense.",
+                                    translate(ctx, ADD_EXPENSE_CREATING_EXPENSE_GENERIC_ERROR),
                                 )
                                 .await?;
                             }
@@ -282,22 +312,23 @@ pub async fn start_split_among(
                 }
                 Err(err) => {
                     tracing::error!("{err}");
-                    bot.send_message(
-                        msg.chat.id,
-                        match err {
-                            AddExpenseError::Generic(_) => String::from(
-                                "An error occured while parsing the text. Please retry.",
-                            ),
-                            _ => format!("{err}"),
-                        },
-                    )
-                    .await?;
+                    let mut reply = translate(ctx.clone(), ADD_EXPENSE_SHARES_PARSING_ERROR);
+                    if !matches!(err, AddExpenseError::Generic(_)) {
+                        reply += "\n";
+                        reply += &err.translate(ctx.clone());
+                        if matches!(err, AddExpenseError::ExpenseTooHigh { tot_amount: _ }) {
+                            reply += "\n";
+                            reply += &translate(ctx, ADD_EXPENSE_SHARES_CLEARED);
+                        }
+                    }
+
+                    bot.send_message(msg.chat.id, reply).await?;
                 }
             }
         }
         None => {
             tracing::warn!("Invalid text: received `None`.");
-            bot.send_message(msg.chat.id, "You sent an invalid text, please retry.")
+            bot.send_message(msg.chat.id, translate(ctx, ADD_EXPENSE_INVALID_SHARES))
                 .await?;
         }
     }
@@ -316,6 +347,7 @@ pub async fn receive_split_among(
         BTreeMap<Name, AmountEnum>,
     ), // Available from `AddExpenseState::ReceiveSplitAmong`.
     msg: Message,
+    ctx: Arc<Mutex<Context>>,
 ) -> HandlerResult {
     tracing::debug!(DEBUG_START);
     match msg.text() {
@@ -324,11 +356,8 @@ pub async fn receive_split_among(
             let split_res = parse_split_among(text, msg.chat.id, split_among).await;
             match split_res {
                 Ok((SplitAmongEnum::List, split_among)) => {
-                    bot.send_message(
-                        msg.chat.id,
-                        format!("Continue splitting or type `{END_KWORD}` to end the process.",),
-                    )
-                    .await?;
+                    bot.send_message(msg.chat.id, translate(ctx, ADD_EXPENSE_CONTINUE_SPLIT))
+                        .await?;
                     dialogue
                         .update(AddExpenseState::ReceiveSplitAmong {
                             description,
@@ -349,35 +378,38 @@ pub async fn receive_split_among(
                     .await
                     {
                         Ok(expense) => {
-                            bot.send_message(
-                                msg.chat.id,
-                                format!("Expense added successfully!\n{expense}"),
-                            )
-                            .await?;
+                            let reply = format!(
+                                "{expense_added}\n\n{format_expense}",
+                                expense_added = translate(ctx.clone(), ADD_EXPENSE_OK),
+                                format_expense = expense.translate(ctx)
+                            );
+                            bot.send_message(msg.chat.id, reply).await?;
                         }
                         Err(err) => match err {
-                            EndError::ClosingDialogue => {
-                                bot.send_message(
-                                    msg.chat.id,
-                                    "An error occured while closing the process.",
-                                )
-                                .await?;
+                            EndError::ClosingDialogue | EndError::NoExpenseCreated => {
+                                bot.send_message(msg.chat.id, err.translate(ctx)).await?;
                             }
-                            EndError::NoExpenseCreated => {
-                                bot.send_message(msg.chat.id, "No expense has been created.")
-                                    .await?;
-                            }
-                            EndError::AddExpense(_) => {
-                                bot.send_message(
-                                    msg.chat.id,
-                                    "An error occured while computing shares.",
-                                )
-                                .await?;
+                            EndError::AddExpense(err) => {
+                                let mut reply =
+                                    translate(ctx.clone(), ADD_EXPENSE_ERROR_ON_COMPUTING_SHARES);
+                                if !matches!(err, AddExpenseError::Generic(_)) {
+                                    reply += "\n";
+                                    reply += &err.translate(ctx.clone());
+                                    if matches!(
+                                        err,
+                                        AddExpenseError::ExpenseTooHigh { tot_amount: _ }
+                                    ) {
+                                        reply += "\n";
+                                        reply += &translate(ctx, ADD_EXPENSE_SHARES_CLEARED);
+                                    }
+                                }
+
+                                bot.send_message(msg.chat.id, reply).await?;
                             }
                             EndError::Generic(_) => {
                                 bot.send_message(
                                     msg.chat.id,
-                                    "An error occured while creating expense.",
+                                    translate(ctx, ADD_EXPENSE_CREATING_EXPENSE_GENERIC_ERROR),
                                 )
                                 .await?;
                             }
@@ -386,22 +418,23 @@ pub async fn receive_split_among(
                 }
                 Err(err) => {
                     tracing::error!("{err}");
-                    bot.send_message(
-                        msg.chat.id,
-                        match err {
-                            AddExpenseError::Generic(_) => String::from(
-                                "An error occured while parsing the text. Please retry.",
-                            ),
-                            _ => format!("{err}"),
-                        },
-                    )
-                    .await?;
+                    let mut reply = translate(ctx.clone(), ADD_EXPENSE_SHARES_PARSING_ERROR);
+                    if !matches!(err, AddExpenseError::Generic(_)) {
+                        reply += "\n";
+                        reply += &err.translate(ctx.clone());
+                        if matches!(err, AddExpenseError::ExpenseTooHigh { tot_amount: _ }) {
+                            reply += "\n";
+                            reply += &translate(ctx, ADD_EXPENSE_SHARES_CLEARED);
+                        }
+                    }
+
+                    bot.send_message(msg.chat.id, reply).await?;
                 }
             }
         }
         None => {
             tracing::warn!("Invalid text: received `None`.");
-            bot.send_message(msg.chat.id, "You sent an invalid text, please retry.")
+            bot.send_message(msg.chat.id, translate(ctx, ADD_EXPENSE_INVALID_SHARES))
                 .await?;
         }
     }
@@ -514,7 +547,7 @@ async fn parse_split_among(
                     input: entry.to_owned(),
                 })?;
             let name = Name::from_str(&caps[SPLIT_AMONG_REGEX_NAME_GRP])
-                .map_err(|err| AddExpenseError::Generic(Box::new(err)))?;
+                .map_err(AddExpenseError::NameValidation)?;
             if split_among.contains_key(&name) {
                 return Err(AddExpenseError::RepeatedTravelerName { name });
             }

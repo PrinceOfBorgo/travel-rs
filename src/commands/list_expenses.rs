@@ -3,7 +3,7 @@ use crate::{
     consts::{DEBUG_START, DEBUG_SUCCESS},
     errors::CommandError,
     expense::Expense,
-    i18n::translate,
+    i18n::{self, Translatable, translate},
     trace_command,
 };
 use macro_rules_attribute::apply;
@@ -21,13 +21,13 @@ pub async fn list_expenses(
     match list_res {
         Ok(expenses) => {
             let reply = if expenses.is_empty() {
-                translate(ctx, "i18n-list-expenses-not-found")
+                translate(ctx, i18n::commands::LIST_EXPENSES_NOT_FOUND)
             } else {
                 expenses
                     .into_iter()
-                    .map(|expense| format!("{expense}"))
+                    .map(|expense| expense.translate(ctx.clone()))
                     .collect::<Vec<_>>()
-                    .join("\n")
+                    .join("\n\n")
             };
             tracing::debug!(DEBUG_SUCCESS);
             Ok(reply)

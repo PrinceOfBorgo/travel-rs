@@ -1,6 +1,7 @@
 use config::Config;
 use serde::Deserialize;
-use std::sync::LazyLock;
+use std::{path::PathBuf, sync::LazyLock};
+use unic_langid::LanguageIdentifier;
 
 static CONFIG: LazyLock<Config> = LazyLock::new(|| {
     Config::builder()
@@ -57,9 +58,16 @@ pub struct Database {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct I18n {
+    pub default_locale: LanguageIdentifier,
+    pub locales_path: PathBuf,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct Settings {
     pub bot: Bot,
     pub database: Database,
+    pub i18n: I18n,
 }
 
 impl Settings {

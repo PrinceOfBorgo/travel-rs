@@ -3,7 +3,7 @@ use crate::{
     consts::{DEBUG_START, DEBUG_SUCCESS},
     errors::CommandError,
     expense::Expense,
-    i18n::translate_with_args,
+    i18n::{self, Translatable, translate_with_args},
     trace_command,
 };
 use macro_rules_attribute::apply;
@@ -29,13 +29,13 @@ pub async fn find_expenses(
             let reply = if expenses.is_empty() {
                 translate_with_args(
                     ctx,
-                    "i18n-find-expenses-not-found",
-                    &hashmap! {"description".into() => description.into()},
+                    i18n::commands::FIND_EXPENSES_NOT_FOUND,
+                    &hashmap! {i18n::args::DESCRIPTION.into() => description.into()},
                 )
             } else {
                 expenses
                     .into_iter()
-                    .map(|expense| format!("{expense}"))
+                    .map(|expense| expense.translate(ctx.clone()))
                     .collect::<Vec<_>>()
                     .join("\n")
             };

@@ -1,0 +1,19 @@
+pub const ADD_EXPENSE_COMMAND: &str = "-add-expense-command";
+pub const ADD_TRAVELER_COMMAND: &str = "-add-traveler-command";
+pub const CANCEL_COMMAND: &str = "-cancel-command";
+pub const DELETE_EXPENSE_COMMAND: &str = "-delete-expense-command";
+pub const DELETE_TRAVELER_COMMAND: &str = "-delete-traveler-command";
+pub const FIND_EXPENSES_COMMAND: &str = "-find-expenses-command";
+pub const HELP_COMMAND: &str = "-help-command";
+pub const LIST_EXPENSES_COMMAND: &str = "-list-expenses-command";
+pub const LIST_TRAVELERS_COMMAND: &str = "-list-travelers-command";
+pub const SHOW_BALANCE_COMMAND: &str = "-show-balance-command";
+pub const SHOW_BALANCES_COMMAND: &str = "-show-balances-command";
+pub const SHOW_EXPENSE_COMMAND: &str = "-show-expense-command";
+pub const TRANSFER_COMMAND: &str = "-transfer-command";
+
+pub const I18N_DECIMAL_SEP: &str = "-decimal-sep";
+pub const I18N_SPLIT_AMONG_ENTRIES_SEP: &str = "-split-among-entries-sep";
+pub const I18N_SPLIT_AMONG_NAME_AMOUNT_SEP: &str = "-split-among-name-amount-sep";
+pub const I18N_ALL_KWORD: &str = "-all-kword";
+pub const I18N_END_KWORD: &str = "-end-kword";

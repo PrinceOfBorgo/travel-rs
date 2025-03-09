@@ -19,3 +19,7 @@ username = "root"
 password = "root"
 namespace = "travel_rs"
 database = "travel_rs_db"
+
+[i18n]
+default_locale = "en-US"
+locales_path = "locales"

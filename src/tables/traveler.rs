@@ -3,6 +3,7 @@ use crate::{
     db::{Count, db},
     errors::NameValidationError,
 };
+
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::{Debug, Display},

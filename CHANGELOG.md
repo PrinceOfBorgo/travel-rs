@@ -2,10 +2,14 @@
 
 ## [0.1.4-SNAPSHOT]
 ### Added
-- N/A
+- Support for i18n.
+- `en-US` locale.
+- `[i18n]` section in (profile) settings files.
 
 ### Changed
 - Improved settings: now supporting dedicated profile settings files.
+- Bot replies are translated using lookup files.
+- Updated dependencies.
 
 ### Fixed
 - N/A

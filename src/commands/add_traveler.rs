@@ -2,7 +2,7 @@ use crate::{
     Context,
     consts::{DEBUG_START, DEBUG_SUCCESS},
     errors::CommandError,
-    i18n::translate_with_args,
+    i18n::{self, translate_with_args, translate_with_args_default},
     trace_command,
     traveler::{Name, Traveler},
 };
@@ -27,11 +27,17 @@ pub async fn add_traveler(
     let count_res = Traveler::db_count(msg.chat.id, &name).await;
     match count_res {
         Ok(Some(count)) if *count > 0 => {
-            tracing::warn!("Traveler {name} has already been added to the travel plan.");
+            tracing::warn!(
+                "{}",
+                translate_with_args_default(
+                    i18n::commands::ADD_TRAVELER_ALREADY_ADDED,
+                    &hashmap! {i18n::args::NAME.into() => name.clone().into()},
+                )
+            );
             Ok(translate_with_args(
                 ctx,
-                "i18n-add-traveler-already-added",
-                &hashmap! {"name".into() => name.into()},
+                i18n::commands::ADD_TRAVELER_ALREADY_ADDED,
+                &hashmap! {i18n::args::NAME.into() => name.into()},
             ))
         }
         Ok(_) => {
@@ -42,8 +48,8 @@ pub async fn add_traveler(
                     tracing::debug!(DEBUG_SUCCESS);
                     Ok(translate_with_args(
                         ctx,
-                        "i18n-add-traveler-ok",
-                        &hashmap! {"name".into() => name.into()},
+                        i18n::commands::ADD_TRAVELER_OK,
+                        &hashmap! {i18n::args::NAME.into() => name.into()},
                     ))
                 }
                 Err(err) => {
