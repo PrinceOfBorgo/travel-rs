@@ -61,7 +61,7 @@ show-expense-ok =
     Number: {$number} - Description: {$description}
     Amount: {$amount}
     Paid by: {$creditor}
-    Split among:
+    Shares:
     {$shares}
 
 ## /transfer

@@ -1,4 +1,5 @@
 pub const AMOUNT: &str = "amount";
+pub const AVAILABLE_LANGS: &str = "available-langs";
 pub const BEST_MATCH: &str = "best-match";
 pub const CHAR: &str = "char";
 pub const COMMAND: &str = "command";

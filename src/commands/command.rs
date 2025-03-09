@@ -1,9 +1,10 @@
 use crate::{
     Context, HandlerResult,
     commands::{set_language, show_balance, show_balances, show_expense},
-    i18n::{Translatable, help::*, translate},
+    i18n::{self, Translatable, help::*, translate, translate_with_args},
     traveler::Name,
 };
+use maplit::hashmap;
 use rust_decimal::Decimal;
 use std::sync::LazyLock;
 use std::sync::{Arc, Mutex};
@@ -73,7 +74,18 @@ impl HelpMessage for Command {
         use Command::*;
         match self {
             Help { command: _ } => translate(ctx, HELP_HELP),
-            SetLanguage { langid: _ } => translate(ctx, HELP_SET_LANGUAGE),
+            SetLanguage { langid: _ } => translate_with_args(
+                ctx,
+                HELP_SET_LANGUAGE,
+                &hashmap! {
+                    i18n::args::AVAILABLE_LANGS.into() =>
+                    i18n::available_langs()
+                    .map(|lang| format!("- {lang}"))
+                    .collect::<Vec<_>>()
+                    .join("\n")
+                    .into()
+                },
+            ),
             AddTraveler { name: _ } => translate(ctx, HELP_ADD_TRAVELER),
             DeleteTraveler { name: _ } => translate(ctx, HELP_DELETE_TRAVELER),
             ListTravelers => translate(ctx, HELP_LIST_TRAVELERS),

@@ -152,3 +152,7 @@ pub fn translate_with_args_default(
 pub fn is_lang_available(langid: &LanguageIdentifier) -> bool {
     LOCALES.locales().any(|locale| locale == langid)
 }
+
+pub fn available_langs() -> Box<dyn Iterator<Item = LanguageIdentifier>> {
+    Box::new(LOCALES.locales().cloned())
+}

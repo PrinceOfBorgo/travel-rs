@@ -6,7 +6,7 @@
 - [ ] Add localization
   - [ ] Add languages:
     - [x] en-US
-    - [ ] it-IT
+    - [x] it-IT
   - [ ] Add currency formatting (decimal separators).
   - [x] Add `SetLanguage` command.
 - [ ] Logs with span_id/trace_id.

@@ -16,6 +16,9 @@ descr-set-language = Set the default language of the bot for this chat.
 help-set-language =
     /{-set-language-command} — {descr-set-language}
 
+    Available langauges:
+    {$available-langs}
+
     Usage: /{-set-language-command} [language]
 
 ## /addtraveler
@@ -52,7 +55,7 @@ help-add-expense =
     - Send a message with the description of the expense.
     - Send a message with the amount of the expense.
     - Send a message with the name of the traveler who paid the expense.
-    - Send a message with the travelers who share the expense and the amount they share.
+    - Send a message with the travelers who partecipate in the expense and their shares.
 
     The process can be interrupted at any time by sending `/{-cancel-command}`. 
 
@@ -63,7 +66,7 @@ help-add-expense =
     > Example: If the total is `100`, typing `Alice{-split-among-name-amount-sep} 40{-split-among-entries-sep} Bob{-split-among-name-amount-sep} 40%{-split-among-entries-sep} Charles{-split-among-name-amount-sep} 60%` means that Alice will pay `40` so the residual is `60`, Bob will pay `24` (i.e. 40% of 60) and Charles will pay `36` (i.e. 60% of 60).
 
     - Omit `{-split-among-name-amount-sep} <amount>` if you want to evenly split the residual expense among the travelers.
-    > Example: If the total is `100`, the input `Alice{-split-among-name-amount-sep} 40{-split-among-entries-sep} Bob{-split-among-name-amount-sep} 40%{-split-among-entries-sep} Charles{-split-among-entries-sep} David` is equivalent to set both Charles and David amounts to 30%.
+    > Example: The input `Alice{-split-among-name-amount-sep} 40{-split-among-entries-sep} Bob{-split-among-name-amount-sep} 40%{-split-among-entries-sep} Charles{-split-among-entries-sep} David` is equivalent to set both Charles and David amounts to 30%.
 
     - Enter `{-all-kword}` to split it evenly among all travelers.
 
@@ -111,7 +114,7 @@ help-transfer =
 
 ## /showbalance
 
-descr-show-balance = Show the simplified balance of the specified traveler.
+descr-show-balance = Show the simplified balance of the specified traveler, minimizing the total number of transfers needed to settle the debts.
 help-show-balance = 
     /{-show-balance-command} — {descr-show-balance}
 
@@ -119,7 +122,7 @@ help-show-balance =
 
 ## /showbalances
 
-descr-show-balances = Show the simplified balances of all travelers.
+descr-show-balances = Show the simplified balances of all travelers, minimizing the total number of transfers needed to settle the debts.
 help-show-balances = 
     /{-show-balances-command} — {descr-show-balances}
 
@@ -132,4 +135,3 @@ help-cancel =
     /{-cancel-command} — {descr-cancel}
 
     Usage: /{-cancel-command}
-    

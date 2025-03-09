@@ -3,7 +3,7 @@
 ## [0.1.4-SNAPSHOT]
 ### Added
 - Support for i18n.
-- `en-US` locale.
+- `en-US`, `it-IT` locales.
 - `[i18n]` section in (profile) settings files.
 - `SetLanguage` command.
 
