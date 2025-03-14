@@ -580,10 +580,10 @@ async fn parse_split_among(
             let select_res = db
                 .query(format!(
                     "SELECT *
-                        FROM {TRAVELER_TB}
-                        WHERE
-                            {CHAT} = ${CHAT_ID}
-                            && {NAME} IN ${NAMES}",
+                    FROM {TRAVELER_TB}
+                    WHERE
+                        {CHAT} = ${CHAT_ID}
+                        && {NAME} IN ${NAMES}",
                 ))
                 .bind((CHAT_ID, RecordId::from_table_key(CHAT_TB, chat_id.0)))
                 .bind((NAMES, split_among.keys().cloned().collect::<Vec<Name>>()))
@@ -648,18 +648,21 @@ fn compute_shares(
         });
     }
 
-    let split_residual = residual.checked_div(Decimal::from(count_blanks));
+    let split_residual = residual
+        .checked_div(Decimal::from(count_blanks))
+        .expect("count_blanks should be positive");
     Ok(split_among
         .into_iter()
         .map(|(name, share)| {
-            (
-                name,
-                match share {
-                    AmountEnum::Fixed(amount) => amount,
-                    AmountEnum::Dynamic => split_residual.expect("count_blanks should be positive"),
-                    AmountEnum::Percentage(_) => unreachable!("Already converted to fixed amounts"),
-                },
-            )
+            let amount = match share {
+                AmountEnum::Fixed(amount) => amount,
+                AmountEnum::Dynamic => split_residual,
+                AmountEnum::Percentage(_) => {
+                    unreachable!("Already converted to fixed amounts")
+                }
+            };
+
+            (name, amount)
         })
         .collect())
 }

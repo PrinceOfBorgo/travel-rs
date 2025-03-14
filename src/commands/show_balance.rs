@@ -1,17 +1,22 @@
 use crate::{
-    consts::{DEBUG_START, DEBUG_SUCCESS}, 
-    errors::CommandError, 
-    i18n::{self, args::{TRAVELER_IS_CASE_CREDITOR, TRAVELER_IS_CASE_DEBTOR}, translate_with_args, translate_with_args_default},
-    trace_command, 
-    traveler::{Name, Traveler}, 
-    views::balance::Balance, 
-    Context
+    Context,
+    balance::Balance,
+    consts::{DEBUG_START, DEBUG_SUCCESS},
+    errors::CommandError,
+    i18n::{
+        self,
+        args::{TRAVELER_IS_CASE_CREDITOR, TRAVELER_IS_CASE_DEBTOR},
+        translate_with_args, translate_with_args_default,
+    },
+    money_wrapper::MoneyWrapper,
+    trace_command,
+    traveler::{Name, Traveler},
 };
 use macro_rules_attribute::apply;
 use maplit::hashmap;
+use std::sync::{Arc, Mutex};
 use teloxide::prelude::*;
 use tracing::Level;
-use std::sync::{Arc, Mutex};
 
 #[apply(trace_command)]
 pub async fn show_balance(
@@ -29,7 +34,7 @@ pub async fn show_balance(
     match count_res {
         Ok(Some(count)) if *count > 0 => {
             // Retrieve balances from db
-            let list_res = Balance::db_select_by_name(msg.chat.id, name.to_owned()).await;
+            let list_res = Balance::balances_by_name(msg.chat.id, name.to_owned()).await;
             match list_res {
                 Ok(balances) => {
                     let reply = if balances.is_empty() {
@@ -39,25 +44,32 @@ pub async fn show_balance(
                             &hashmap! {i18n::args::NAME.into() => name.into()},
                         )
                     } else {
+                        let currency = ctx.lock().expect("Failed to lock context").currency.clone();
                         balances
                             .into_iter()
-                            .map(
+                            .filter_map(
                                 |Balance {
                                      debtor_name,
                                      creditor_name,
                                      debt,
                                      ..
-                                }| 
-                                translate_with_args(
-                                    ctx.clone(),
-                                    i18n::commands::SHOW_BALANCE_OK,
-                                    &hashmap!{
-                                        i18n::args::TRAVELER_NAME.into() => name.clone().into(),
-                                        i18n::args::TRAVELER_IS.into() => if debtor_name == name { TRAVELER_IS_CASE_DEBTOR } else { TRAVELER_IS_CASE_CREDITOR }.into(),
-                                        i18n::args::DEBT.into() => debt.to_string().into(),
-                                        i18n::args::OTHER_TRAVELER_NAME.into() => if debtor_name == name { creditor_name } else { debtor_name }.into(),
-                                    },
-                                )
+                                 }| {
+                                    let debt = MoneyWrapper::new(debt, &currency);
+                                    if debt.round_value().is_zero() {
+                                        None
+                                    } else {
+                                        Some(translate_with_args(
+                                            ctx.clone(),
+                                            i18n::commands::SHOW_BALANCE_OK,
+                                            &hashmap! {
+                                                i18n::args::TRAVELER_NAME.into() => name.clone().into(),
+                                                i18n::args::TRAVELER_IS.into() => if debtor_name == name { TRAVELER_IS_CASE_DEBTOR } else { TRAVELER_IS_CASE_CREDITOR }.into(),
+                                                i18n::args::DEBT.into() => debt.to_string().into(),
+                                                i18n::args::OTHER_TRAVELER_NAME.into() => if debtor_name == name { creditor_name } else { debtor_name }.into(),
+                                            }
+                                        ))
+                                    }
+                                },
                             )
                             .collect::<Vec<_>>()
                             .join("\n")
@@ -72,10 +84,13 @@ pub async fn show_balance(
             }
         }
         Ok(_) => {
-            tracing::warn!("{}", translate_with_args_default(
-                i18n::commands::SHOW_BALANCE_TRAVELER_NOT_FOUND,
-                &hashmap! {i18n::args::NAME.into() => name.clone().into()},
-            ));
+            tracing::warn!(
+                "{}",
+                translate_with_args_default(
+                    i18n::commands::SHOW_BALANCE_TRAVELER_NOT_FOUND,
+                    &hashmap! {i18n::args::NAME.into() => name.clone().into()},
+                )
+            );
             Ok(translate_with_args(
                 ctx,
                 i18n::commands::SHOW_BALANCE_TRAVELER_NOT_FOUND,

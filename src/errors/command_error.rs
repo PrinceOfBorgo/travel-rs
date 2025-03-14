@@ -23,6 +23,9 @@ pub enum CommandError {
     SetLanguage {
         langid: LanguageIdentifier,
     },
+    SetCurrency {
+        currency: String,
+    },
     AddTraveler {
         name: Name,
     },
@@ -65,6 +68,11 @@ impl Translatable for CommandError {
                 ctx,
                 i18n::errors::COMMAND_ERROR_SET_LANGUAGE,
                 &hashmap! {i18n::args::LANGID.into() => langid.to_string().into()},
+            ),
+            SetCurrency { currency } => translate_with_args(
+                ctx,
+                i18n::errors::COMMAND_ERROR_SET_CURRENCY,
+                &hashmap! {i18n::args::CURRENCY.into() => currency.into()},
             ),
             AddTraveler { name } => translate_with_args(
                 ctx,
@@ -126,6 +134,10 @@ impl Translatable for CommandError {
             SetLanguage { langid } => translate_with_args_default(
                 i18n::errors::COMMAND_ERROR_SET_LANGUAGE,
                 &hashmap! {i18n::args::LANGID.into() => langid.to_string().into()},
+            ),
+            SetCurrency { currency } => translate_with_args_default(
+                i18n::errors::COMMAND_ERROR_SET_CURRENCY,
+                &hashmap! {i18n::args::CURRENCY.into() => currency.into()},
             ),
             AddTraveler { name } => translate_with_args_default(
                 i18n::errors::COMMAND_ERROR_ADD_TRAVELER,

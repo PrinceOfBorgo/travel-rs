@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.5-SNAPSHOT]
+### Added
+- Support for currency output formatting.
+- Default currency configurable in (profile) settings files.
+- `SetCurrency` command.
+
+### Changed
+- Sorted results from database queries.
+
+### Fixed
+- N/A
+
 ## [0.1.4] - 2025-03-09
 ### Added
 - Support for i18n.

@@ -1,6 +1,6 @@
 use crate::{
     Context, HandlerResult,
-    commands::{set_language, show_balance, show_balances, show_expense},
+    commands::{set_currency, set_language, show_balance, show_balances, show_expense},
     i18n::{self, Translatable, help::*, translate, translate_with_args},
     traveler::Name,
 };
@@ -31,6 +31,8 @@ pub enum Command {
     Help { command: String },
     #[command(description = "{descr-set-language}")]
     SetLanguage { langid: LanguageIdentifier },
+    #[command(description = "{descr-set-currency}")]
+    SetCurrency { currency: String },
     #[command(description = "{descr-add-traveler}")]
     AddTraveler { name: Name },
     #[command(description = "{descr-delete-traveler}")]
@@ -86,6 +88,7 @@ impl HelpMessage for Command {
                     .into()
                 },
             ),
+            SetCurrency { currency: _ } => translate(ctx, HELP_SET_CURRENCY),
             AddTraveler { name: _ } => translate(ctx, HELP_ADD_TRAVELER),
             DeleteTraveler { name: _ } => translate(ctx, HELP_DELETE_TRAVELER),
             ListTravelers => translate(ctx, HELP_LIST_TRAVELERS),
@@ -117,6 +120,7 @@ pub async fn commands_handler(
     let result = match cmd.clone() {
         Help { command } => help(&msg, &command, ctx.clone()),
         SetLanguage { langid } => set_language(&msg, langid, ctx.clone()).await,
+        SetCurrency { currency } => set_currency(&msg, &currency, ctx.clone()).await,
         AddTraveler { name } => add_traveler(&msg, name, ctx.clone()).await,
         DeleteTraveler { name } => delete_traveler(&msg, name, ctx.clone()).await,
         ListTravelers => list_travelers(&msg, ctx.clone()).await,

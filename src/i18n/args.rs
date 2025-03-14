@@ -4,6 +4,7 @@ pub const BEST_MATCH: &str = "best-match";
 pub const CHAR: &str = "char";
 pub const COMMAND: &str = "command";
 pub const CREDITOR: &str = "creditor";
+pub const CURRENCY: &str = "currency";
 pub const DEBT: &str = "debt";
 pub const DEBTOR: &str = "debtor";
 pub const DESCRIPTION: &str = "description";

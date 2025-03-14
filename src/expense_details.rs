@@ -4,6 +4,7 @@ use crate::{
         self, Translatable, translate_with_args, translate_with_args_default,
         types::FORMAT_SHARE_DETAILS,
     },
+    money_wrapper::MoneyWrapper,
     traveler::Name,
 };
 use maplit::hashmap;
@@ -24,12 +25,13 @@ pub struct ShareDetails {
 
 impl Translatable for ShareDetails {
     fn translate(&self, ctx: std::sync::Arc<std::sync::Mutex<crate::Context>>) -> String {
+        let amount = MoneyWrapper::new_with_context(self.amount, ctx.clone());
         translate_with_args(
             ctx,
             FORMAT_SHARE_DETAILS,
             &hashmap! {
                 i18n::args::TRAVELER_NAME.into() => self.traveler_name.clone().into(),
-                i18n::args::AMOUNT.into() => self.amount.to_string().into()
+                i18n::args::AMOUNT.into() => amount.to_string().into()
             },
         )
     }

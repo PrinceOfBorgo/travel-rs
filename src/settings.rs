@@ -61,6 +61,7 @@ pub struct Database {
 pub struct I18n {
     pub default_locale: LanguageIdentifier,
     pub locales_path: PathBuf,
+    pub default_currency: String,
 }
 
 #[derive(Debug, Deserialize)]

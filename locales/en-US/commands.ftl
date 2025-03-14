@@ -7,6 +7,10 @@ process-already-running = Another process is already running, please cancel it f
 set-language-not-available = Couldn't set the language. {$langid} is not available. 
 set-language-ok = Chat language correctly set to {$langid}.
 
+## /setcurrency
+
+set-currency-ok = Chat default currency correctly set to {$currency}.
+
 ## /addtraveler
 
 add-traveler-already-added = Traveler {$name} has already been added to the travel plan.

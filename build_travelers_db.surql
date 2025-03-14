@@ -92,7 +92,9 @@ DEFINE FUNCTION fn::calc_debts($chat: record<chat>) -> any {
     RETURN $sum_debts;
 } COMMENT 'Calculate and simplify debts between users in a chat' PERMISSIONS FULL;
 DEFINE FUNCTION fn::clear_debts($chat: record<chat>) { DELETE owes WHERE in.chat = $chat; } PERMISSIONS FULL;
-DEFINE FUNCTION fn::get_expense_details($chat: record<chat>, $expense_number: int) { RETURN (SELECT amount AS expense_amount, number AS expense_number, description AS expense_description, chat AS chat, (<-paid_for<-traveler)[0].name AS creditor_name, array::group((SELECT in.name AS traveler_name, amount FROM split WHERE out = $parent.id)) AS shares FROM expense WHERE chat = $chat AND number = $expense_number); } COMMENT 'Retrieve the details of the expense with the given identifying number in the specified chat' PERMISSIONS FULL;
+DEFINE FUNCTION fn::get_balances($chat: record<chat>) { RETURN SELECT in.name AS debtor_name, out.name AS creditor_name, amount AS debt, in.chat AS chat FROM owes WHERE in.chat.id = $chat; } COMMENT 'Retrieve the balances among travelers in the specified chat' PERMISSIONS FULL;
+DEFINE FUNCTION fn::get_expense_details($chat: record<chat>, $expense_number: int) { RETURN (SELECT amount AS expense_amount, number AS expense_number, description AS expense_description, chat AS chat, (<-paid_for<-traveler)[0].name AS creditor_name, array::group((SELECT in.name AS traveler_name, amount FROM split WHERE out = $parent.id ORDER BY amount DESC, traveler_name ASC)) AS shares FROM expense WHERE chat = $chat AND number = $expense_number); } COMMENT 'Retrieve the details of the expense with the given identifying number in the specified chat' PERMISSIONS FULL;
+
 
 -- ------------------------------
 -- TABLE: chat
@@ -100,9 +102,9 @@ DEFINE FUNCTION fn::get_expense_details($chat: record<chat>, $expense_number: in
 
 DEFINE TABLE chat TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;
 
+DEFINE FIELD currency ON chat TYPE string PERMISSIONS FOR select, create, update WHERE FULL;
 DEFINE FIELD lang ON chat TYPE string PERMISSIONS FOR select, create, update WHERE FULL;
 DEFINE FIELD last_interaction_utc ON chat TYPE datetime PERMISSIONS FOR select, create, update WHERE FULL;
-
 
 
 -- ------------------------------
@@ -168,7 +170,6 @@ DEFINE FIELD in ON transferred_to TYPE record<traveler> PERMISSIONS FULL;
 DEFINE FIELD out ON transferred_to TYPE record<traveler> PERMISSIONS FULL;
 
 
-
 -- ------------------------------
 -- TABLE: traveler
 -- ------------------------------
@@ -179,14 +180,3 @@ DEFINE FIELD chat ON traveler TYPE record<chat> PERMISSIONS FOR select, create, 
 DEFINE FIELD name ON traveler TYPE string ASSERT string::len($value) > 0 PERMISSIONS FOR select, create, update WHERE FULL;
 
 DEFINE INDEX chat_name_index ON traveler FIELDS chat, name UNIQUE;
-
-
--- ------------------------------
--- TABLE: v_balances
--- ------------------------------
-
-DEFINE TABLE v_balances TYPE ANY SCHEMALESS AS SELECT in.name AS debtor_name, out.name AS creditor_name, amount AS debt, in.chat AS chat FROM owes PERMISSIONS NONE;
-
-
-
-

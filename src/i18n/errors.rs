@@ -1,6 +1,7 @@
 pub const COMMAND_ERROR_EMPTY_INPUT: &str = "command-error-empty-input";
 pub const COMMAND_ERROR_HELP: &str = "command-error-help";
 pub const COMMAND_ERROR_SET_LANGUAGE: &str = "command-error-set-language";
+pub const COMMAND_ERROR_SET_CURRENCY: &str = "command-error-set-currency";
 pub const COMMAND_ERROR_ADD_TRAVELER: &str = "command-error-add-traveler";
 pub const COMMAND_ERROR_DELETE_TRAVELER: &str = "command-error-delete-traveler";
 pub const COMMAND_ERROR_LIST_TRAVELERS: &str = "command-error-list-travelers";

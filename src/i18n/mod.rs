@@ -39,6 +39,7 @@ static LOCALES: LazyLock<ArcLoader> = LazyLock::new(|| {
 {HELP_COMMAND} = {help}
 {LIST_EXPENSES_COMMAND} = {list_expenses}
 {LIST_TRAVELERS_COMMAND} = {list_travelers}
+{SET_CURRENCY_COMMAND} = {set_currency}
 {SET_LANGUAGE_COMMAND} = {set_language}
 {SHOW_BALANCE_COMMAND} = {show_balance}
 {SHOW_BALANCES_COMMAND} = {show_balances}
@@ -54,6 +55,7 @@ static LOCALES: LazyLock<ArcLoader> = LazyLock::new(|| {
                 help = variant_to_string!(Command::Help),
                 list_expenses = variant_to_string!(Command::ListExpenses),
                 list_travelers = variant_to_string!(Command::ListTravelers),
+                set_currency = variant_to_string!(Command::SetCurrency),
                 set_language = variant_to_string!(Command::SetLanguage),
                 show_balance = variant_to_string!(Command::ShowBalance),
                 show_balances = variant_to_string!(Command::ShowBalances),
@@ -115,9 +117,12 @@ static LOCALES: LazyLock<ArcLoader> = LazyLock::new(|| {
 });
 
 pub fn translate(ctx: Arc<Mutex<Context>>, input: &str) -> String {
-    let langid = &ctx.lock().expect("Failed to lock context").langid;
+    let langid = {
+        let ctx = ctx.lock().expect("Failed to lock context");
+        ctx.langid.clone()
+    };
     LOCALES
-        .try_lookup(langid, input)
+        .try_lookup(&langid, input)
         .unwrap_or(input.to_owned())
 }
 
@@ -126,9 +131,12 @@ pub fn translate_with_args(
     input: &str,
     args: &HashMap<Cow<'static, str>, FluentValue<'_>, RandomState>,
 ) -> String {
-    let langid = &ctx.lock().expect("Failed to lock context").langid;
+    let langid = {
+        let ctx = ctx.lock().expect("Failed to lock context");
+        ctx.langid.clone()
+    };
     LOCALES
-        .try_lookup_with_args(langid, input, args)
+        .try_lookup_with_args(&langid, input, args)
         .unwrap_or(input.to_owned())
 }
 

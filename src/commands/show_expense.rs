@@ -5,6 +5,7 @@ use crate::{
     expense::Expense,
     expense_details::ExpenseDetails,
     i18n::{self, Translatable, translate_with_args, translate_with_args_default},
+    money_wrapper::MoneyWrapper,
     trace_command,
 };
 use macro_rules_attribute::apply;
@@ -36,13 +37,14 @@ pub async fn show_expense(
                     shares,
                     ..
                 })) => {
+                    let amount = MoneyWrapper::new_with_context(expense_amount, ctx.clone());
                     let reply = translate_with_args(
                         ctx.clone(),
                         i18n::commands::SHOW_EXPENSE_OK,
                         &hashmap! {
                             i18n::args::NUMBER.into() => expense_number.to_string().into(),
                             i18n::args::DESCRIPTION.into() => expense_description.to_string().into(),
-                            i18n::args::AMOUNT.into() => expense_amount.to_string().into(),
+                            i18n::args::AMOUNT.into() => amount.to_string().into(),
                             i18n::args::CREDITOR.into() => creditor_name.to_string().into(),
                             i18n::args::SHARES.into() => shares
                                 .into_iter()

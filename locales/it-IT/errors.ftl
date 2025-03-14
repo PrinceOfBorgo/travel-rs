@@ -3,6 +3,7 @@
 command-error-empty-input = Nessun input fornito.
 command-error-help = Nessun aiuto disponibile per il comando /{$command}.
 command-error-set-language = Impossibile impostare la lingua "{$langid}".
+command-error-set-currency = Impossibile impostare la valuta "{$currency}".
 command-error-add-traveler = Impossibile aggiungere il viaggiatore chiamato "{$name}".
 command-error-delete-traveler = Impossibile eliminare il viaggiatore chiamato "{$name}".
 command-error-list-travelers = Impossibile elencare i viaggiatori.

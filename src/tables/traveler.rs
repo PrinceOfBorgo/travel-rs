@@ -133,7 +133,8 @@ impl Traveler {
         db.query(format!(
             "SELECT *
             FROM {TABLE}
-            WHERE {CHAT} = ${CHAT_ID}",
+            WHERE {CHAT} = ${CHAT_ID}
+            ORDER BY {NAME} ASC",
         ))
         .bind((CHAT_ID, RecordId::from_table_key(CHAT_TB, chat_id.0)))
         .await

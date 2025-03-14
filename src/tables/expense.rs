@@ -3,6 +3,7 @@ use crate::{
     i18n::{
         self, Translatable, translate_with_args, translate_with_args_default, types::FORMAT_EXPENSE,
     },
+    money_wrapper::MoneyWrapper,
 };
 use maplit::hashmap;
 use rust_decimal::prelude::*;
@@ -120,7 +121,8 @@ impl Expense {
             FROM {TABLE}
             WHERE
                 {CHAT} = ${CHAT_ID}
-                && {DESCRIPTION} ~ ${FUZZY_DESCR}",
+                && {DESCRIPTION} ~ ${FUZZY_DESCR}
+            ORDER BY {NUMBER} ASC",
         ))
         .bind((CHAT_ID, RecordId::from_table_key(CHAT_TB, chat_id.0)))
         .bind((FUZZY_DESCR, fuzzy_descr))
@@ -131,38 +133,25 @@ impl Expense {
 
 impl Translatable for Expense {
     fn translate(&self, ctx: std::sync::Arc<std::sync::Mutex<crate::Context>>) -> String {
-        let Expense {
-            number,
-            description,
-            amount,
-            ..
-        } = self;
-
+        let amount = MoneyWrapper::new_with_context(self.amount, ctx.clone());
         translate_with_args(
             ctx,
             FORMAT_EXPENSE,
             &hashmap! {
-                i18n::args::NUMBER.into() => number.into(),
-                i18n::args::DESCRIPTION.into() => description.into(),
+                i18n::args::NUMBER.into() => self.number.into(),
+                i18n::args::DESCRIPTION.into() => self.description.clone().into(),
                 i18n::args::AMOUNT.into() => amount.to_string().into(),
             },
         )
     }
 
     fn translate_default(&self) -> String {
-        let Expense {
-            number,
-            description,
-            amount,
-            ..
-        } = self;
-
         translate_with_args_default(
             FORMAT_EXPENSE,
             &hashmap! {
-                i18n::args::NUMBER.into() => number.into(),
-                i18n::args::DESCRIPTION.into() => description.into(),
-                i18n::args::AMOUNT.into() => amount.to_string().into(),
+                i18n::args::NUMBER.into() => self.number.into(),
+                i18n::args::DESCRIPTION.into() => self.description.clone().into(),
+                i18n::args::AMOUNT.into() => self.amount.to_string().into(),
             },
         )
     }

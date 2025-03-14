@@ -7,6 +7,10 @@ process-already-running = Un altro processo è già in esecuzione, per favore an
 set-language-not-available = Impossibile impostare la lingua. {$langid} non è disponibile.
 set-language-ok = Lingua della chat impostata correttamente su {$langid}.
 
+## /setcurrency
+
+set-currency-ok = Valuta predefinita della chat impostata correttamente su {$currency}.
+
 ## /addtraveler
 
 add-traveler-already-added = Il viaggiatore {$name} è già stato aggiunto al piano di viaggio.

@@ -2,12 +2,14 @@
 ## Roadmap
 
 - [x] Use stable channel when `std::sync::LazyLock` will be stabilized (1.80 - 25 July, 2024).
-- [ ] Currency support: exchange using external APIs.
+- [ ] Currency support
+  - [ ] Exchange using external APIs. https://crates.io/crates/freecurrencyapi-rs
+  - [x] Handle different currencies with their specific precision instead of Decimal.
 - [ ] Add localization
   - [ ] Add languages:
     - [x] en-US
     - [x] it-IT
-  - [ ] Add currency formatting (decimal separators).
+  - [ ] Add currency input formatting (decimal separators).
   - [x] Add `SetLanguage` command.
 - [ ] Logs with span_id/trace_id.
 - [ ] Formatting of bot responses (bold, italic, etc.). https://docs.rs/teloxide/latest/teloxide/types/enum.ParseMode.html

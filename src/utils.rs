@@ -27,7 +27,7 @@ attribute_alias! {
     #[tracing::instrument(
         err(level = Level::ERROR),
         ret(level = Level::DEBUG),
-        skip(msg),
+        skip(msg, ctx),
         fields(
             chat_id = %msg.chat.id,
             sender_id = %msg.from.as_ref().unwrap().id

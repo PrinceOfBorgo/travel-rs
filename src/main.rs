@@ -1,5 +1,6 @@
 #[macro_use]
 mod macros;
+mod balance;
 mod commands;
 mod consts;
 mod db;
@@ -8,11 +9,11 @@ mod dialogues;
 mod errors;
 mod expense_details;
 mod i18n;
+mod money_wrapper;
 mod relationships;
 mod settings;
 mod tables;
 mod utils;
-mod views;
 
 use i18n::translate;
 pub(crate) use relationships::*;
@@ -42,6 +43,7 @@ pub type HandlerResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
 #[derive(Debug, Clone)]
 pub struct Context {
     langid: LanguageIdentifier,
+    currency: String,
 }
 
 #[tokio::main]
@@ -130,7 +132,8 @@ async fn main() -> anyhow::Result<()> {
         .dependencies(deps![
             InMemStorage::<AddExpenseState>::new(),
             Arc::new(Mutex::new(Context {
-                langid: SETTINGS.i18n.default_locale.clone()
+                langid: SETTINGS.i18n.default_locale.clone(),
+                currency: SETTINGS.i18n.default_currency.clone()
             }))
         ])
         .build()
@@ -165,7 +168,12 @@ where
 
 #[apply(trace_skip_all)]
 pub async fn update_chat_db(msg: Message, ctx: Arc<Mutex<Context>>) -> HandlerResult {
-    let mut chat = Chat::db_create(msg.chat.id, SETTINGS.i18n.default_locale.to_string()).await;
+    let mut chat = Chat::db_create(
+        msg.chat.id,
+        &SETTINGS.i18n.default_locale,
+        &SETTINGS.i18n.default_currency,
+    )
+    .await;
     if chat.is_err() {
         chat = Chat::db_update_last_interaction_utc(msg.chat.id).await;
         match chat {
@@ -187,6 +195,7 @@ pub async fn update_chat_db(msg: Message, ctx: Arc<Mutex<Context>>) -> HandlerRe
             .lang
             .parse()
             .unwrap_or(SETTINGS.i18n.default_locale.clone());
+        ctx.currency = chat.currency;
     }
 
     Ok(())
