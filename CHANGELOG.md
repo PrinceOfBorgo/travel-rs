@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.1.5-SNAPSHOT]
+## [0.1.5] - 2025-03-15
 ### Added
 - Support for currency output formatting.
 - Default currency configurable in (profile) settings files.
