@@ -19,7 +19,7 @@ help-set-language =
     Available langauges:
     {$available-langs}
 
-    Usage: /{-set-language-command} [language]
+    Usage: /{-set-language-command} <language>
 
 ## /setcurrency
 
@@ -27,7 +27,7 @@ descr-set-currency = Set the default currency for this chat.
 help-set-currency =
     /{-set-currency-command} — {descr-set-currency}
 
-    Usage: /{-set-currency-command} [currency code]
+    Usage: /{-set-currency-command} <currency code>
 
 ## /addtraveler
 
@@ -90,19 +90,11 @@ help-delete-expense =
 
 ## /listexpenses
 
-descr-list-expenses = Show the expenses in the travel plan.
+descr-list-expenses = Show the expenses in the travel plan. If a description is specified, show only the expenses that match the given description. Supports fuzzy search for more flexible matching.
 help-list-expenses = 
     /{-list-expenses-command} — {descr-list-expenses}
 
-    Usage: /{-list-expenses-command}
-
-## /findexpenses
-
-descr-find-expenses = Search for expenses that match the given description. Supports fuzzy search for more flexible matching.
-help-find-expenses = 
-    /{-find-expenses-command} — {descr-find-expenses}
-
-    Usage: /{-find-expenses-command} <description>
+    Usage: /{-list-expenses-command} [description]
 
 ## /showexpense
 
@@ -120,21 +112,29 @@ help-transfer =
 
     Usage: /{-transfer-command} <sender> <receiver> <amount>
 
-## /showbalance
+## /deletetransfer
 
-descr-show-balance = Show the simplified balance of the specified traveler, minimizing the total number of transfers needed to settle the debts.
-help-show-balance = 
-    /{-show-balance-command} — {descr-show-balance}
+descr-delete-transfer = Delete the transfer with the specified identifying number from the travel plan.
+help-delete-transfer = 
+    /{-delete-transfer-command} — {descr-delete-transfer}
 
-    Usage: /{-show-balance-command} <name>
+    Usage: /{-delete-transfer-command} <number>
+
+## /listtransfers
+
+descr-list-transfers = Show the transfers in the travel plan. If a name is specified, show only the transfers that involve that traveler.
+help-list-transfers = 
+    /{-list-transfers-command} — {descr-list-transfers}
+
+    Usage: /{-list-transfers-command} [name]
 
 ## /showbalances
 
-descr-show-balances = Show the simplified balances of all travelers, minimizing the total number of transfers needed to settle the debts.
+descr-show-balances = Show the simplified balances of all travelers, minimizing the total number of transfers needed to settle the debts. If a name is specified, show the balance of the specified traveler.
 help-show-balances = 
     /{-show-balances-command} — {descr-show-balances}
 
-    Usage: /{-show-balances-command}
+    Usage: /{-show-balances-command} [name]
 
 ## /cancel
 

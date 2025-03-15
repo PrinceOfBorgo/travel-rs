@@ -13,6 +13,7 @@ mod money_wrapper;
 mod relationships;
 mod settings;
 mod tables;
+mod transfer;
 mod utils;
 
 use i18n::translate;

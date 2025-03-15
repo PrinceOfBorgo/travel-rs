@@ -2,9 +2,9 @@ use crate::{
     Context,
     consts::{DEBUG_START, DEBUG_SUCCESS},
     errors::CommandError,
-    expense::Expense,
     i18n::{self, translate_with_args, translate_with_args_default},
     trace_command,
+    transferred_to::TransferredTo,
     utils::update_debts,
 };
 use macro_rules_attribute::apply;
@@ -14,19 +14,19 @@ use teloxide::prelude::*;
 use tracing::Level;
 
 #[apply(trace_command)]
-pub async fn delete_expense(
+pub async fn delete_transfer(
     msg: &Message,
     number: i64,
     ctx: Arc<Mutex<Context>>,
 ) -> Result<String, CommandError> {
     tracing::debug!(DEBUG_START);
 
-    // Check if expense exists on db
-    let count_res = Expense::db_count(msg.chat.id, number).await;
+    // Check if transfer relation exists on db
+    let count_res = TransferredTo::db_count(msg.chat.id, number).await;
     match count_res {
         Ok(Some(count)) if *count > 0 => {
-            // Delete expense from db
-            let delete_res = Expense::db_delete(msg.chat.id, number).await;
+            // Delete transfer relation from db
+            let delete_res = TransferredTo::db_delete(msg.chat.id, number).await;
             match delete_res {
                 Ok(_) => {
                     if let Err(err_update) = update_debts(msg.chat.id).await {
@@ -35,13 +35,13 @@ pub async fn delete_expense(
                     tracing::debug!(DEBUG_SUCCESS);
                     Ok(translate_with_args(
                         ctx,
-                        i18n::commands::DELETE_EXPENSE_OK,
+                        i18n::commands::DELETE_TRANSFER_OK,
                         &hashmap! {i18n::args::NUMBER.into() => number.into()},
                     ))
                 }
                 Err(err) => {
                     tracing::error!("{err}");
-                    Err(CommandError::DeleteExpense { number })
+                    Err(CommandError::DeleteTransfer { number })
                 }
             }
         }
@@ -49,19 +49,19 @@ pub async fn delete_expense(
             tracing::warn!(
                 "{}",
                 translate_with_args_default(
-                    i18n::commands::DELETE_EXPENSE_NOT_FOUND,
+                    i18n::commands::DELETE_TRANSFER_NOT_FOUND,
                     &hashmap! {i18n::args::NUMBER.into() => number.into()},
                 )
             );
             Ok(translate_with_args(
                 ctx,
-                i18n::commands::DELETE_EXPENSE_NOT_FOUND,
+                i18n::commands::DELETE_TRANSFER_NOT_FOUND,
                 &hashmap! {i18n::args::NUMBER.into() => number.into()},
             ))
         }
         Err(err) => {
             tracing::error!("{err}");
-            Err(CommandError::DeleteExpense { number })
+            Err(CommandError::DeleteTransfer { number })
         }
     }
 }

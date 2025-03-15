@@ -2,9 +2,10 @@ use crate::{
     Context,
     consts::{DEBUG_START, DEBUG_SUCCESS},
     errors::CommandError,
-    expense::Expense,
     i18n::{self, Translatable, translate, translate_with_args},
     trace_command,
+    transfer::Transfer,
+    traveler::Name,
 };
 use macro_rules_attribute::apply;
 use maplit::hashmap;
@@ -13,33 +14,35 @@ use teloxide::prelude::*;
 use tracing::Level;
 
 #[apply(trace_command)]
-pub async fn list_expenses(
+pub async fn list_transfers(
     msg: &Message,
-    description: &str,
+    name: Name,
     ctx: Arc<Mutex<Context>>,
 ) -> Result<String, CommandError> {
     tracing::debug!(DEBUG_START);
-    let list_res = if description.is_empty() {
-        Expense::db_select(msg.chat.id).await
+
+    let list_res = if name.is_empty() {
+        Transfer::transfers(msg.chat.id).await
     } else {
-        Expense::db_select_by_descr(msg.chat.id, description.to_owned()).await
+        Transfer::transfers_by_name(msg.chat.id, name.clone()).await
     };
+
     match list_res {
-        Ok(expenses) => {
-            let reply = if expenses.is_empty() {
-                if description.is_empty() {
-                    translate(ctx, i18n::commands::LIST_EXPENSES_NOT_FOUND)
+        Ok(transfers) => {
+            let reply = if transfers.is_empty() {
+                if name.is_empty() {
+                    translate(ctx, i18n::commands::LIST_TRANSFERS_NOT_FOUND)
                 } else {
                     translate_with_args(
                         ctx,
-                        i18n::commands::LIST_EXPENSES_DESCR_NOT_FOUND,
-                        &hashmap! {i18n::args::DESCRIPTION.into() => description.into()},
+                        i18n::commands::LIST_TRANSFERS_NAME_NOT_FOUND,
+                        &hashmap! {i18n::args::NAME.into() => name.into()},
                     )
                 }
             } else {
-                expenses
+                transfers
                     .into_iter()
-                    .map(|expense| expense.translate(ctx.clone()))
+                    .map(|transfer| transfer.translate(ctx.clone()))
                     .collect::<Vec<_>>()
                     .join("\n")
             };
@@ -48,9 +51,7 @@ pub async fn list_expenses(
         }
         Err(err) => {
             tracing::error!("{err}");
-            Err(CommandError::ListExpenses {
-                description: description.to_owned(),
-            })
+            Err(CommandError::ListTransfers { name })
         }
     }
 }

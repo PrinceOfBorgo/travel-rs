@@ -36,8 +36,7 @@ pub enum CommandError {
     DeleteExpense {
         number: i64,
     },
-    ListExpenses,
-    FindExpenses {
+    ListExpenses {
         description: String,
     },
     ShowExpense {
@@ -48,10 +47,15 @@ pub enum CommandError {
         receiver: Name,
         amount: Decimal,
     },
-    ShowBalance {
+    DeleteTransfer {
+        number: i64,
+    },
+    ListTransfers {
         name: Name,
     },
-    ShowBalances,
+    ShowBalances {
+        name: Name,
+    },
 }
 
 impl Translatable for CommandError {
@@ -90,10 +94,9 @@ impl Translatable for CommandError {
                 i18n::errors::COMMAND_ERROR_DELETE_EXPENSE,
                 &hashmap! {i18n::args::NUMBER.into() => number.into()},
             ),
-            ListExpenses => translate(ctx, i18n::errors::COMMAND_ERROR_LIST_EXPENSES),
-            FindExpenses { description } => translate_with_args(
+            ListExpenses { description } => translate_with_args(
                 ctx,
-                i18n::errors::COMMAND_ERROR_FIND_EXPENSES,
+                i18n::errors::COMMAND_ERROR_LIST_EXPENSES,
                 &hashmap! {i18n::args::DESCRIPTION.into() => description.into()},
             ),
             ShowExpense { number } => translate_with_args(
@@ -114,12 +117,21 @@ impl Translatable for CommandError {
                     i18n::args::AMOUNT.into() => amount.to_string().into()
                 },
             ),
-            ShowBalance { name } => translate_with_args(
+            DeleteTransfer { number } => translate_with_args(
                 ctx,
-                i18n::errors::COMMAND_ERROR_SHOW_BALANCE,
+                i18n::errors::COMMAND_ERROR_DELETE_TRANSFER,
+                &hashmap! {i18n::args::NUMBER.into() => number.into()},
+            ),
+            ListTransfers { name } => translate_with_args(
+                ctx,
+                i18n::errors::COMMAND_ERROR_LIST_TRANSFERS,
                 &hashmap! {i18n::args::NAME.into() => name.clone().into()},
             ),
-            ShowBalances => translate(ctx, i18n::errors::COMMAND_ERROR_SHOW_BALANCES),
+            ShowBalances { name } => translate_with_args(
+                ctx,
+                i18n::errors::COMMAND_ERROR_SHOW_BALANCES,
+                &hashmap! {i18n::args::NAME.into() => name.clone().into()},
+            ),
         }
     }
 
@@ -152,9 +164,8 @@ impl Translatable for CommandError {
                 i18n::errors::COMMAND_ERROR_DELETE_EXPENSE,
                 &hashmap! {i18n::args::NUMBER.into() => number.into()},
             ),
-            ListExpenses => translate_default(i18n::errors::COMMAND_ERROR_LIST_EXPENSES),
-            FindExpenses { description } => translate_with_args_default(
-                i18n::errors::COMMAND_ERROR_FIND_EXPENSES,
+            ListExpenses { description } => translate_with_args_default(
+                i18n::errors::COMMAND_ERROR_LIST_EXPENSES,
                 &hashmap! {i18n::args::DESCRIPTION.into() => description.into()},
             ),
             ShowExpense { number } => translate_with_args_default(
@@ -173,11 +184,18 @@ impl Translatable for CommandError {
                     i18n::args::AMOUNT.into() => amount.to_string().into()
                 },
             ),
-            ShowBalance { name } => translate_with_args_default(
-                i18n::errors::COMMAND_ERROR_SHOW_BALANCE,
+            DeleteTransfer { number } => translate_with_args_default(
+                i18n::errors::COMMAND_ERROR_DELETE_TRANSFER,
+                &hashmap! {i18n::args::NUMBER.into() => number.into()},
+            ),
+            ListTransfers { name } => translate_with_args_default(
+                i18n::errors::COMMAND_ERROR_LIST_TRANSFERS,
                 &hashmap! {i18n::args::NAME.into() => name.clone().into()},
             ),
-            ShowBalances => translate_default(i18n::errors::COMMAND_ERROR_SHOW_BALANCES),
+            ShowBalances { name } => translate_with_args_default(
+                i18n::errors::COMMAND_ERROR_SHOW_BALANCES,
+                &hashmap! {i18n::args::NAME.into() => name.clone().into()},
+            ),
         }
     }
 }

@@ -31,32 +31,27 @@ delete-expense-ok = Expense #{$number} deleted successfully.
 delete-traveler-not-found = Couldn't find traveler {$name} to delete.
 delete-traveler-ok = Traveler {$name} deleted successfully.
 
-## /findexpenses
-
-find-expenses-not-found = No expenses match the specified description (~ "{$description}").
-
 ## /listexpenses
 
+list-expenses-descr-not-found = No expenses match the specified description (~ "{$description}").
 list-expenses-not-found = No expenses found. Use `/{-add-expense-command}` to add one.
 
 ## /listtravelers
 
 list-travelers-not-found = No travelers found. Use `/{-add-traveler-command} <name>` to add one.
 
-## /showbalance
-
-show-balance-ok = 
-    {$traveler-name} { $traveler-is -> 
-        *[debtor] owes {$debt} to
-        [creditor] is owed {$debt} from
-    } {$other-traveler-name}.
-show-balance-settled-up = Traveler {$name} is settled up with everyone.
-show-balance-traveler-not-found = Couldn't find traveler {$name} to show the balance.
-
 ## /showbalances
 
 show-balances-ok = {$debtor} owes {$debt} to {$creditor}.
 show-balances-settled-up = All travelers are settled up with everyone.
+show-balances-traveler-ok = 
+    {$traveler-name} { $traveler-is -> 
+        *[debtor] owes {$debt} to
+        [creditor] is owed {$debt} from
+    } {$other-traveler-name}.
+show-balances-traveler-settled-up = Traveler {$name} is settled up with everyone.
+show-balances-traveler-not-found = Couldn't find traveler "{$name}" to show the balance.
+
 
 ## /showexpense
 
@@ -73,6 +68,16 @@ show-expense-ok =
 transfer-ok = Transfer recorded successfully.
 transfer-receiver-not-found = Couldn't find traveler "{$name}" to transfer money to.
 transfer-sender-not-found = Couldn't find traveler "{$name}" to transfer money from.
+
+## /deletetransfer
+
+delete-transfer-not-found = Couldn't find transfer #{$number} to delete.
+delete-transfer-ok = Transfer #{$number} deleted successfully.
+
+## /listtransfers
+
+list-transfers-name-not-found = No transfers related to traveler "{$name}" found.
+list-transfers-not-found = No transfers found. Use `/{-transfer-command} <sender> <receiver> <amount>` to add one.
 
 ## unknown command
 

@@ -19,7 +19,7 @@ help-set-language =
     Lingue disponibili:
     {$available-langs}
 
-    Uso: /{-set-language-command} [lingua]
+    Uso: /{-set-language-command} <lingua>
 
 ## /setcurrency
 
@@ -27,7 +27,7 @@ descr-set-currency = Imposta la valuta predefinita per questa chat.
 help-set-currency =
     /{-set-currency-command} — {descr-set-currency}
 
-    Uso: /{-set-currency-command} [codice valuta]
+    Uso: /{-set-currency-command} <codice valuta>
 
 ## /addtraveler
 
@@ -90,19 +90,11 @@ help-delete-expense =
 
 ## /listexpenses
 
-descr-list-expenses = Mostra le spese nel piano di viaggio.
+descr-list-expenses = Mostra le spese nel piano di viaggio. Se viene specificata una descrizione, mostra solo le spese che corrispondono alla descrizione fornita. Supporta la ricerca approssimativa (fuzzy search) per una corrispondenza più flessibile.
 help-list-expenses = 
     /{-list-expenses-command} — {descr-list-expenses}
 
-    Uso: /{-list-expenses-command}
-
-## /findexpenses
-
-descr-find-expenses = Cerca le spese che corrispondono alla descrizione fornita. Supporta la ricerca fuzzy per un abbinamento più flessibile.
-help-find-expenses = 
-    /{-find-expenses-command} — {descr-find-expenses}
-
-    Uso: /{-find-expenses-command} <descrizione>
+    Uso: /{-list-expenses-command} [descrizione]
 
 ## /showexpense
 
@@ -120,21 +112,29 @@ help-transfer =
 
     Uso: /{-transfer-command} <mittente> <destinatario> <importo>
 
-## /showbalance
+## /deletetransfer
 
-descr-show-balance = Mostra il saldo semplificato del viaggiatore specificato, minimizzando il numero totale di trasferimenti necessari a saldare i debiti.
-help-show-balance = 
-    /{-show-balance-command} — {descr-show-balance}
+descr-delete-transfer = Elimina il trasferimento con il numero identificativo specificato dal piano di viaggio.
+help-delete-transfer = 
+    /{-delete-transfer-command} — {descr-delete-transfer}
 
-    Uso: /{-show-balance-command} <nome>
+    Uso: /{-delete-transfer-command} <numero>
+
+## /listtransfers
+
+descr-list-transfers = Mostra i trasferimenti nel piano di viaggio. Se viene specificato un nome, mostra solo i trasferimenti che coinvolgono quel viaggiatore.
+help-list-transfers = 
+    /{-list-transfers-command} — {descr-list-transfers}
+
+    Uso: /{-list-transfers-command} [nome]
 
 ## /showbalances
 
-descr-show-balances = Mostra i saldi semplificati di tutti i viaggiatori, minimizzando il numero totale di trasferimenti necessari a saldare i debiti.
+descr-show-balances = Mostra i saldi semplificati di tutti i viaggiatori, minimizzando il numero totale di trasferimenti necessari per saldare i debiti. Se viene specificato un nome, mostra il saldo del viaggiatore specificato.
 help-show-balances = 
     /{-show-balances-command} — {descr-show-balances}
 
-    Uso: /{-show-balances-command}
+    Uso: /{-show-balances-command} [nome]
 
 ## /cancel
 

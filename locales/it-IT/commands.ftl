@@ -31,32 +31,26 @@ delete-expense-ok = Spesa #{$number} eliminata con successo.
 delete-traveler-not-found = Impossibile trovare il viaggiatore {$name} da eliminare.
 delete-traveler-ok = Viaggiatore {$name} eliminato con successo.
 
-## /findexpenses
-
-find-expenses-not-found = Nessuna spesa corrisponde alla descrizione specificata (~ "{$description}").
-
 ## /listexpenses
 
+list-expenses-descr-not-found = Nessuna spesa corrisponde alla descrizione specificata (~ "{$description}").
 list-expenses-not-found = Nessuna spesa trovata. Usa `/{-add-expense-command}` per aggiungerne una.
 
 ## /listtravelers
 
 list-travelers-not-found = Nessun viaggiatore trovato. Usa `/{-add-traveler-command} <name>` per aggiungerne uno.
 
-## /showbalance
-
-show-balance-ok = 
-    {$traveler-name} { $traveler-is -> 
-        *[debtor] deve {$debt} a
-        [creditor] deve riceve {$debt} da
-    } {$other-traveler-name}.
-show-balance-settled-up = Il viaggiatore {$name} è in pari con tutti.
-show-balance-traveler-not-found = Impossibile trovare il viaggiatore {$name} per mostrare il saldo.
-
 ## /showbalances
 
 show-balances-ok = {$debtor} deve {$debt} a {$creditor}.
 show-balances-settled-up = Tutti i viaggiatori sono in pari con tutti.
+show-balances-traveler-ok = 
+    {$traveler-name} { $traveler-is -> 
+        *[debtor] deve {$debt} a
+        [creditor] deve riceve {$debt} da
+    } {$other-traveler-name}.
+show-balances-traveler-settled-up = Il viaggiatore {$name} è in pari con tutti.
+show-balances-traveler-not-found = Impossibile trovare il viaggiatore "{$name}" per mostrare il saldo.
 
 ## /showexpense
 
@@ -73,6 +67,16 @@ show-expense-ok =
 transfer-ok = Trasferimento registrato con successo.
 transfer-receiver-not-found = Impossibile trovare il viaggiatore "{$name}" a cui trasferire denaro.
 transfer-sender-not-found = Impossibile trovare il viaggiatore "{$name}" da cui trasferire denaro.
+
+## /deletetransfer
+
+delete-transfer-not-found = Impossibile trovare il trasferimento #{$number} da eliminare.
+delete-transfer-ok = Trasferimento #{$number} eliminata con successo.
+
+## /listtransfers
+
+list-transfers-name-not-found = Nessun trasferimento relativo al viaggiatore "{$name}" trovato.
+list-transfers-not-found = Nessun trasferimento trovato. Usa `/{-transfer-command} <mittente> <destinatario> <importo>` per aggiungerne uno.
 
 ## unknown command
 

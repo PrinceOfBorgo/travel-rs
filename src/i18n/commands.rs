@@ -19,18 +19,16 @@ pub const DELETE_EXPENSE_OK: &str = "delete-expense-ok";
 pub const DELETE_TRAVELER_NOT_FOUND: &str = "delete-traveler-not-found";
 pub const DELETE_TRAVELER_OK: &str = "delete-traveler-ok";
 
-pub const FIND_EXPENSES_NOT_FOUND: &str = "find-expenses-not-found";
-
+pub const LIST_EXPENSES_DESCR_NOT_FOUND: &str = "list-expenses-descr-not-found";
 pub const LIST_EXPENSES_NOT_FOUND: &str = "list-expenses-not-found";
 
 pub const LIST_TRAVELERS_NOT_FOUND: &str = "list-travelers-not-found";
 
-pub const SHOW_BALANCE_OK: &str = "show-balance-ok";
-pub const SHOW_BALANCE_SETTLED_UP: &str = "show-balance-settled-up";
-pub const SHOW_BALANCE_TRAVELER_NOT_FOUND: &str = "show-balance-traveler-not-found";
-
 pub const SHOW_BALANCES_OK: &str = "show-balances-ok";
 pub const SHOW_BALANCES_SETTLED_UP: &str = "show-balances-settled-up";
+pub const SHOW_BALANCES_TRAVELER_OK: &str = "show-balances-traveler-ok";
+pub const SHOW_BALANCES_TRAVELER_NOT_FOUND: &str = "show-balances-traveler-not-found";
+pub const SHOW_BALANCES_TRAVELER_SETTLED_UP: &str = "show-balances-traveler-settled-up";
 
 pub const SHOW_EXPENSE_NOT_FOUND: &str = "show-expense-not-found";
 pub const SHOW_EXPENSE_OK: &str = "show-expense-ok";
@@ -38,6 +36,12 @@ pub const SHOW_EXPENSE_OK: &str = "show-expense-ok";
 pub const TRANSFER_OK: &str = "transfer-ok";
 pub const TRANSFER_RECEIVER_NOT_FOUND: &str = "transfer-receiver-not-found";
 pub const TRANSFER_SENDER_NOT_FOUND: &str = "transfer-sender-not-found";
+
+pub const DELETE_TRANSFER_NOT_FOUND: &str = "delete-transfer-not-found";
+pub const DELETE_TRANSFER_OK: &str = "delete-transfer-ok";
+
+pub const LIST_TRANSFERS_NAME_NOT_FOUND: &str = "list-transfers-name-not-found";
+pub const LIST_TRANSFERS_NOT_FOUND: &str = "list-transfers-not-found";
 
 pub const INVALID_COMMAND_USAGE: &str = "invalid-command-usage";
 pub const UNKNOWN_COMMAND: &str = "unknown-command";

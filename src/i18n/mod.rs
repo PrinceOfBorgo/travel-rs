@@ -35,32 +35,32 @@ static LOCALES: LazyLock<ArcLoader> = LazyLock::new(|| {
 {ADD_TRAVELER_COMMAND} = {add_traveler}
 {DELETE_EXPENSE_COMMAND} = {delete_expense}
 {DELETE_TRAVELER_COMMAND} = {delete_traveler}
-{FIND_EXPENSES_COMMAND} = {find_expenses}
 {HELP_COMMAND} = {help}
 {LIST_EXPENSES_COMMAND} = {list_expenses}
 {LIST_TRAVELERS_COMMAND} = {list_travelers}
 {SET_CURRENCY_COMMAND} = {set_currency}
 {SET_LANGUAGE_COMMAND} = {set_language}
-{SHOW_BALANCE_COMMAND} = {show_balance}
 {SHOW_BALANCES_COMMAND} = {show_balances}
 {SHOW_EXPENSE_COMMAND} = {show_expense}
 {TRANSFER_COMMAND} = {transfer}
+{DELETE_TRANSFER_COMMAND} = {delete_transfer}
+{LIST_TRANSFERS_COMMAND} = {list_transfers}
 ",
                 cancel = variant_to_string!(Command::Cancel),
                 add_expense = variant_to_string!(Command::AddExpense),
                 add_traveler = variant_to_string!(Command::AddTraveler),
                 delete_expense = variant_to_string!(Command::DeleteExpense),
                 delete_traveler = variant_to_string!(Command::DeleteTraveler),
-                find_expenses = variant_to_string!(Command::FindExpenses),
                 help = variant_to_string!(Command::Help),
                 list_expenses = variant_to_string!(Command::ListExpenses),
                 list_travelers = variant_to_string!(Command::ListTravelers),
                 set_currency = variant_to_string!(Command::SetCurrency),
                 set_language = variant_to_string!(Command::SetLanguage),
-                show_balance = variant_to_string!(Command::ShowBalance),
                 show_balances = variant_to_string!(Command::ShowBalances),
                 show_expense = variant_to_string!(Command::ShowExpense),
-                transfer = variant_to_string!(Command::Transfer)
+                transfer = variant_to_string!(Command::Transfer),
+                delete_transfer = variant_to_string!(Command::DeleteTransfer),
+                list_transfers = variant_to_string!(Command::ListTransfers),
             );
 
             let consts = format!(

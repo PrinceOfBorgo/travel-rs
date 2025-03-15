@@ -94,6 +94,7 @@ DEFINE FUNCTION fn::calc_debts($chat: record<chat>) -> any {
 DEFINE FUNCTION fn::clear_debts($chat: record<chat>) { DELETE owes WHERE in.chat = $chat; } PERMISSIONS FULL;
 DEFINE FUNCTION fn::get_balances($chat: record<chat>) { RETURN SELECT in.name AS debtor_name, out.name AS creditor_name, amount AS debt, in.chat AS chat FROM owes WHERE in.chat.id = $chat; } COMMENT 'Retrieve the balances among travelers in the specified chat' PERMISSIONS FULL;
 DEFINE FUNCTION fn::get_expense_details($chat: record<chat>, $expense_number: int) { RETURN (SELECT amount AS expense_amount, number AS expense_number, description AS expense_description, chat AS chat, (<-paid_for<-traveler)[0].name AS creditor_name, array::group((SELECT in.name AS traveler_name, amount FROM split WHERE out = $parent.id ORDER BY amount DESC, traveler_name ASC)) AS shares FROM expense WHERE chat = $chat AND number = $expense_number); } COMMENT 'Retrieve the details of the expense with the given identifying number in the specified chat' PERMISSIONS FULL;
+DEFINE FUNCTION fn::get_transfers($chat: record<chat>) { RETURN SELECT number, amount, in.name AS sender_name, out.name AS receiver_name, in.chat AS chat FROM transferred_to WHERE in.chat.id = $chat; } COMMENT 'Retrieve the transfers recorded in the specified chat' PERMISSIONS FULL;
 
 
 -- ------------------------------
@@ -166,8 +167,12 @@ DEFINE INDEX unique_relationships ON split FIELDS in, out UNIQUE;
 DEFINE TABLE transferred_to TYPE RELATION IN traveler OUT traveler SCHEMAFULL PERMISSIONS NONE;
 
 DEFINE FIELD amount ON transferred_to TYPE decimal PERMISSIONS FOR select, create, update WHERE FULL;
+DEFINE FIELD chat ON transferred_to TYPE record<chat> PERMISSIONS FULL;
 DEFINE FIELD in ON transferred_to TYPE record<traveler> PERMISSIONS FULL;
+DEFINE FIELD number ON transferred_to TYPE int PERMISSIONS FULL;
 DEFINE FIELD out ON transferred_to TYPE record<traveler> PERMISSIONS FULL;
+
+DEFINE INDEX chat_number_index ON transferred_to FIELDS chat, number UNIQUE;
 
 
 -- ------------------------------

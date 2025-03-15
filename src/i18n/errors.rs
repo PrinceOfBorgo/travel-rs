@@ -7,10 +7,10 @@ pub const COMMAND_ERROR_DELETE_TRAVELER: &str = "command-error-delete-traveler";
 pub const COMMAND_ERROR_LIST_TRAVELERS: &str = "command-error-list-travelers";
 pub const COMMAND_ERROR_DELETE_EXPENSE: &str = "command-error-delete-expense";
 pub const COMMAND_ERROR_LIST_EXPENSES: &str = "command-error-list-expenses";
-pub const COMMAND_ERROR_FIND_EXPENSES: &str = "command-error-find-expenses";
 pub const COMMAND_ERROR_SHOW_EXPENSE: &str = "command-error-show-expense";
 pub const COMMAND_ERROR_TRANSFER: &str = "command-error-transfer";
-pub const COMMAND_ERROR_SHOW_BALANCE: &str = "command-error-show-balance";
+pub const COMMAND_ERROR_DELETE_TRANSFER: &str = "command-error-delete-transfer";
+pub const COMMAND_ERROR_LIST_TRANSFERS: &str = "command-error-list-transfers";
 pub const COMMAND_ERROR_SHOW_BALANCES: &str = "command-error-show-balances";
 
 pub const NAME_VALIDATION_ERROR_STARTS_WITH_SLASH: &str = "name-validation-error-starts-with-slash";

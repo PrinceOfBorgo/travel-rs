@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.1.6] - 2025-03-16
+### Added
+- `DeleteTransfer` and `ListTransfers` commands.
+
+### Changed
+- Merged `ShowBalance` command into `ShowBalances`:
+  - Removed `ShowBalance` command.
+  - Changed `ShowBalances` to accept an optional name.
+- Merged `FindExpenses` command into `ListExpenses`:
+  - Removed `FindExpenses` command.
+  - Changed `ListExpenses` to accept an optional description.
+
+### Fixed
+- Not updating debts when deleting expenses.
+
 ## [0.1.5] - 2025-03-15
 ### Added
 - Support for currency output formatting.
