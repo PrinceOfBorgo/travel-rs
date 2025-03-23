@@ -3,7 +3,9 @@ use serde::Deserialize;
 use std::{path::PathBuf, sync::LazyLock};
 use unic_langid::LanguageIdentifier;
 
-static CONFIG: LazyLock<Config> = LazyLock::new(|| {
+use crate::ARGS;
+
+pub static CONFIG: LazyLock<Config> = LazyLock::new(|| {
     Config::builder()
         .add_source(config::File::with_name("config/config"))
         .build()
@@ -11,34 +13,41 @@ static CONFIG: LazyLock<Config> = LazyLock::new(|| {
 });
 
 pub static SETTINGS: LazyLock<Settings> = LazyLock::new(|| {
-    let profile = CONFIG.get_string("profile").unwrap();
-    Config::builder()
+    // Retrieve the profile from command line arguments or fallback to the configuration file
+    let profile = ARGS
+        .profile
+        .clone()
+        .unwrap_or_else(|| CONFIG.get_string("profile").unwrap());
+    let conf = Config::builder()
         .add_source(config::File::with_name(&format!(
             "config/profiles/{profile}"
         )))
         .build()
-        .and_then(Config::try_deserialize)
-        .unwrap() // Panics if configurations cannot be loaded
+        .unwrap();
+    conf.try_deserialize().unwrap() // Panics if configurations cannot be loaded
 });
 
-pub enum TokenSource {
+enum TokenSource {
     File,
     Env,
     String,
 }
 
 impl TokenSource {
-    pub fn from_str(s: &str) -> Self {
+    fn from_str(s: &str) -> Self {
         match s {
             "file" => Self::File,
             "env" => Self::Env,
             "string" => Self::String,
-            _ => panic!(
-                "Invalid token source: {}. Expected 'file', 'env', or 'string'",
-                s
-            ),
+            _ => panic!("Invalid token source: {s}. Expected 'file', 'env', or 'string'"),
         }
     }
+}
+#[derive(Debug, Deserialize)]
+pub struct Logging {
+    pub path: String,
+    pub file_name_prefix: String,
+    pub level: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -49,8 +58,7 @@ pub struct Bot {
 
 #[derive(Debug, Deserialize)]
 pub struct Database {
-    pub host: String,
-    pub port: usize,
+    pub address: String,
     pub username: String,
     pub password: String,
     pub namespace: String,
@@ -66,6 +74,7 @@ pub struct I18n {
 
 #[derive(Debug, Deserialize)]
 pub struct Settings {
+    pub logging: Logging,
     pub bot: Bot,
     pub database: Database,
     pub i18n: I18n,

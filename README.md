@@ -17,7 +17,7 @@
   - [x] Delete from DB always returns OK even if the entry doesn't exist. Should return WARN with a dedicated message.
 - [ ] Refactor code to make it more readable and maintainable.
 - [ ] Add tests (not sure what to test).
-- [ ] Add assertion/events to check if `in.chat = out.chat` for `split` and `paid_for` tables.
+- [ ] Add assertion/events to check if `in.chat = out.chat` for relationships.
 - [x] Handle `unknown_command` when command name is right but arguments are incomplete.
 - [x] Add dedicated help messages for all commands.
 - [ ] Improve user experience (e.g. add buttons).

@@ -33,3 +33,10 @@ Cargo.lock
 
 # Telegram bot token
 token.txt
+
+# Logs folder
+logs/
+
+# Ignore all configuration profiles except dev-local.toml
+config/profiles/*.toml
+!config/profiles/dev-local.toml

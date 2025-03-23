@@ -1,3 +1,8 @@
+[logging]
+path = "logs"
+file_name_prefix = "travelrs.log"
+level = "debug"
+
 [bot]
 # token_source: Specifies the source in which the bot token is provided.
 # Allowed values:
@@ -13,8 +18,7 @@ token_source = "file"
 token = "token.txt"
 
 [database]
-host = "127.0.0.1"
-port = 8000
+address = "ws://127.0.0.1:8000"
 username = "root"
 password = "root"
 namespace = "travel_rs"

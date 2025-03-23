@@ -16,6 +16,7 @@ mod tables;
 mod transfer;
 mod utils;
 
+use clap::Parser;
 use i18n::translate;
 pub(crate) use relationships::*;
 pub(crate) use tables::*;
@@ -26,13 +27,14 @@ use dialogues::add_expense_dialogue::AddExpenseState;
 use dialogues::*;
 use dptree::{case, deps};
 use macro_rules_attribute::apply;
-use settings::SETTINGS;
-use std::sync::{Arc, Mutex};
+use settings::{Logging, SETTINGS};
+use std::sync::{Arc, LazyLock, Mutex};
 use teloxide::{
     dispatching::dialogue::{InMemStorage, Storage},
     prelude::*,
 };
 use tracing::Level;
+use tracing_appender::rolling::daily;
 use tracing_subscriber::{
     EnvFilter, fmt::time::LocalTime, layer::SubscriberExt, util::SubscriberInitExt,
 };
@@ -47,22 +49,50 @@ pub struct Context {
     currency: String,
 }
 
+#[derive(Parser, Debug)]
+#[command(name = "TravelRS Bot")]
+pub struct Args {
+    /// Profile to use
+    #[arg(short, long)]
+    profile: Option<String>,
+}
+
+pub static ARGS: LazyLock<Args> = LazyLock::new(Args::parse);
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    // Setup logs
+    let Logging {
+        path,
+        file_name_prefix,
+        level,
+    } = &SETTINGS.logging;
+
+    // Initialize tracing subscriber to write logs to a file
+    let file_appender = daily(path, file_name_prefix);
+    let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
+
     let log_layer = tracing_subscriber::fmt::layer()
         .with_timer(LocalTime::rfc_3339())
         .with_line_number(true)
-        .compact();
+        .compact()
+        .with_writer(non_blocking);
 
     tracing_subscriber::registry()
-        .with(
-            EnvFilter::builder()
-                .with_default_directive(Level::INFO.into())
-                .from_env_lossy(),
-        )
+        .with(EnvFilter::new(format!(
+            "{}={level}",
+            env!("CARGO_PKG_NAME").replace("-", "_"),
+        )))
         .with(log_layer)
         .init();
 
+    // Start the bot
+    start_bot().await;
+
+    Ok(())
+}
+
+async fn start_bot() {
     tracing::info!("Starting TravelRS bot...");
     let token = SETTINGS.token_value();
     let bot = Bot::new(token);
@@ -140,8 +170,6 @@ async fn main() -> anyhow::Result<()> {
         .build()
         .dispatch()
         .await;
-
-    Ok(())
 }
 
 #[apply(trace_skip_all)]

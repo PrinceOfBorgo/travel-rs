@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.7] - 2025-03-23
+### Added
+- Support for command line argument `profile`.
+- `[logging]` section in (profile) settings files.
+
+### Changed
+- Security: set `.gitignore` to ignore uploading all configuration profiles except `dev-local.toml`.
+- If command line argument `profile` is specified, the bot will use the specified profile settings instead of loading from `config.toml`.
+- Logs are now written to files instead of `stdout`.
+
+### Fixed
+- N/A
+
 ## [0.1.6] - 2025-03-16
 ### Added
 - `DeleteTransfer` and `ListTransfers` commands.

@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::ops::Deref;
 use surrealdb::{
     Surreal,
-    engine::remote::ws::{Client, Ws},
+    engine::any::{Any, connect},
     opt::auth::Root,
 };
 use tokio::sync::OnceCell;
@@ -21,30 +21,30 @@ impl Deref for Count {
 }
 
 /// Panics if couldn't retrieve the db info from config file.
-async fn connect_to_db() -> Result<Surreal<Client>, surrealdb::Error> {
-    tracing::info!("Connecting to database...");
-
+async fn connect_to_db() -> Result<Surreal<Any>, surrealdb::Error> {
     let Database {
-        host,
-        port,
+        address,
         username,
         password,
         namespace,
         database,
     } = &SETTINGS.database;
 
-    let db = Surreal::new::<Ws>(format!("{host}:{port}")).await?;
+    tracing::info!("Connecting to database {address}::{namespace}::{database}...");
+
+    let db = connect(address).await?;
+
     db.signin(Root { username, password }).await?;
     db.use_ns(namespace).use_db(database).await?;
 
-    tracing::info!("Connected to database.");
+    tracing::info!("Connected to database {address}::{namespace}::{database}");
 
     Ok(db)
 }
 
 /// Panics if couldn't connect to database.
-pub async fn db() -> &'static Surreal<Client> {
-    static DB: OnceCell<Surreal<Client>> = OnceCell::const_new();
+pub async fn db() -> &'static Surreal<Any> {
+    static DB: OnceCell<Surreal<Any>> = OnceCell::const_new();
     DB.get_or_init(async || connect_to_db().await.unwrap())
         .await
 }

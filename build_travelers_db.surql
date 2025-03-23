@@ -167,12 +167,11 @@ DEFINE INDEX unique_relationships ON split FIELDS in, out UNIQUE;
 DEFINE TABLE transferred_to TYPE RELATION IN traveler OUT traveler SCHEMAFULL PERMISSIONS NONE;
 
 DEFINE FIELD amount ON transferred_to TYPE decimal PERMISSIONS FOR select, create, update WHERE FULL;
-DEFINE FIELD chat ON transferred_to TYPE record<chat> PERMISSIONS FULL;
 DEFINE FIELD in ON transferred_to TYPE record<traveler> PERMISSIONS FULL;
 DEFINE FIELD number ON transferred_to TYPE int PERMISSIONS FULL;
 DEFINE FIELD out ON transferred_to TYPE record<traveler> PERMISSIONS FULL;
 
-DEFINE INDEX chat_number_index ON transferred_to FIELDS chat, number UNIQUE;
+DEFINE INDEX chat_number_index ON transferred_to FIELDS in.chat, number UNIQUE;
 
 
 -- ------------------------------
