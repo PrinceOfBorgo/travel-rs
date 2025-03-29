@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.1.8-SNAPSHOT]
+### Added
+- `ROADMAP.md` file.
+
+### Changed
+- `README.md` now contains an overall description of the project while the roadmap has been moved to a dedicated file.
+- Error messages for the `Help` command are now more descriptive.
+
+### Fixed
+- Database indexes conflicting with each other.
+
 ## [0.1.7] - 2025-03-23
 ### Added
 - Support for command line argument `profile`.

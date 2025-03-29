@@ -4,8 +4,10 @@ pub mod dialogues;
 pub mod errors;
 pub mod help;
 pub mod terms;
-mod translatable;
+mod translate;
 pub mod types;
+
+pub use translate::Translate;
 
 use crate::{Context, commands::Command, consts::*, settings::SETTINGS};
 use commands::COMMAND_DESCRIPTIONS;
@@ -19,7 +21,6 @@ use std::{
 };
 use teloxide::utils::command::BotCommands;
 use terms::*;
-pub use translatable::Translatable;
 use unic_langid::LanguageIdentifier;
 
 static LOCALES: LazyLock<ArcLoader> = LazyLock::new(|| {

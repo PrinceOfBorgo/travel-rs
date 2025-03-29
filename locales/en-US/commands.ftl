@@ -89,4 +89,4 @@ unknown-command =
     Unknown command: {$command}.
 unknown-command-best-match = 
     Unknown command: {$command}.
-    Did you mean: /{$best-match}?
+    Did you mean: {$best-match}?

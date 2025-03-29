@@ -1,6 +1,6 @@
 use crate::{
     Context,
-    commands::{Command, HelpMessage},
+    commands::{Command, HelpMessage, ParseCommand},
     consts::{DEBUG_START, DEBUG_SUCCESS},
     errors::CommandError,
     i18n::{commands::COMMAND_DESCRIPTIONS, translate},
@@ -8,7 +8,6 @@ use crate::{
 };
 use macro_rules_attribute::apply;
 use std::sync::{Arc, Mutex};
-use strum::IntoEnumIterator;
 use teloxide::prelude::*;
 use tracing::Level;
 
@@ -25,17 +24,25 @@ pub fn help(
         return Ok(translate(ctx, COMMAND_DESCRIPTIONS));
     }
 
-    match Command::iter()
-        .find(|variant| variant.as_ref() == command.trim_matches('/').to_lowercase())
-        .map(|variant| variant.help_message(ctx))
-    {
-        Some(help) => {
+    let cmd_name = command.strip_prefix('/').unwrap_or(command).to_lowercase();
+
+    match Command::parse_cmd_name(&cmd_name) {
+        ParseCommand::ValidCommandName(command) => {
             tracing::debug!(DEBUG_SUCCESS);
-            Ok(help.to_string())
+            Ok(command.help_message(ctx).to_string())
         }
-        None => {
+        ParseCommand::BestMatch(best_match) => {
             let err = CommandError::Help {
                 command: command.to_owned(),
+                best_match: Some(best_match.as_ref().to_string()),
+            };
+            tracing::error!("{err}");
+            Err(err)
+        }
+        ParseCommand::UnknownCommand => {
+            let err = CommandError::Help {
+                command: command.to_owned(),
+                best_match: None,
             };
             tracing::error!("{err}");
             Err(err)

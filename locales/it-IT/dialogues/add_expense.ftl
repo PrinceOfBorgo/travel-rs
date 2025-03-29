@@ -1,11 +1,11 @@
 ## start
 
 add-expense-start = Il processo può essere interrotto in qualsiasi momento inviando `/{-cancel-command}`.
-add-expense-ask-description = Come descriveresti questa spesa?
+add-expense-ask-description = Imposta una descrizione per questa spesa.
 
 ## receive_description
 
-add-expense-ask-amount = Quanto è la spesa?
+add-expense-ask-amount = A quanto ammonta è la spesa?
 add-expense-invalid-description = Hai inviato un testo non valido, per favore riprova.
 
 ## receive_amount
@@ -23,7 +23,7 @@ add-expense-traveler-generic-error = Si è verificato un errore durante la ricer
 ## start_split_among / receive_split_among
 
 add-expense-continue-split = Continua a dividere o digita `{-end-kword}` per terminare il processo.
-add-expense-ok = Spesa aggiunta con successo!
+add-expense-ok = Spesa registrata con successo!
 add-expense-error-on-computing-shares = Si è verificato un errore durante il calcolo delle quote.
 add-expense-creating-expense-generic-error = Si è verificato un errore durante la creazione della spesa.
 add-expense-shares-parsing-error = Si è verificato un errore durante l'analisi del testo. Per favore riprova.

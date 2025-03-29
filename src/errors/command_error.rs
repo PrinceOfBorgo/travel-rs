@@ -1,7 +1,7 @@
 use crate::{
     Context,
     i18n::{
-        self, Translatable, translate, translate_default, translate_with_args,
+        self, Translate, translate, translate_default, translate_with_args,
         translate_with_args_default,
     },
     traveler::Name,
@@ -19,6 +19,7 @@ pub enum CommandError {
     EmptyInput,
     Help {
         command: String,
+        best_match: Option<String>,
     },
     SetLanguage {
         langid: LanguageIdentifier,
@@ -58,16 +59,40 @@ pub enum CommandError {
     },
 }
 
-impl Translatable for CommandError {
+impl Translate for CommandError {
     fn translate(&self, ctx: Arc<Mutex<Context>>) -> String {
         use CommandError::*;
         match self {
             EmptyInput => translate(ctx, i18n::errors::COMMAND_ERROR_EMPTY_INPUT),
-            Help { command } => translate_with_args(
-                ctx,
-                i18n::errors::COMMAND_ERROR_HELP,
-                &hashmap! {i18n::args::COMMAND.into() => command.into()},
-            ),
+            Help {
+                command,
+                best_match,
+            } => {
+                let err_msg1 = translate_with_args(
+                    ctx.clone(),
+                    i18n::errors::COMMAND_ERROR_HELP,
+                    &hashmap! {i18n::args::COMMAND.into() => command.into()},
+                );
+                let err_msg2 = if let Some(best_match) = best_match {
+                    translate_with_args(
+                        ctx,
+                        i18n::commands::UNKNOWN_COMMAND_BEST_MATCH,
+                        &hashmap! {
+                            i18n::args::COMMAND.into() => command.into(),
+                            i18n::args::BEST_MATCH.into() => best_match.into()
+                        },
+                    )
+                } else {
+                    translate_with_args(
+                        ctx,
+                        i18n::commands::UNKNOWN_COMMAND,
+                        &hashmap! {
+                            i18n::args::COMMAND.into() => command.into(),
+                        },
+                    )
+                };
+                format!("{err_msg1}\n\n{err_msg2}")
+            }
             SetLanguage { langid } => translate_with_args(
                 ctx,
                 i18n::errors::COMMAND_ERROR_SET_LANGUAGE,
@@ -139,10 +164,32 @@ impl Translatable for CommandError {
         use CommandError::*;
         match self {
             EmptyInput => translate_default(i18n::errors::COMMAND_ERROR_EMPTY_INPUT),
-            Help { command } => translate_with_args_default(
-                i18n::errors::COMMAND_ERROR_HELP,
-                &hashmap! {i18n::args::COMMAND.into() => command.into()},
-            ),
+            Help {
+                command,
+                best_match,
+            } => {
+                let err_msg1 = translate_with_args_default(
+                    i18n::errors::COMMAND_ERROR_HELP,
+                    &hashmap! {i18n::args::COMMAND.into() => command.into()},
+                );
+                let err_msg2 = if let Some(best_match) = best_match {
+                    translate_with_args_default(
+                        i18n::commands::UNKNOWN_COMMAND_BEST_MATCH,
+                        &hashmap! {
+                            i18n::args::COMMAND.into() => command.into(),
+                            i18n::args::BEST_MATCH.into() => best_match.into()
+                        },
+                    )
+                } else {
+                    translate_with_args_default(
+                        i18n::commands::UNKNOWN_COMMAND,
+                        &hashmap! {
+                            i18n::args::COMMAND.into() => command.into(),
+                        },
+                    )
+                };
+                format!("{err_msg1}\n\n{err_msg2}")
+            }
             SetLanguage { langid } => translate_with_args_default(
                 i18n::errors::COMMAND_ERROR_SET_LANGUAGE,
                 &hashmap! {i18n::args::LANGID.into() => langid.to_string().into()},

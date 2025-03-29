@@ -3,7 +3,7 @@ use crate::{
     consts::{DEBUG_START, DEBUG_SUCCESS},
     errors::CommandError,
     expense::Expense,
-    i18n::{self, Translatable, translate, translate_with_args},
+    i18n::{self, Translate, translate, translate_with_args},
     trace_command,
 };
 use macro_rules_attribute::apply;

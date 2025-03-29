@@ -23,7 +23,7 @@ help-set-language =
 
 ## /setcurrency
 
-descr-set-currency = Set the default currency for this chat.
+descr-set-currency = Set the default currency for the travel plan.
 help-set-currency =
     /{-set-currency-command} — {descr-set-currency}
 

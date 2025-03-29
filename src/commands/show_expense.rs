@@ -4,7 +4,7 @@ use crate::{
     errors::CommandError,
     expense::Expense,
     expense_details::ExpenseDetails,
-    i18n::{self, Translatable, translate_with_args, translate_with_args_default},
+    i18n::{self, Translate, translate_with_args, translate_with_args_default},
     money_wrapper::MoneyWrapper,
     trace_command,
 };

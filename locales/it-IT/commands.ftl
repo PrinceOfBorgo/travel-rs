@@ -88,4 +88,4 @@ unknown-command =
     Comando sconosciuto: {$command}.
 unknown-command-best-match = 
     Comando sconosciuto: {$command}.
-    Intendevi: /{$best-match}?
+    Intendevi: {$best-match}?

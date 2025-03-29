@@ -1,7 +1,7 @@
 ## start
 
 add-expense-start = The process can be interrupted at any time by sending `/{-cancel-command}`.
-add-expense-ask-description = How would you describe this expense?
+add-expense-ask-description = Set a description for this expense.
 
 ## receive_description
 
@@ -23,7 +23,7 @@ add-expense-traveler-generic-error = An error occured while looking for traveler
 ## start_split_among / receive_split_among
 
 add-expense-continue-split = Continue splitting or type `{-end-kword}` to end the process.
-add-expense-ok = Expense added successfully!
+add-expense-ok = Expense recorded successfully!
 add-expense-error-on-computing-shares = An error occured while computing shares.
 add-expense-creating-expense-generic-error = An error occured while creating expense.
 add-expense-shares-parsing-error = An error occured while parsing the text. Please retry.

@@ -2,7 +2,7 @@ use crate::{
     Context,
     consts::{DEBUG_START, DEBUG_SUCCESS},
     errors::CommandError,
-    i18n::{self, Translatable, translate, translate_with_args},
+    i18n::{self, Translate, translate, translate_with_args},
     trace_command,
     transfer::Transfer,
     traveler::Name,

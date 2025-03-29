@@ -23,7 +23,7 @@ help-set-language =
 
 ## /setcurrency
 
-descr-set-currency = Imposta la valuta predefinita per questa chat.
+descr-set-currency = Imposta la valuta predefinita per il piano di viaggio.
 help-set-currency =
     /{-set-currency-command} — {descr-set-currency}
 

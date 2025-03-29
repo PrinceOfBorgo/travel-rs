@@ -2,7 +2,7 @@ use std::{error::Error, fmt::Display};
 
 use maplit::hashmap;
 
-use crate::i18n::{self, Translatable, translate_with_args, translate_with_args_default};
+use crate::i18n::{self, Translate, translate_with_args, translate_with_args_default};
 
 #[derive(Debug, Clone)]
 pub enum NameValidationError {
@@ -11,7 +11,7 @@ pub enum NameValidationError {
     ReservedKeyword(String),
 }
 
-impl Translatable for NameValidationError {
+impl Translate for NameValidationError {
     fn translate(&self, ctx: std::sync::Arc<std::sync::Mutex<crate::Context>>) -> String {
         match self {
             NameValidationError::StartsWithSlash(name) => translate_with_args(

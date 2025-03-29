@@ -3,8 +3,7 @@ use std::fmt::{Display, Formatter};
 use crate::{
     db::db,
     i18n::{
-        self, Translatable, translate_with_args, translate_with_args_default,
-        types::FORMAT_TRANSFER,
+        self, Translate, translate_with_args, translate_with_args_default, types::FORMAT_TRANSFER,
     },
     money_wrapper::MoneyWrapper,
     traveler::Name,
@@ -65,7 +64,7 @@ impl Transfer {
     }
 }
 
-impl Translatable for Transfer {
+impl Translate for Transfer {
     fn translate(&self, ctx: std::sync::Arc<std::sync::Mutex<crate::Context>>) -> String {
         let amount = MoneyWrapper::new_with_context(self.amount, ctx.clone());
         translate_with_args(

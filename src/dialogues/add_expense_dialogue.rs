@@ -4,7 +4,7 @@ use crate::{
     db::db,
     errors::{AddExpenseError, EndError},
     expense::Expense,
-    i18n::{self, Translatable, dialogues::*, translate, translate_with_args},
+    i18n::{self, Translate, dialogues::*, translate, translate_with_args},
     trace_state,
     traveler::{Name, Traveler},
     update_debts,

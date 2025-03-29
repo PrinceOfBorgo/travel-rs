@@ -1,7 +1,7 @@
 use crate::{
     db::{Count, db},
     i18n::{
-        self, Translatable, translate_with_args, translate_with_args_default, types::FORMAT_EXPENSE,
+        self, Translate, translate_with_args, translate_with_args_default, types::FORMAT_EXPENSE,
     },
     money_wrapper::MoneyWrapper,
 };
@@ -131,7 +131,7 @@ impl Expense {
     }
 }
 
-impl Translatable for Expense {
+impl Translate for Expense {
     fn translate(&self, ctx: std::sync::Arc<std::sync::Mutex<crate::Context>>) -> String {
         let amount = MoneyWrapper::new_with_context(self.amount, ctx.clone());
         translate_with_args(

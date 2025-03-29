@@ -1,7 +1,7 @@
 use crate::{
     db::db,
     i18n::{
-        self, Translatable, translate_with_args, translate_with_args_default,
+        self, Translate, translate_with_args, translate_with_args_default,
         types::FORMAT_SHARE_DETAILS,
     },
     money_wrapper::MoneyWrapper,
@@ -23,7 +23,7 @@ pub struct ShareDetails {
     pub amount: Decimal,
 }
 
-impl Translatable for ShareDetails {
+impl Translate for ShareDetails {
     fn translate(&self, ctx: std::sync::Arc<std::sync::Mutex<crate::Context>>) -> String {
         let amount = MoneyWrapper::new_with_context(self.amount, ctx.clone());
         translate_with_args(

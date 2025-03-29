@@ -16,16 +16,13 @@ mod tables;
 mod transfer;
 mod utils;
 
-use clap::Parser;
-use i18n::translate;
-pub(crate) use relationships::*;
-pub(crate) use tables::*;
-
 use chat::Chat;
+use clap::Parser;
 use commands::*;
 use dialogues::add_expense_dialogue::AddExpenseState;
 use dialogues::*;
 use dptree::{case, deps};
+use i18n::translate;
 use macro_rules_attribute::apply;
 use settings::{Logging, SETTINGS};
 use std::sync::{Arc, LazyLock, Mutex};
@@ -40,6 +37,9 @@ use tracing_subscriber::{
 };
 use unic_langid::LanguageIdentifier;
 use utils::*;
+
+pub(crate) use relationships::*;
+pub(crate) use tables::*;
 
 pub type HandlerResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
 

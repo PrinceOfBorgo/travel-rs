@@ -119,7 +119,7 @@ DEFINE FIELD chat ON expense TYPE record<chat> PERMISSIONS FOR select, create, u
 DEFINE FIELD description ON expense TYPE string PERMISSIONS FOR select, create, update WHERE FULL;
 DEFINE FIELD number ON expense TYPE int PERMISSIONS FOR select, create, update WHERE FULL;
 
-DEFINE INDEX chat_number_index ON expense FIELDS chat, number UNIQUE;
+DEFINE INDEX expense_chat_number_index ON expense FIELDS chat, number UNIQUE;
 
 
 -- ------------------------------
@@ -132,7 +132,7 @@ DEFINE FIELD amount ON owes TYPE decimal PERMISSIONS FOR select, create, update 
 DEFINE FIELD in ON owes TYPE record<traveler> PERMISSIONS FULL;
 DEFINE FIELD out ON owes TYPE record<traveler> PERMISSIONS FULL;
 
-DEFINE INDEX unique_relationships ON owes FIELDS in, out UNIQUE;
+DEFINE INDEX owes_unique_relationships ON owes FIELDS in, out UNIQUE;
 
 
 -- ------------------------------
@@ -144,7 +144,7 @@ DEFINE TABLE paid_for TYPE RELATION IN traveler OUT expense SCHEMAFULL PERMISSIO
 DEFINE FIELD in ON paid_for TYPE record<traveler> PERMISSIONS FULL;
 DEFINE FIELD out ON paid_for TYPE record<expense> PERMISSIONS FULL;
 
-DEFINE INDEX unique_relationships ON paid_for FIELDS in, out UNIQUE;
+DEFINE INDEX paid_for_unique_relationships ON paid_for FIELDS in, out UNIQUE;
 
 
 -- ------------------------------
@@ -157,7 +157,7 @@ DEFINE FIELD amount ON split TYPE decimal PERMISSIONS FOR select, create, update
 DEFINE FIELD in ON split TYPE record<traveler> PERMISSIONS FULL;
 DEFINE FIELD out ON split TYPE record<expense> PERMISSIONS FULL;
 
-DEFINE INDEX unique_relationships ON split FIELDS in, out UNIQUE;
+DEFINE INDEX split_unique_relationships ON split FIELDS in, out UNIQUE;
 
 
 -- ------------------------------
@@ -171,7 +171,7 @@ DEFINE FIELD in ON transferred_to TYPE record<traveler> PERMISSIONS FULL;
 DEFINE FIELD number ON transferred_to TYPE int PERMISSIONS FULL;
 DEFINE FIELD out ON transferred_to TYPE record<traveler> PERMISSIONS FULL;
 
-DEFINE INDEX chat_number_index ON transferred_to FIELDS in.chat, number UNIQUE;
+DEFINE INDEX transferred_to_chat_number_index ON transferred_to FIELDS in.chat, number UNIQUE;
 
 
 -- ------------------------------
@@ -183,4 +183,4 @@ DEFINE TABLE traveler TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;
 DEFINE FIELD chat ON traveler TYPE record<chat> PERMISSIONS FOR select, create, update WHERE FULL;
 DEFINE FIELD name ON traveler TYPE string ASSERT string::len($value) > 0 PERMISSIONS FOR select, create, update WHERE FULL;
 
-DEFINE INDEX chat_name_index ON traveler FIELDS chat, name UNIQUE;
+DEFINE INDEX traveler_chat_name_index ON traveler FIELDS chat, name UNIQUE;

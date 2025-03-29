@@ -5,13 +5,15 @@ use crate::{
         list_expenses, list_transfers, list_travelers, set_currency, set_language, show_balances,
         show_expense, transfer,
     },
-    i18n::{self, Translatable, help::*, translate, translate_with_args},
+    consts::MIN_SIMILARITY_SCORE,
+    i18n::{self, Translate, help::*, translate, translate_with_args},
     traveler::Name,
 };
 use maplit::hashmap;
 use rust_decimal::Decimal;
-use std::sync::LazyLock;
+use rust_fuzzy_search::fuzzy_search_best_n;
 use std::sync::{Arc, Mutex};
+use std::{str::FromStr, sync::LazyLock};
 use strum::{AsRefStr, EnumIter, EnumString, IntoEnumIterator};
 use teloxide::{prelude::*, utils::command::BotCommands};
 use unic_langid::LanguageIdentifier;
@@ -60,6 +62,44 @@ pub enum Command {
     ShowBalances { name: Name },
     #[command(description = "{descr-cancel}")]
     Cancel,
+}
+
+pub enum ParseCommand {
+    ValidCommandName(Command),
+    BestMatch(Command),
+    UnknownCommand,
+}
+
+impl Command {
+    pub fn parse_cmd_name(cmd_name: &str) -> ParseCommand {
+        let available_cmd_names: Vec<&str> = COMMANDS.iter().map(String::as_ref).collect();
+
+        if available_cmd_names.contains(&cmd_name) {
+            let command = Command::from_str(cmd_name)
+                .unwrap_or_else(|_| panic!("Command /{cmd_name} should exist."));
+            ParseCommand::ValidCommandName(command)
+        } else if available_cmd_names.contains(&cmd_name.to_lowercase().as_str()) {
+            let best_match = Command::from_str(cmd_name.to_lowercase().as_str())
+                .unwrap_or_else(|_| panic!("Command /{} should exist.", cmd_name.to_lowercase()));
+            ParseCommand::BestMatch(best_match)
+        } else {
+            let (best_match, best_score) =
+                fuzzy_search_best_n(cmd_name, &available_cmd_names, 1)[0];
+
+            tracing::debug!(
+                "Input command: {cmd_name}, best match: {best_match}, score: {best_score}."
+            );
+
+            if best_score >= MIN_SIMILARITY_SCORE {
+                let best_match = Command::from_str(best_match).unwrap_or_else(|_| {
+                    panic!("Command /{} should exist.", cmd_name.to_lowercase())
+                });
+                ParseCommand::BestMatch(best_match)
+            } else {
+                ParseCommand::UnknownCommand
+            }
+        }
+    }
 }
 
 impl Default for Command {

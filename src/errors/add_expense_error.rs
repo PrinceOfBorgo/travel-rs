@@ -1,7 +1,7 @@
 use super::NameValidationError;
 use crate::{
     i18n::{
-        self, Translatable, translate, translate_default, translate_with_args,
+        self, Translate, translate, translate_default, translate_with_args,
         translate_with_args_default,
     },
     traveler::Name,
@@ -33,7 +33,7 @@ pub enum AddExpenseError {
     Generic(Box<dyn std::error::Error + Send + Sync>),
 }
 
-impl Translatable for AddExpenseError {
+impl Translate for AddExpenseError {
     fn translate(&self, ctx: std::sync::Arc<std::sync::Mutex<crate::Context>>) -> String {
         use AddExpenseError::*;
         match self {
@@ -130,7 +130,7 @@ pub enum EndError {
     Generic(Box<dyn std::error::Error + Send + Sync>),
 }
 
-impl Translatable for EndError {
+impl Translate for EndError {
     fn translate(&self, ctx: std::sync::Arc<std::sync::Mutex<crate::Context>>) -> String {
         use EndError::*;
         match self {

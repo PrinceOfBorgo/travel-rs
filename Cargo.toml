@@ -1,6 +1,6 @@
 [package]
 name = "travel-rs"
-version = "0.1.7"
+version = "0.1.8-SNAPSHOT"
 authors = ["Michele Medori <princeofborgo@hotmail.com>"]
 edition = "2024"
 
@@ -8,7 +8,7 @@ edition = "2024"
 
 [dependencies]
 teloxide = { version = "0.13.0", features = ["macros"] }
-log = "0.4.26"
+log = "0.4.27"
 tokio = { version = "1.44.1", features = ["rt-multi-thread", "macros"] }
 rust_decimal = "1.37.1"
 surrealdb = "2.2.1"
@@ -30,5 +30,5 @@ unic-langid = { version = "0.9.5", features = ["serde"] }
 fluent-templates = "0.13.0"
 maplit = "1.0.2"
 rusty-money = { version = "0.4.1", features = ["iso", "crypto"] }
-clap = { version = "4.5.32", features = ["derive"] }
+clap = { version = "4.5.34", features = ["derive"] }
 tracing-appender = "0.2.3"
