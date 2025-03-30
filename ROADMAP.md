@@ -21,9 +21,3 @@
 - [x] Handle `unknown_command` when command name is right but arguments are incomplete.
 - [x] Add dedicated help messages for all commands.
 - [ ] Improve user experience (e.g. add buttons).
-- [ ] Find a way to use constants instead of string literals in `#[command(description = "here")]` syntax.
-- [ ] Handle deletions of travelers from the database:
-  - Prevent deleting if related to expenses?
-  - Delete expense when `paid_for` is deleted?
-  - Rework database? Remove `paid_for` relation in favor of new field `paid_by` in `expense` table.
-  - How to handle removed travelers that are related to expenses through `split`? Sum of shares will not equal the expense amount anymore.

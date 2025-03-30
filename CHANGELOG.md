@@ -1,12 +1,13 @@
 # Changelog
 
-## [0.1.8-SNAPSHOT]
+## [0.1.8] - 2025-03-30
 ### Added
 - `ROADMAP.md` file.
 
 ### Changed
 - `README.md` now contains an overall description of the project while the roadmap has been moved to a dedicated file.
 - Error messages for the `Help` command are now more descriptive.
+- The `DeleteTraveler` command now prevents deleting a traveler with associated expenses. A warning message is displayed, prompting the user to remove the related expenses first.
 
 ### Fixed
 - Database indexes conflicting with each other.

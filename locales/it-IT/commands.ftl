@@ -28,6 +28,12 @@ delete-expense-ok = Spesa #{$number} eliminata con successo.
 
 ## /deletetraveler
 
+delete-traveler-has-expenses =
+    Il viaggiatore {$name} ha pagato per le seguenti spese:
+    
+    {$expenses}
+
+    Per favore, eliminale prima di eliminare il viaggiatore.
 delete-traveler-not-found = Impossibile trovare il viaggiatore {$name} da eliminare.
 delete-traveler-ok = Viaggiatore {$name} eliminato con successo.
 

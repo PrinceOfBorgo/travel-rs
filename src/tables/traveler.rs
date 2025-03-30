@@ -14,6 +14,8 @@ use surrealdb::RecordId;
 use teloxide::types::ChatId;
 use travel_rs_derive::Table;
 
+const FN_DELETE_TRAVELER: &str = "fn::delete_traveler";
+
 #[derive(Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Name(String);
 
@@ -114,16 +116,11 @@ impl Traveler {
         use super::chat::{ID as CHAT_ID, TABLE as CHAT_TB};
 
         let db = db().await;
-        db.query(format!(
-            "DELETE {TABLE}
-            WHERE
-                {CHAT} = ${CHAT_ID}
-                && {NAME} = ${NAME}",
-        ))
-        .bind((CHAT_ID, RecordId::from_table_key(CHAT_TB, chat_id.0)))
-        .bind((NAME, name.clone()))
-        .await
-        .map(|_| {})
+        db.query(format!("{FN_DELETE_TRAVELER}(${CHAT_ID}, ${NAME})",))
+            .bind((CHAT_ID, RecordId::from_table_key(CHAT_TB, chat_id.0)))
+            .bind((NAME, name.clone()))
+            .await
+            .map(|_| {})
     }
 
     pub async fn db_select(chat_id: ChatId) -> Result<Vec<Self>, surrealdb::Error> {
@@ -143,7 +140,7 @@ impl Traveler {
 
     pub async fn db_select_by_name(
         chat_id: ChatId,
-        name: Name,
+        name: &Name,
     ) -> Result<Option<Self>, surrealdb::Error> {
         use super::chat::{ID as CHAT_ID, TABLE as CHAT_TB};
 
@@ -156,7 +153,7 @@ impl Traveler {
                 && {NAME} = ${NAME}",
         ))
         .bind((CHAT_ID, RecordId::from_table_key(CHAT_TB, chat_id.0)))
-        .bind((NAME, name))
+        .bind((NAME, name.clone()))
         .await
         .and_then(|mut response| response.take::<Option<Self>>(0))
     }

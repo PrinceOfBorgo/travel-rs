@@ -16,6 +16,7 @@ pub const CANCEL_OK: &str = "cancel-ok";
 pub const DELETE_EXPENSE_NOT_FOUND: &str = "delete-expense-not-found";
 pub const DELETE_EXPENSE_OK: &str = "delete-expense-ok";
 
+pub const DELETE_TRAVELER_HAS_EXPENSES: &str = "delete-traveler-has-expenses";
 pub const DELETE_TRAVELER_NOT_FOUND: &str = "delete-traveler-not-found";
 pub const DELETE_TRAVELER_OK: &str = "delete-traveler-ok";
 

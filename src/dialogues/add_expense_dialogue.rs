@@ -192,7 +192,7 @@ pub async fn receive_paid_by(
     };
 
     // Select traveler from db
-    let select_res = Traveler::db_select_by_name(msg.chat.id, name.clone()).await;
+    let select_res = Traveler::db_select_by_name(msg.chat.id, &name).await;
     match select_res {
         Ok(Some(traveler)) => {
             bot.send_message(msg.chat.id, translate(ctx, ADD_EXPENSE_ASK_SHARES))

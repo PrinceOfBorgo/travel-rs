@@ -8,7 +8,7 @@ OPTION IMPORT;
 -- FUNCTIONS
 -- ------------------------------
 
-DEFINE FUNCTION fn::calc_debts($chat: record<chat>) -> any {
+DEFINE FUNCTION fn::calc_debts($chat: record<chat>) {
     // Calculate individual shares within the specified chat.
     // 'split' table likely represents individual expenses split between users.
     LET $shares = (
@@ -91,7 +91,12 @@ DEFINE FUNCTION fn::calc_debts($chat: record<chat>) -> any {
     // Return the summed debts
     RETURN $sum_debts;
 } COMMENT 'Calculate and simplify debts between users in a chat' PERMISSIONS FULL;
-DEFINE FUNCTION fn::clear_debts($chat: record<chat>) { DELETE owes WHERE in.chat = $chat; } PERMISSIONS FULL;
+DEFINE FUNCTION fn::clear_debts($chat: record<chat>) { DELETE owes WHERE in.chat = $chat; } COMMENT 'Utility function to clear all debts' PERMISSIONS FULL;
+DEFINE FUNCTION fn::delete_traveler($chat: record<chat>, $name: string) {
+    LET $traveler = (SELECT * FROM traveler WHERE chat = $chat AND name = $name)[0];
+    DELETE ($traveler->paid_for->expense).id;
+    DELETE $traveler;
+} COMMENT 'Delete a traveler and all expenses paid by them' PERMISSIONS FULL;
 DEFINE FUNCTION fn::get_balances($chat: record<chat>) { RETURN SELECT in.name AS debtor_name, out.name AS creditor_name, amount AS debt, in.chat AS chat FROM owes WHERE in.chat.id = $chat; } COMMENT 'Retrieve the balances among travelers in the specified chat' PERMISSIONS FULL;
 DEFINE FUNCTION fn::get_expense_details($chat: record<chat>, $expense_number: int) { RETURN (SELECT amount AS expense_amount, number AS expense_number, description AS expense_description, chat AS chat, (<-paid_for<-traveler)[0].name AS creditor_name, array::group((SELECT in.name AS traveler_name, amount FROM split WHERE out = $parent.id ORDER BY amount DESC, traveler_name ASC)) AS shares FROM expense WHERE chat = $chat AND number = $expense_number); } COMMENT 'Retrieve the details of the expense with the given identifying number in the specified chat' PERMISSIONS FULL;
 DEFINE FUNCTION fn::get_transfers($chat: record<chat>) { RETURN SELECT number, amount, in.name AS sender_name, out.name AS receiver_name, in.chat AS chat FROM transferred_to WHERE in.chat.id = $chat; } COMMENT 'Retrieve the transfers recorded in the specified chat' PERMISSIONS FULL;
@@ -144,7 +149,7 @@ DEFINE TABLE paid_for TYPE RELATION IN traveler OUT expense SCHEMAFULL PERMISSIO
 DEFINE FIELD in ON paid_for TYPE record<traveler> PERMISSIONS FULL;
 DEFINE FIELD out ON paid_for TYPE record<expense> PERMISSIONS FULL;
 
-DEFINE INDEX paid_for_unique_relationships ON paid_for FIELDS in, out UNIQUE;
+DEFINE INDEX paid_for_unique_expense ON paid_for FIELDS out UNIQUE;
 
 
 -- ------------------------------

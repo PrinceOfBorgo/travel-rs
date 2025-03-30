@@ -28,6 +28,12 @@ delete-expense-ok = Expense #{$number} deleted successfully.
 
 ## /deletetraveler
 
+delete-traveler-has-expenses =
+    Traveler {$name} has paid for the following expenses:
+    
+    {$expenses}
+
+    Please delete them first before deleting the traveler.
 delete-traveler-not-found = Couldn't find traveler {$name} to delete.
 delete-traveler-ok = Traveler {$name} deleted successfully.
 

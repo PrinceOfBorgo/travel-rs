@@ -16,6 +16,8 @@ use surrealdb::{
 use teloxide::types::ChatId;
 use travel_rs_derive::Table;
 
+use super::traveler::Traveler;
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Table)]
 pub struct Expense {
     pub id: RecordId,
@@ -128,6 +130,16 @@ impl Expense {
         .bind((FUZZY_DESCR, fuzzy_descr))
         .await
         .and_then(|mut response| response.take::<Vec<Self>>(0))
+    }
+
+    pub async fn db_select_by_payer(traveler: Traveler) -> Result<Vec<Self>, surrealdb::Error> {
+        use crate::{paid_for::TABLE as PAID_FOR, traveler::TABLE as TRAVELER};
+
+        let db = db().await;
+        db.query(format!("${TRAVELER}->{PAID_FOR}->{TABLE}.*"))
+            .bind((TRAVELER, traveler))
+            .await
+            .and_then(|mut response| response.take::<Vec<Self>>(0))
     }
 }
 

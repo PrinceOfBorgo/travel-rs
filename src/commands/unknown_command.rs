@@ -25,7 +25,12 @@ pub async fn unknown_command(bot: Bot, msg: Message, ctx: Arc<Mutex<Context>>) -
     cmd_name = cmd_name
         .strip_suffix(&format!(
             "@{bot_name}",
-            bot_name = bot.get_my_name().await?.name
+            bot_name = bot
+                .get_me()
+                .await?
+                .user
+                .username
+                .expect("Bots must have a username")
         ))
         .unwrap_or(cmd_name);
 

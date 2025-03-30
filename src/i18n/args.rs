@@ -9,6 +9,7 @@ pub const DEBT: &str = "debt";
 pub const DEBTOR: &str = "debtor";
 pub const DESCRIPTION: &str = "description";
 pub const EXPENSE: &str = "expense";
+pub const EXPENSES: &str = "expenses";
 pub const HELP_MESSAGE: &str = "help-message";
 pub const INPUT: &str = "input";
 pub const LANGID: &str = "langid";

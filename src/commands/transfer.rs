@@ -30,11 +30,11 @@ pub async fn transfer(
     let chat_id = msg.chat.id;
 
     // Get sender from db
-    let select_from_res = Traveler::db_select_by_name(chat_id, from.clone()).await;
+    let select_from_res = Traveler::db_select_by_name(chat_id, &from).await;
     match select_from_res {
         Ok(Some(sender)) => {
             // Get receiver from db
-            let select_to_res = Traveler::db_select_by_name(chat_id, to.clone()).await;
+            let select_to_res = Traveler::db_select_by_name(chat_id, &to).await;
             match select_to_res {
                 Ok(Some(recv)) => {
                     // Record the new transfer on db
