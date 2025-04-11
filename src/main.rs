@@ -33,7 +33,7 @@ use teloxide::{
 use tracing::Level;
 use tracing_appender::rolling::daily;
 use tracing_subscriber::{
-    EnvFilter, fmt::time::LocalTime, layer::SubscriberExt, util::SubscriberInitExt,
+    EnvFilter, fmt::time::UtcTime, layer::SubscriberExt, util::SubscriberInitExt,
 };
 use unic_langid::LanguageIdentifier;
 use utils::*;
@@ -73,7 +73,7 @@ async fn main() -> anyhow::Result<()> {
     let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
 
     let log_layer = tracing_subscriber::fmt::layer()
-        .with_timer(LocalTime::rfc_3339())
+        .with_timer(UtcTime::rfc_3339())
         .with_line_number(true)
         .compact()
         .with_writer(non_blocking);

@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="assets/logo.svg" width="256"/>
+</div>
+
 # Travel-RS Bot
 
 Travel-RS Bot is a Rust-based Telegram bot designed to assist with managing travel-related expenses, debts, and balances. It provides a seamless experience for tracking financial transactions among travelers, offering localization support, and enabling flexible configurations.
@@ -108,7 +112,7 @@ Here are some detailed examples of how to use the bot to manage expenses for a g
     Bot:  Traveler Charles added successfully.
     ```
 
-1.  **Viewing Travelers:**
+2.  **Viewing Travelers:**
 
     To confirm that everyone has been added correctly, use `/listtravelers` command:
 
@@ -119,7 +123,7 @@ Here are some detailed examples of how to use the bot to manage expenses for a g
           Charles
     ```
 
-1.  **Adding an Expense:**
+3.  **Adding an Expense:**
 
     Alice pays $50 for the highway toll. To record the expense, use `/addexpense` command, to start a conversation with the bot:
 
@@ -142,7 +146,7 @@ Here are some detailed examples of how to use the bot to manage expenses for a g
 
     This will record an expense of $50 paid by Alice, divided equally among Alice, Bob, and Charles.
 
-1.  **Cancelling a Dialogue:**
+4.  **Cancelling a Dialogue:**
 
     To interrupt an ongoing dialogue, use `/cancel` command:
 
@@ -151,7 +155,7 @@ Here are some detailed examples of how to use the bot to manage expenses for a g
     Bot:  The process was cancelled.
     ```
 
-1.  **Viewing Expenses:**
+5.  **Viewing Expenses:**
 
     To see all the expenses recorded so far, use `/listexpenses` command:
 
@@ -170,7 +174,7 @@ Here are some detailed examples of how to use the bot to manage expenses for a g
 
     The bot will display a list of expenses, including the expense numeric IDs.
 
-1.  **Deleting an Expense:**
+6.  **Deleting an Expense:**
 
     If there is an error in entering an expense, it can be deleted using `/deleteexpense` followed by the expense ID:
 
@@ -179,7 +183,29 @@ Here are some detailed examples of how to use the bot to manage expenses for a g
     Bot:  Expense #2 deleted successfully.
     ```
 
-1.  **Viewing Balances:**
+7.  **Viewing Expense Details:**
+
+    The `/listexpenses` command provides a concise summary of expenses, displaying their numeric IDs, descriptions, and total amounts. To view detailed information about a specific expense, use the `/showexpense` command followed by the expense ID:
+
+    ```
+    User: /showexpense 1
+    Bot:  Number: 1 - Description: Highway Toll
+          Amount: $50
+          Paid by: Alice
+          Shares:
+          - Alice: $16.67
+          - Bob: $16.67
+          - Charles: $16.67
+    ```
+
+    This command reveals comprehensive details about the selected expense, including:
+    - The numeric identifier
+    - The description
+    - The total amount spent
+    - The name of the payer
+    - A breakdown of the shares for each participant
+
+8.  **Viewing Balances:**
 
     To see how much everyone owes or is owed, use `/showbalances` command:
 
@@ -198,7 +224,7 @@ Here are some detailed examples of how to use the bot to manage expenses for a g
 
     The bot will display the simplified balances.
 
-2.  **Recording a Transfer:**
+9.  **Recording a Transfer:**
 
     Bob pays $16.67 to Alice for his share of the toll. To record the transfer use `/tansfer` followed by the sender name, the receiver name, and the transferred amount:
 
@@ -207,7 +233,7 @@ Here are some detailed examples of how to use the bot to manage expenses for a g
     Bot:  Transfer recorded successfully.
     ```
 
-3.  **Viewing Transfers:**
+10. **Viewing Transfers:**
 
     To see all the transfers made use `/listtransfers` command:
 
@@ -270,21 +296,21 @@ The profile-specific configuration files are structured into sections, each serv
 
 * `[i18n]`
 
-    * **`default_locale`**: Specifies the default locale for the bot (e.g., `"en-US"`).
+    * **`default_locale`**: Specifies the default locale for the bot (e.g. `"en-US"`).
     * **`locales_path`**: Path to the directory containing localization files.
-    * **`default_currency`**: Sets the default currency for formatting purposes (e.g., `"USD"`).
+    * **`default_currency`**: Sets the default currency for formatting purposes (e.g. `"USD"`).
 
 This modular structure allows users to easily configure the bot's behavior for different environments or use cases.
 
 ### Logging Configuration
 
-Logs are written to files in a directory specified in the profile file under the `[logging]` section. Each log file is timestamped for easy reference. Logging behavior, including the log directory, log level, and file rotation settings, can be customized in the profile-specific configuration.
+Logs are written to files in a directory specified in the profile file under the `[logging]` section. Each log file is timestamped for easy reference. Logging behavior, including the log directory and log level, can be customized in the profile-specific configuration.
 
 ## Localization
 
 ### Customizing Fluent Localization Files
 
-Travel-RS Bot uses [Fluent](https://projectfluent.org/) localization files to support multiple languages, making it easy to customize and extend language support. Localization files are organized into folders named after the locale code (e.g., `en-US`, `it-IT`) in the `locales/` directory. Each locale folder contains `.ftl` files and may include subfolders for further organization.
+Travel-RS Bot uses [Fluent](https://projectfluent.org/) localization files to support multiple languages, making it easy to customize and extend language support. Localization files are organized into folders named after the locale code (e.g. `en-US`, `it-IT`) in the `locales/` directory. Each locale folder contains `.ftl` files and may include subfolders for further organization.
 
 #### Available Fluent Localization Files
 
@@ -298,73 +324,26 @@ Each locale directory contains the following `.ftl` files, each serving a specif
 
     * `dialogues/add-expense.ftl`: Handles translations for dialogues related to adding expenses, including prompts and confirmations.
 
-These files are organized by locale (e.g., `en-US/messages.ftl`, `it-IT/messages.ftl`) to ensure seamless language support and easy customization.
+These files are organized by locale (e.g. `en-US/messages.ftl`, `it-IT/messages.ftl`) to ensure seamless language support and easy customization.
 
 #### Adding or Modifying Translations
 
 1.  **Locate the Locale Folder**: Navigate to the folder corresponding to the desired locale in the `locales/` directory.
-1.  **Edit or Add Messages**: Open the appropriate `.ftl` file and use Fluent's syntax to define or update translations. For example:
+2.  **Edit or Add Messages**: Open the appropriate `.ftl` file and use Fluent's syntax to define or update translations. For example:
 
     ```
     welcome-message = Welcome to Travel-RS Bot!
     ```
 
-1.  **Save Changes**: Save the file. A restart of the bot is necessary for the changes to take effect.
+3.  **Save Changes**: Save the file. A restart of the bot is necessary for the changes to take effect.
 
 #### Adding a New Language
 
-1.  **Create a New Locale Folder**: Add a new folder in the `locales/` directory with the appropriate locale code (e.g., `fr-FR` for French).
-1.  **`Add .ftl Files`**: Populate the folder with `.ftl` files containing translations for all required messages.
-1.  **Update Configuration**: Ensure the new language is listed in the bot's configuration or accessible via the `/setlanguage` command.
+1.  **Create a New Locale Folder**: Add a new folder in the `locales/` directory with the appropriate locale code (e.g. `fr-FR` for French).
+2.  **`Add .ftl Files`**: Populate the folder with `.ftl` files containing translations for all required messages.
+3.  **Update Configuration**: Ensure the new language is listed in the bot's configuration or accessible via the `/setlanguage` command.
 
 This structure ensures that localization is both flexible and scalable, allowing contributors to easily adapt the bot for different languages and regions. Users can switch languages using the `/setlanguage` command.
-
-## Installation
-
-To install and run Travel-RS Bot, follow these steps:
-
-1.  **Prerequisites:**
-
-    * Rust: Install Rust from the official website: <https://www.rust-lang.org/tools/install>
-    * SurrealDB: (To be defined)
-1.  **Clone the Repository:**
-
-    ```
-    git clone <repository_url>
-    cd travel-rs-bot
-    ```
-
-1.  **Configure the Bot:**
-
-    * Copy the example configuration file
-
-    ```
-    cp config/config.toml.example config/config.toml
-    ```
-
-    * Create a configuration profile
-
-    ```
-    mkdir config/profiles
-    cp config/profiles/dev-local.toml.example config/profiles/dev-local.toml
-    ```
-
-    * Edit `config/config.toml` to set the desired profile
-    * Edit the profile (e.g., `config/profiles/dev-local.toml`) with the appropriate settings for your environment.
-1.  **Set up the Database:**
-
-    * Follow the instructions to install and start SurrealDB
-    * Execute the script to initialize the database schema
-
-    ```
-    # The exact command is to be defined
-    ```
-
-1.  **Run the Bot:**
-
-    ```
-    cargo run --profile <profile_name>
-    ```
 
 ## Database Setup
 

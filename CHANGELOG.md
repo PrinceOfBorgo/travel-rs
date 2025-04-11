@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.9] - 2025-04-11
+### Added
+- Logo.
+
+### Changed
+- Updated `README.md`.
+- Updated dependencies.
+- Logs timestamps use UTC time.
+
+### Fixed
+- N/A
+
 ## [0.1.8] - 2025-03-30
 ### Added
 - `ROADMAP.md` file.
