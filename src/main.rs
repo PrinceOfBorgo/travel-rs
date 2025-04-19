@@ -19,8 +19,7 @@ mod utils;
 use chat::Chat;
 use clap::Parser;
 use commands::*;
-use dialogues::add_expense_dialogue::AddExpenseState;
-use dialogues::*;
+use dialogues::add_expense_dialogue::{self, AddExpenseState};
 use dptree::{case, deps};
 use macro_rules_attribute::apply;
 use settings::{Logging, SETTINGS};
@@ -133,11 +132,9 @@ fn handler_tree() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'st
                     case![Command::AddExpense]
                         .enter_dialogue::<Message, InMemStorage<AddExpenseState>, AddExpenseState>()
                         .branch(case![AddExpenseState::Start].endpoint(add_expense_dialogue::start))
+                        // The dialogue has already been started...
                         .endpoint(
-                            handle_process_already_running::<
-                                InMemStorage<AddExpenseState>,
-                                AddExpenseState,
-                            >,
+                            dialogues::Dialogue::<InMemStorage<AddExpenseState>, AddExpenseState>::handle_already_running,
                         ),
                 )
                 // Otherwise -> handle other commands
@@ -148,7 +145,7 @@ fn handler_tree() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'st
             dptree::entry()
                 // Check if a process is running, otherwise skip the branch...
                 .filter_async(
-                    process_already_running::<InMemStorage<AddExpenseState>, AddExpenseState>,
+                    dialogues::Dialogue::<InMemStorage<AddExpenseState>, AddExpenseState>::is_already_running,
                 )
                 // Check if the message is a response to an add expense dialogue...
                 .enter_dialogue::<Message, InMemStorage<AddExpenseState>, AddExpenseState>()
@@ -216,4 +213,3 @@ pub async fn update_chat_db(msg: Message, ctx: Arc<Mutex<Context>>) -> HandlerRe
 
     Ok(())
 }
-
