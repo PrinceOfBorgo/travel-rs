@@ -37,6 +37,7 @@ token.txt
 # Logs folder
 logs/
 
-# Ignore all configuration profiles except dev-local.toml
+# Ignore all configuration profiles except dev-local.toml and unit-tests.toml
 config/profiles/*.toml
 !config/profiles/dev-local.toml
+!config/profiles/unit-tests.toml

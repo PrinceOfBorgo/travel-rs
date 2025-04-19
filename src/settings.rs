@@ -12,6 +12,7 @@ pub static CONFIG: LazyLock<Config> = LazyLock::new(|| {
         .unwrap() // Panics if configurations cannot be loaded
 });
 
+#[cfg(not(test))]
 pub static SETTINGS: LazyLock<Settings> = LazyLock::new(|| {
     // Retrieve the profile from command line arguments or fallback to the configuration file
     let profile = ARGS
@@ -22,6 +23,15 @@ pub static SETTINGS: LazyLock<Settings> = LazyLock::new(|| {
         .add_source(config::File::with_name(&format!(
             "config/profiles/{profile}"
         )))
+        .build()
+        .unwrap();
+    conf.try_deserialize().unwrap() // Panics if configurations cannot be loaded
+});
+
+#[cfg(test)]
+pub static SETTINGS: LazyLock<Settings> = LazyLock::new(|| {
+    let conf = Config::builder()
+        .add_source(config::File::with_name("config/profiles/unit-tests"))
         .build()
         .unwrap();
     conf.try_deserialize().unwrap() // Panics if configurations cannot be loaded

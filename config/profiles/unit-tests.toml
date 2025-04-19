@@ -1,0 +1,30 @@
+[logging]
+path = ""
+file_name_prefix = ""
+level = ""
+
+[bot]
+# token_source: Specifies the source in which the bot token is provided.
+# Allowed values:
+# - "file": The token is read from a file.
+# - "env": The token is read from an environment variable.
+# - "string": The token is provided directly as a string.
+token_source = "string"
+
+# token: The bot token.
+# If token_source is "file", this should be a path to a file containing the token.
+# If token_source is "env", this should be the name of the environment variable holding the token.
+# If token_source is "string", this should be the token itself.
+token = "MOCK_TOKEN"
+
+[database]
+address = "memory"
+username = ""
+password = ""
+namespace = "test"
+database = "test"
+
+[i18n]
+default_locale = "en-US"
+locales_path = "locales"
+default_currency = "USD"

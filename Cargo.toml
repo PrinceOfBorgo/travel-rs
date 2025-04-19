@@ -33,3 +33,6 @@ rusty-money = { version = "0.4.1", features = ["iso", "crypto"] }
 clap = { version = "4.5.37", features = ["derive"] }
 tracing-appender = "0.2.3"
 
+[dev-dependencies]
+surrealdb = { version = "2.2.2", features = ["kv-mem"] }
+teloxide_tests = "0.2.0"

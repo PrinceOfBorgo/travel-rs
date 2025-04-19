@@ -217,3 +217,18 @@ pub async fn update_chat_db(msg: Message, ctx: Arc<Mutex<Context>>) -> HandlerRe
     Ok(())
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_connect_to_db() {
+        let db = db::db().await;
+        let version = db.version().await;
+        assert!(
+            version.is_ok(),
+            "Failed to connect to the database: {:?}",
+            version.err()
+        );
+    }
+}

@@ -34,8 +34,16 @@ async fn connect_to_db() -> surrealdb::Result<Surreal<Any>> {
 
     let db = connect(address).await?;
 
-    db.signin(Root { username, password }).await?;
     db.use_ns(namespace).use_db(database).await?;
+
+    #[cfg(not(test))]
+    db.signin(Root { username, password }).await?;
+
+    #[cfg(test)]
+    {
+        let schema = std::fs::read_to_string("build_travelers_db.surql").unwrap();
+        db.query(schema).await?;
+    }
 
     tracing::info!("Connected to database {address}::{namespace}::{database}");
 
