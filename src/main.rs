@@ -22,12 +22,11 @@ use commands::*;
 use dialogues::add_expense_dialogue::AddExpenseState;
 use dialogues::*;
 use dptree::{case, deps};
-use i18n::translate;
 use macro_rules_attribute::apply;
 use settings::{Logging, SETTINGS};
 use std::sync::{Arc, LazyLock, Mutex};
 use teloxide::{
-    dispatching::dialogue::{InMemStorage, Storage},
+    dispatching::{UpdateHandler, dialogue::InMemStorage},
     prelude::*,
 };
 use tracing::Level;
@@ -100,8 +99,26 @@ async fn start_bot() {
     // Initialize the database connection
     db::db().await;
 
-    let handler = Update::filter_message()
-        .map_async(update_chat_db)  // Create chat record on db if it does not exist yet or update it
+    Dispatcher::builder(bot, handler_tree())
+        .error_handler(LoggingErrorHandler::with_custom_text(
+            "An error has occurred in the dispatcher",
+        ))
+        .enable_ctrlc_handler()
+        .dependencies(deps![
+            InMemStorage::<AddExpenseState>::new(),
+            Arc::new(Mutex::new(Context {
+                langid: SETTINGS.i18n.default_locale.clone(),
+                currency: SETTINGS.i18n.default_currency.clone()
+            }))
+        ])
+        .build()
+        .dispatch()
+        .await;
+}
+
+fn handler_tree() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'static>> {
+    Update::filter_message()
+        .map_async(update_chat_db) // Create chat record on db if it does not exist yet or update it
         .branch(
             dptree::entry()
                 // Check if a command is received...
@@ -116,14 +133,23 @@ async fn start_bot() {
                     case![Command::AddExpense]
                         .enter_dialogue::<Message, InMemStorage<AddExpenseState>, AddExpenseState>()
                         .branch(case![AddExpenseState::Start].endpoint(add_expense_dialogue::start))
-                        .endpoint(process_already_running::<InMemStorage<AddExpenseState>, AddExpenseState>),
+                        .endpoint(
+                            handle_process_already_running::<
+                                InMemStorage<AddExpenseState>,
+                                AddExpenseState,
+                            >,
+                        ),
                 )
                 // Otherwise -> handle other commands
-                .branch(dptree::endpoint(commands_handler)),
+                .endpoint(commands_handler),
         )
         .branch({
-            use {add_expense_dialogue::*, AddExpenseState::*};
+            use {AddExpenseState::*, add_expense_dialogue::*};
             dptree::entry()
+                // Check if a process is running, otherwise skip the branch...
+                .filter_async(
+                    process_already_running::<InMemStorage<AddExpenseState>, AddExpenseState>,
+                )
                 // Check if the message is a response to an add expense dialogue...
                 .enter_dialogue::<Message, InMemStorage<AddExpenseState>, AddExpenseState>()
                 .branch(case![ReceiveDescription].endpoint(receive_description))
@@ -153,46 +179,7 @@ async fn start_bot() {
                     .endpoint(receive_split_among),
                 )
         })
-        .map_async(unknown_command);
-
-    Dispatcher::builder(bot, handler)
-        .error_handler(LoggingErrorHandler::with_custom_text(
-            "An error has occurred in the dispatcher",
-        ))
-        .enable_ctrlc_handler()
-        .dependencies(deps![
-            InMemStorage::<AddExpenseState>::new(),
-            Arc::new(Mutex::new(Context {
-                langid: SETTINGS.i18n.default_locale.clone(),
-                currency: SETTINGS.i18n.default_currency.clone()
-            }))
-        ])
-        .build()
-        .dispatch()
-        .await;
-}
-
-#[apply(trace_skip_all)]
-pub async fn process_already_running<S, D>(
-    bot: Bot,
-    storage: Arc<S>,
-    msg: Message,
-    ctx: Arc<Mutex<Context>>,
-) -> HandlerResult
-where
-    S: Storage<D> + ?Sized + Send + Sync + 'static,
-    <S as Storage<D>>::Error: std::error::Error + Send + Sync,
-    D: Default + Send + Sync + 'static,
-{
-    let chat_id = msg.chat.id;
-    if Arc::clone(&storage).get_dialogue(chat_id).await?.is_some() {
-        bot.send_message(
-            chat_id,
-            translate(ctx, i18n::commands::PROCESS_ALREADY_RUNNING),
-        )
-        .await?;
-    }
-    Ok(())
+        .endpoint(unknown_command)
 }
 
 #[apply(trace_skip_all)]
@@ -229,3 +216,4 @@ pub async fn update_chat_db(msg: Message, ctx: Arc<Mutex<Context>>) -> HandlerRe
 
     Ok(())
 }
+

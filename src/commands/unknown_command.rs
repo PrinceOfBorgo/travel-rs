@@ -30,53 +30,38 @@ pub async fn unknown_command(bot: Bot, msg: Message, ctx: Arc<Mutex<Context>>) -
                 .await?
                 .user
                 .username
-                .expect("Bots must have a username")
+                .expect("Bot must have a username")
         ))
         .unwrap_or(cmd_name);
 
-    match Command::parse_cmd_name(cmd_name) {
+    let reply = match Command::parse_cmd_name(cmd_name) {
         ParseCommand::ValidCommandName(command) => {
             let help_message = command.help_message(ctx.clone());
 
-            bot.send_message(
-                msg.chat.id,
-                translate_with_args(
-                    ctx,
-                    i18n::commands::INVALID_COMMAND_USAGE,
-                    &hashmap! {
-                        i18n::args::COMMAND.into() => format!("/{cmd_name}").into(),
-                        i18n::args::HELP_MESSAGE.into() => help_message.into()
-                    },
-                ),
+            translate_with_args(
+                ctx,
+                i18n::commands::INVALID_COMMAND_USAGE,
+                &hashmap! {
+                    i18n::args::COMMAND.into() => format!("/{cmd_name}").into(),
+                    i18n::args::HELP_MESSAGE.into() => help_message.into()
+                },
             )
-            .await?;
         }
-        ParseCommand::BestMatch(best_match) => {
-            bot.send_message(
-                msg.chat.id,
-                translate_with_args(
-                    ctx,
-                    i18n::commands::UNKNOWN_COMMAND_BEST_MATCH,
-                    &hashmap! {
-                        i18n::args::COMMAND.into() => text.into(),
-                        i18n::args::BEST_MATCH.into() => format!("/{}", best_match.as_ref()).into()
-                    },
-                ),
-            )
-            .await?;
-        }
-        ParseCommand::UnknownCommand => {
-            bot.send_message(
-                msg.chat.id,
-                translate_with_args(
-                    ctx,
-                    i18n::commands::UNKNOWN_COMMAND,
-                    &hashmap! {i18n::args::COMMAND.into() => text.into()},
-                ),
-            )
-            .await?;
-        }
-    }
+        ParseCommand::BestMatch(best_match) => translate_with_args(
+            ctx,
+            i18n::commands::UNKNOWN_COMMAND_BEST_MATCH,
+            &hashmap! {
+                i18n::args::COMMAND.into() => text.into(),
+                i18n::args::BEST_MATCH.into() => format!("/{}", best_match.as_ref()).into()
+            },
+        ),
+        ParseCommand::UnknownCommand => translate_with_args(
+            ctx,
+            i18n::commands::UNKNOWN_COMMAND,
+            &hashmap! {i18n::args::COMMAND.into() => text.into()},
+        ),
+    };
 
+    bot.send_message(msg.chat.id, reply).await?;
     Ok(())
 }

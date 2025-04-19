@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.1.10]
+### Added
+- N/A
+
+### Changed
+- N/A
+
+### Fixed
+- An issue where new dialogues were created when an unknown command was invoked.
+
 ## [0.1.9] - 2025-04-11
 ### Added
 - Logo.

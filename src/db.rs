@@ -21,7 +21,7 @@ impl Deref for Count {
 }
 
 /// Panics if couldn't retrieve the db info from config file.
-async fn connect_to_db() -> Result<Surreal<Any>, surrealdb::Error> {
+async fn connect_to_db() -> surrealdb::Result<Surreal<Any>> {
     let Database {
         address,
         username,
