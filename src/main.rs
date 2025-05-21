@@ -1,5 +1,9 @@
 #[macro_use]
 mod macros;
+
+#[cfg(test)]
+mod tests;
+
 mod balance;
 mod commands;
 mod consts;
@@ -24,6 +28,7 @@ use dptree::{case, deps};
 use macro_rules_attribute::apply;
 use settings::{Logging, SETTINGS};
 use std::sync::{Arc, LazyLock, Mutex};
+use surrealdb::{Surreal, engine::any::Any};
 use teloxide::{
     dispatching::{UpdateHandler, dialogue::InMemStorage},
     prelude::*,
@@ -47,6 +52,15 @@ pub struct Context {
     currency: String,
 }
 
+impl Default for Context {
+    fn default() -> Self {
+        Self {
+            langid: SETTINGS.i18n.default_locale.clone(),
+            currency: SETTINGS.i18n.default_currency.clone(),
+        }
+    }
+}
+
 #[derive(Parser, Debug)]
 #[command(name = "TravelRS Bot")]
 pub struct Args {
@@ -66,6 +80,7 @@ async fn main() -> anyhow::Result<()> {
         level,
     } = &SETTINGS.logging;
 
+    let path = std::path::Path::new(path).join(&SETTINGS.profile);
     // Initialize tracing subscriber to write logs to a file
     let file_appender = daily(path, file_name_prefix);
     let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
@@ -95,27 +110,30 @@ async fn start_bot() {
     let token = SETTINGS.token_value();
     let bot = Bot::new(token);
     tracing::info!("TravelRS bot started.");
-    // Initialize the database connection
-    db::db().await;
+
+    // Initialize the database connection.
+    let db_instance = db::db().await;
 
     Dispatcher::builder(bot, handler_tree())
         .error_handler(LoggingErrorHandler::with_custom_text(
             "An error has occurred in the dispatcher",
         ))
         .enable_ctrlc_handler()
-        .dependencies(deps![
-            InMemStorage::<AddExpenseState>::new(),
-            Arc::new(Mutex::new(Context {
-                langid: SETTINGS.i18n.default_locale.clone(),
-                currency: SETTINGS.i18n.default_currency.clone()
-            }))
-        ])
+        .dependencies(deps(db_instance))
         .build()
         .dispatch()
         .await;
 }
 
-fn handler_tree() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'static>> {
+fn deps(db_instance: Arc<Surreal<Any>>) -> DependencyMap {
+    deps![
+        InMemStorage::<AddExpenseState>::new(),
+        Arc::new(Mutex::new(Context::default())),
+        db_instance
+    ]
+}
+
+pub(crate) fn handler_tree() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'static>> {
     Update::filter_message()
         .map_async(update_chat_db) // Create chat record on db if it does not exist yet or update it
         .branch(
@@ -180,29 +198,54 @@ fn handler_tree() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'st
 }
 
 #[apply(trace_skip_all)]
-pub async fn update_chat_db(msg: Message, ctx: Arc<Mutex<Context>>) -> HandlerResult {
-    let mut chat = Chat::db_create(
-        msg.chat.id,
-        &SETTINGS.i18n.default_locale,
-        &SETTINGS.i18n.default_currency,
-    )
-    .await;
-    if chat.is_err() {
-        chat = Chat::db_update_last_interaction_utc(msg.chat.id).await;
-        match chat {
-            Ok(Some(ref chat)) => {
-                tracing::debug!("Chat updated on db: {chat:?}")
-            }
-            Ok(None) => {
-                tracing::error!("Error while updating chat with id: {}", msg.chat.id)
-            }
-            Err(ref err) => tracing::error!("{err}"),
+pub async fn update_chat_db(
+    db: Arc<Surreal<Any>>,
+    msg: Message,
+    ctx: Arc<Mutex<Context>>,
+) -> HandlerResult {
+    let mut chat_res = Chat::db_select_by_id(db.clone(), msg.chat.id).await;
+    match chat_res {
+        Ok(Some(ref chat)) => {
+            tracing::debug!("Chat found on db: {chat:?}");
+
+            chat_res = Chat::db_update_last_interaction_utc(db, msg.chat.id).await;
+            match chat_res {
+                Ok(Some(ref chat)) => {
+                    tracing::debug!("Chat updated on db: {chat:?}")
+                }
+                Ok(None) => {
+                    tracing::error!("Error while updating chat with id: {}", msg.chat.id)
+                }
+                Err(ref err) => tracing::error!("{err}"),
+            };
         }
-    } else {
-        tracing::debug!("Chat with id: {} created on db", msg.chat.id);
+        Ok(None) => {
+            tracing::debug!("Chat with id {} not found on db. Creating it.", msg.chat.id);
+
+            chat_res = Chat::db_create(
+                db,
+                msg.chat.id,
+                &SETTINGS.i18n.default_locale,
+                &SETTINGS.i18n.default_currency,
+            )
+            .await;
+
+            match chat_res {
+                Ok(Some(_)) => {
+                    tracing::debug!("Chat with id: {} created on db", msg.chat.id);
+                }
+                Ok(None) => {
+                    tracing::error!("Error while creating chat with id: {}", msg.chat.id)
+                }
+                Err(ref err) => tracing::error!("{err}"),
+            };
+        }
+        Err(ref err) => {
+            tracing::error!("{err}");
+        }
     }
 
-    if let Ok(Some(chat)) = chat {
+    if let Ok(Some(chat)) = chat_res {
         let mut ctx = ctx.lock().expect("Failed to lock context");
         ctx.langid = chat
             .lang
@@ -212,20 +255,4 @@ pub async fn update_chat_db(msg: Message, ctx: Arc<Mutex<Context>>) -> HandlerRe
     }
 
     Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[tokio::test]
-    async fn test_connect_to_db() {
-        let db = db::db().await;
-        let version = db.version().await;
-        assert!(
-            version.is_ok(),
-            "Failed to connect to the database: {:?}",
-            version.err()
-        );
-    }
 }

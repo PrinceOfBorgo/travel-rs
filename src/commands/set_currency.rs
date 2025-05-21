@@ -9,18 +9,20 @@ use crate::{
 use macro_rules_attribute::apply;
 use maplit::hashmap;
 use std::sync::{Arc, Mutex};
+use surrealdb::{Surreal, engine::any::Any};
 use teloxide::prelude::*;
 use tracing::Level;
 
 #[apply(trace_command)]
 pub async fn set_currency(
+    db: Arc<Surreal<Any>>,
     msg: &Message,
     currency: &str,
     ctx: Arc<Mutex<Context>>,
 ) -> Result<String, CommandError> {
     tracing::debug!(DEBUG_START);
     // Update chat currency on db
-    let update_res = Chat::db_update_currency(msg.chat.id, currency).await;
+    let update_res = Chat::db_update_currency(db, msg.chat.id, currency).await;
     match update_res {
         Ok(_) => {
             tracing::debug!(DEBUG_SUCCESS);

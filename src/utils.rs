@@ -1,9 +1,10 @@
-use crate::{db::db, debt::Debt};
+use crate::debt::Debt;
 use macro_rules_attribute::attribute_alias;
 use rust_decimal::Decimal;
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 use surrealdb::{
-    RecordId,
+    RecordId, Surreal,
+    engine::any::Any,
     sql::statements::{BeginStatement, CommitStatement},
 };
 use teloxide::types::ChatId;
@@ -139,14 +140,13 @@ fn simplify_balances(debts: &mut Vec<Debt>) {
     }
 }
 
-pub async fn update_debts(chat_id: ChatId) -> Result<(), surrealdb::Error> {
+pub async fn update_debts(db: Arc<Surreal<Any>>, chat_id: ChatId) -> Result<(), surrealdb::Error> {
     use crate::{
         chat::{ID as CHAT_ID, TABLE as CHAT_TB},
         debt::{CREDITOR, DEBT, DEBTOR},
         owes::{AMOUNT, TABLE as OWES},
     };
 
-    let db = db().await;
     let mut debts = db
         .query(format!(
             "SELECT {DEBTOR}, {CREDITOR}, {DEBT} 

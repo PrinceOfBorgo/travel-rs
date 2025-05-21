@@ -23,6 +23,8 @@ pub static SETTINGS: LazyLock<Settings> = LazyLock::new(|| {
         .add_source(config::File::with_name(&format!(
             "config/profiles/{profile}"
         )))
+        .set_override("profile", profile)
+        .unwrap() // Add profile to the configuration
         .build()
         .unwrap();
     conf.try_deserialize().unwrap() // Panics if configurations cannot be loaded
@@ -32,6 +34,8 @@ pub static SETTINGS: LazyLock<Settings> = LazyLock::new(|| {
 pub static SETTINGS: LazyLock<Settings> = LazyLock::new(|| {
     let conf = Config::builder()
         .add_source(config::File::with_name("config/profiles/unit-tests"))
+        .set_override("profile", "unit-tests")
+        .unwrap() // Add profile to the configuration
         .build()
         .unwrap();
     conf.try_deserialize().unwrap() // Panics if configurations cannot be loaded
@@ -84,6 +88,7 @@ pub struct I18n {
 
 #[derive(Debug, Deserialize)]
 pub struct Settings {
+    pub profile: String,
     pub logging: Logging,
     pub bot: Bot,
     pub database: Database,

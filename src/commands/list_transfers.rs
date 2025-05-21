@@ -10,11 +10,13 @@ use crate::{
 use macro_rules_attribute::apply;
 use maplit::hashmap;
 use std::sync::{Arc, Mutex};
+use surrealdb::{Surreal, engine::any::Any};
 use teloxide::prelude::*;
 use tracing::Level;
 
 #[apply(trace_command)]
 pub async fn list_transfers(
+    db: Arc<Surreal<Any>>,
     msg: &Message,
     name: Name,
     ctx: Arc<Mutex<Context>>,
@@ -22,9 +24,9 @@ pub async fn list_transfers(
     tracing::debug!(DEBUG_START);
 
     let list_res = if name.is_empty() {
-        Transfer::transfers(msg.chat.id).await
+        Transfer::transfers(db, msg.chat.id).await
     } else {
-        Transfer::transfers_by_name(msg.chat.id, name.clone()).await
+        Transfer::transfers_by_name(db, msg.chat.id, name.clone()).await
     };
 
     match list_res {

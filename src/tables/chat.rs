@@ -1,6 +1,7 @@
-use crate::db::db;
+use std::sync::Arc;
+
 use serde::{Deserialize, Serialize};
-use surrealdb::{RecordId, sql::Datetime};
+use surrealdb::{RecordId, Surreal, engine::any::Any, sql::Datetime};
 use teloxide::types::ChatId;
 use travel_rs_derive::Table;
 use unic_langid::LanguageIdentifier;
@@ -14,17 +15,19 @@ pub struct Chat {
 }
 
 impl Chat {
-    pub async fn db_select_by_id(id: ChatId) -> Result<Option<Self>, surrealdb::Error> {
-        let db = db().await;
+    pub async fn db_select_by_id(
+        db: Arc<Surreal<Any>>,
+        id: ChatId,
+    ) -> Result<Option<Self>, surrealdb::Error> {
         db.select((TABLE, id.0)).await
     }
 
     pub async fn db_create(
+        db: Arc<Surreal<Any>>,
         id: ChatId,
         langid: &LanguageIdentifier,
         currency: &str,
     ) -> Result<Option<Self>, surrealdb::Error> {
-        let db = db().await;
         db.query(format!(
             "CREATE ${ID}
             CONTENT {{
@@ -42,9 +45,9 @@ impl Chat {
     }
 
     pub async fn db_update_last_interaction_utc(
+        db: Arc<Surreal<Any>>,
         id: ChatId,
     ) -> Result<Option<Self>, surrealdb::Error> {
-        let db = db().await;
         db.query(format!(
             "UPDATE ${ID}
             SET {LAST_INTERACTION_UTC} = ${LAST_INTERACTION_UTC}",
@@ -56,10 +59,10 @@ impl Chat {
     }
 
     pub async fn db_update_lang(
+        db: Arc<Surreal<Any>>,
         id: ChatId,
         langid: &LanguageIdentifier,
     ) -> Result<Option<Self>, surrealdb::Error> {
-        let db = db().await;
         db.query(format!(
             "UPDATE ${ID}
             SET {LANG} = ${LANG}",
@@ -71,10 +74,10 @@ impl Chat {
     }
 
     pub async fn db_update_currency(
+        db: Arc<Surreal<Any>>,
         id: ChatId,
         currency: &str,
     ) -> Result<Option<Self>, surrealdb::Error> {
-        let db = db().await;
         db.query(format!(
             "UPDATE ${ID}
             SET {CURRENCY} = ${CURRENCY}",

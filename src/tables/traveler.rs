@@ -1,6 +1,6 @@
 use crate::{
     consts::{INVALID_CHARS, RESERVED_KWORDS},
-    db::{Count, db},
+    db::Count,
     errors::NameValidationError,
 };
 
@@ -9,8 +9,9 @@ use std::{
     fmt::{Debug, Display},
     ops::Deref,
     str::FromStr,
+    sync::Arc,
 };
-use surrealdb::RecordId;
+use surrealdb::{RecordId, Surreal, engine::any::Any};
 use teloxide::types::ChatId;
 use travel_rs_derive::Table;
 
@@ -77,10 +78,13 @@ pub struct Traveler {
 }
 
 impl Traveler {
-    pub async fn db_create(chat_id: ChatId, name: &Name) -> Result<Option<Self>, surrealdb::Error> {
+    pub async fn db_create(
+        db: Arc<Surreal<Any>>,
+        chat_id: ChatId,
+        name: &Name,
+    ) -> Result<Option<Self>, surrealdb::Error> {
         use super::chat::{ID as CHAT_ID, TABLE as CHAT_TB};
 
-        let db = db().await;
         db.query(format!(
             "CREATE {TABLE}
             CONTENT {{
@@ -94,10 +98,13 @@ impl Traveler {
         .and_then(|mut response| response.take::<Option<Self>>(0))
     }
 
-    pub async fn db_count(chat_id: ChatId, name: &Name) -> Result<Option<Count>, surrealdb::Error> {
+    pub async fn db_count(
+        db: Arc<Surreal<Any>>,
+        chat_id: ChatId,
+        name: &Name,
+    ) -> Result<Option<Count>, surrealdb::Error> {
         use super::chat::{ID as CHAT_ID, TABLE as CHAT_TB};
 
-        let db = db().await;
         db.query(format!(
             "SELECT count()
             FROM {TABLE}
@@ -112,10 +119,13 @@ impl Traveler {
         .and_then(|mut response| response.take::<Option<Count>>(0))
     }
 
-    pub async fn db_delete(chat_id: ChatId, name: &Name) -> Result<(), surrealdb::Error> {
+    pub async fn db_delete(
+        db: Arc<Surreal<Any>>,
+        chat_id: ChatId,
+        name: &Name,
+    ) -> Result<(), surrealdb::Error> {
         use super::chat::{ID as CHAT_ID, TABLE as CHAT_TB};
 
-        let db = db().await;
         db.query(format!("{FN_DELETE_TRAVELER}(${CHAT_ID}, ${NAME})",))
             .bind((CHAT_ID, RecordId::from_table_key(CHAT_TB, chat_id.0)))
             .bind((NAME, name.clone()))
@@ -123,10 +133,12 @@ impl Traveler {
             .map(|_| {})
     }
 
-    pub async fn db_select(chat_id: ChatId) -> Result<Vec<Self>, surrealdb::Error> {
+    pub async fn db_select(
+        db: Arc<Surreal<Any>>,
+        chat_id: ChatId,
+    ) -> Result<Vec<Self>, surrealdb::Error> {
         use super::chat::{ID as CHAT_ID, TABLE as CHAT_TB};
 
-        let db = db().await;
         db.query(format!(
             "SELECT *
             FROM {TABLE}
@@ -139,12 +151,12 @@ impl Traveler {
     }
 
     pub async fn db_select_by_name(
+        db: Arc<Surreal<Any>>,
         chat_id: ChatId,
         name: &Name,
     ) -> Result<Option<Self>, surrealdb::Error> {
         use super::chat::{ID as CHAT_ID, TABLE as CHAT_TB};
 
-        let db = db().await;
         db.query(format!(
             "SELECT *
             FROM {TABLE}

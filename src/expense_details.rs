@@ -1,17 +1,13 @@
 use crate::{
-    db::db,
-    i18n::{
-        self, Translate, translate_with_args, translate_with_args_default,
-        types::FORMAT_SHARE_DETAILS,
-    },
+    i18n::{self, Translate, translate_with_args, types::FORMAT_SHARE_DETAILS},
     money_wrapper::MoneyWrapper,
     traveler::Name,
 };
 use maplit::hashmap;
 use rust_decimal::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::fmt::Display;
-use surrealdb::RecordId;
+use std::{fmt::Display, sync::Arc};
+use surrealdb::{RecordId, Surreal, engine::any::Any};
 use teloxide::types::ChatId;
 use travel_rs_derive::Table;
 
@@ -35,16 +31,6 @@ impl Translate for ShareDetails {
             },
         )
     }
-
-    fn translate_default(&self) -> String {
-        translate_with_args_default(
-            FORMAT_SHARE_DETAILS,
-            &hashmap! {
-                i18n::args::TRAVELER_NAME.into() => self.traveler_name.clone().into(),
-                i18n::args::AMOUNT.into() => self.amount.to_string().into()
-            },
-        )
-    }
 }
 
 impl Display for ShareDetails {
@@ -65,12 +51,12 @@ pub struct ExpenseDetails {
 
 impl ExpenseDetails {
     pub async fn expense_details(
+        db: Arc<Surreal<Any>>,
         chat_id: ChatId,
         number: i64,
     ) -> Result<Option<Self>, surrealdb::Error> {
         use crate::chat::TABLE as CHAT_TB;
 
-        let db = db().await;
         db.query(format!(
             "SELECT *
             FROM {FN_GET_EXPENSE_DETAILS}(${CHAT}, ${EXPENSE_NUMBER})",

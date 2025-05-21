@@ -16,7 +16,27 @@
 - [ ] Improve error handling: distinguish errors resulting from DB queries.
   - [x] Delete from DB always returns OK even if the entry doesn't exist. Should return WARN with a dedicated message.
 - [ ] Refactor code to make it more readable and maintainable.
-- [ ] Add tests (not sure what to test).
+- [ ] Add tests:
+  - [ ] Unit tests:
+    - [x] DB connection
+    - [x] Command parsing
+    - [ ] Commands:
+      - [x] `/cancel`
+      - [x] `/help`
+      - [ ] `/setlanguage`
+      - [ ] `/setcurrency`
+      - [x] `/addtraveler`
+      - [x] `/deletetraveler`
+      - [x] `/listtravelers`
+      - [ ] `/addexpense`
+      - [ ] `/deleteexpense`
+      - [ ] `/listexpenses`
+      - [ ] `/showexpense`
+      - [ ] `/transfer`
+      - [ ] `/deletetransfer`
+      - [ ] `/listtransfers`
+      - [ ] `/showbalances`
+  - [ ] Integration tests
 - [ ] Add assertion/events to check if `in.chat = out.chat` for relationships.
 - [x] Handle `unknown_command` when command name is right but arguments are incomplete.
 - [x] Add dedicated help messages for all commands.

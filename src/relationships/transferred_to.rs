@@ -1,8 +1,11 @@
-use crate::db::{Count, db};
+use std::sync::Arc;
+
+use crate::db::Count;
 use rust_decimal::prelude::*;
 use serde::{Deserialize, Serialize};
 use surrealdb::{
-    RecordId,
+    RecordId, Surreal,
+    engine::any::Any,
     sql::statements::{BeginStatement, CommitStatement},
 };
 use teloxide::types::ChatId;
@@ -19,13 +22,13 @@ pub struct TransferredTo {
 
 impl TransferredTo {
     pub async fn db_relate(
+        db: Arc<Surreal<Any>>,
         amount: Decimal,
         from: RecordId,
         to: RecordId,
     ) -> Result<Option<Self>, surrealdb::Error> {
         use crate::traveler::CHAT;
 
-        let db = db().await;
         db.query(BeginStatement::default())
             .query(format!(
                 "LET $max = math::max(
@@ -48,13 +51,16 @@ impl TransferredTo {
             .and_then(|mut response| response.take::<Option<Self>>(1))
     }
 
-    pub async fn db_count(chat_id: ChatId, number: i64) -> Result<Option<Count>, surrealdb::Error> {
+    pub async fn db_count(
+        db: Arc<Surreal<Any>>,
+        chat_id: ChatId,
+        number: i64,
+    ) -> Result<Option<Count>, surrealdb::Error> {
         use crate::{
             chat::{ID as CHAT_ID, TABLE as CHAT_TB},
             traveler::CHAT,
         };
 
-        let db = db().await;
         db.query(format!(
             "SELECT count()
             FROM {TABLE}
@@ -69,13 +75,16 @@ impl TransferredTo {
         .and_then(|mut response| response.take::<Option<Count>>(0))
     }
 
-    pub async fn db_delete(chat_id: ChatId, number: i64) -> Result<(), surrealdb::Error> {
+    pub async fn db_delete(
+        db: Arc<Surreal<Any>>,
+        chat_id: ChatId,
+        number: i64,
+    ) -> Result<(), surrealdb::Error> {
         use crate::{
             chat::{ID as CHAT_ID, TABLE as CHAT_TB},
             traveler::CHAT,
         };
 
-        let db = db().await;
         db.query(format!(
             "DELETE {TABLE}
              WHERE 

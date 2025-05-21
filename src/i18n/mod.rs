@@ -142,20 +142,14 @@ pub fn translate_with_args(
 }
 
 pub fn translate_default(input: &str) -> String {
-    let langid = &SETTINGS.i18n.default_locale;
-    LOCALES
-        .try_lookup(langid, input)
-        .unwrap_or(input.to_owned())
+    translate(Arc::new(Mutex::new(Context::default())), input)
 }
 
 pub fn translate_with_args_default(
     input: &str,
     args: &HashMap<Cow<'static, str>, FluentValue<'_>, RandomState>,
 ) -> String {
-    let langid = &SETTINGS.i18n.default_locale;
-    LOCALES
-        .try_lookup_with_args(langid, input, args)
-        .unwrap_or(input.to_owned())
+    translate_with_args(Arc::new(Mutex::new(Context::default())), input, args)
 }
 
 pub fn is_lang_available(langid: &LanguageIdentifier) -> bool {

@@ -49,3 +49,65 @@ pub fn help(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        db::db,
+        errors::CommandError,
+        i18n::{self, Translate, translate_default},
+        tests::TestBot,
+    };
+
+    test! { help_ok,
+        let db = db().await;
+
+        let mut bot = TestBot::new(db, "/help");
+        let response = translate_default(i18n::commands::COMMAND_DESCRIPTIONS);
+        bot.test_last_message(&response).await;
+
+        bot.update("/help addtraveler");
+        let response = translate_default(i18n::help::HELP_ADD_TRAVELER);
+        bot.test_last_message(&response).await;
+
+        bot.update("/help /addtraveler");
+        let response = translate_default(i18n::help::HELP_ADD_TRAVELER);
+        bot.test_last_message(&response).await;
+
+        bot.update("/help   addtraveler  ");
+        let response = translate_default(i18n::help::HELP_ADD_TRAVELER);
+        bot.test_last_message(&response).await;
+    }
+
+    test! { help_best_match,
+        let db = db().await;
+
+        let mut bot = TestBot::new(db, "/help addtrave");
+        let err = CommandError::Help {
+            command: String::from("addtrave"),
+            best_match: Some(String::from("addtraveler")),
+        }
+        .translate_default();
+        assert!(
+            bot.last_message()
+                .await
+                .is_some_and(|msg| msg.starts_with(&err))
+        );
+    }
+
+    test! { help_unknown_command,
+        let db = db().await;
+
+        let mut bot = TestBot::new(db, "/help unknowncommand");
+        let err = CommandError::Help {
+            command: String::from("unknowncommand"),
+            best_match: None,
+        }
+        .translate_default();
+        assert!(
+            bot.last_message()
+                .await
+                .is_some_and(|msg| msg.starts_with(&err))
+        );
+    }
+}

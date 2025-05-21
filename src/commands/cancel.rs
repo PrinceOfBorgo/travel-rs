@@ -30,3 +30,50 @@ where
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        db::db,
+        i18n::{self, translate_default},
+        tests::TestBot,
+    };
+
+    test! { cancel_ok,
+        let db = db().await;
+
+        // Start process
+        let mut bot = TestBot::new(db, "/addexpense");
+        bot.dispatch().await;
+
+        // Cancel process
+        bot.update("/cancel");
+        let response = translate_default(i18n::commands::CANCEL_OK);
+        bot.test_last_message(&response).await;
+    }
+
+    test! { cancel_no_process_to_cancel,
+        let db = db().await;
+
+        let mut bot = TestBot::new(db, "/cancel");
+        let response = translate_default(i18n::commands::CANCEL_NO_PROCESS_TO_CANCEL);
+        bot.test_last_message(&response).await;
+    }
+
+    test! { cancel_twice,
+        let db = db().await;
+
+        // Start process
+        let mut bot = TestBot::new(db, "/addexpense");
+        bot.dispatch().await;
+
+        // Cancel process -> ok
+        bot.update("/cancel");
+        let response = translate_default(i18n::commands::CANCEL_OK);
+        bot.test_last_message(&response).await;
+
+        // Cancel again -> no process to cancel
+        let response = translate_default(i18n::commands::CANCEL_NO_PROCESS_TO_CANCEL);
+        bot.test_last_message(&response).await;
+    }
+}

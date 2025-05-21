@@ -9,12 +9,14 @@ use crate::{
 use macro_rules_attribute::apply;
 use maplit::hashmap;
 use std::sync::{Arc, Mutex};
+use surrealdb::{Surreal, engine::any::Any};
 use teloxide::prelude::*;
 use tracing::Level;
 use unic_langid::LanguageIdentifier;
 
 #[apply(trace_command)]
 pub async fn set_language(
+    db: Arc<Surreal<Any>>,
     msg: &Message,
     langid: LanguageIdentifier,
     ctx: Arc<Mutex<Context>>,
@@ -31,7 +33,7 @@ pub async fn set_language(
     }
 
     // Update chat language on db
-    let update_res = Chat::db_update_lang(msg.chat.id, &langid).await;
+    let update_res = Chat::db_update_lang(db, msg.chat.id, &langid).await;
     match update_res {
         Ok(_) => {
             tracing::debug!(DEBUG_SUCCESS);

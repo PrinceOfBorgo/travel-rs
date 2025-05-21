@@ -1,7 +1,8 @@
-use crate::db::db;
+use std::sync::Arc;
+
 use rust_decimal::prelude::*;
 use serde::{Deserialize, Serialize};
-use surrealdb::RecordId;
+use surrealdb::{RecordId, Surreal, engine::any::Any};
 use teloxide::types::ChatId;
 use travel_rs_derive::Table;
 
@@ -15,11 +16,11 @@ pub struct Owes {
 
 impl Owes {
     pub async fn db_relate(
+        db: Arc<Surreal<Any>>,
         amount: Decimal,
         debitor: RecordId,
         creditor: RecordId,
     ) -> Result<Option<Self>, surrealdb::Error> {
-        let db = db().await;
         db.query(format!(
             "RELATE ${IN}->{TABLE}->${OUT}
             SET {AMOUNT} = <decimal> ${AMOUNT}",
@@ -31,13 +32,15 @@ impl Owes {
         .and_then(|mut response| response.take::<Option<Self>>(0))
     }
 
-    pub async fn db_select(chat_id: ChatId) -> Result<Vec<Self>, surrealdb::Error> {
+    pub async fn db_select(
+        db: Arc<Surreal<Any>>,
+        chat_id: ChatId,
+    ) -> Result<Vec<Self>, surrealdb::Error> {
         use crate::{
             chat::{ID as CHAT_ID, TABLE as CHAT_TB},
             traveler::CHAT,
         };
 
-        let db = db().await;
         db.query(format!(
             "SELECT *
             FROM {TABLE}

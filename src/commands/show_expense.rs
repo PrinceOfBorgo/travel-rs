@@ -11,11 +11,13 @@ use crate::{
 use macro_rules_attribute::apply;
 use maplit::hashmap;
 use std::sync::{Arc, Mutex};
+use surrealdb::{Surreal, engine::any::Any};
 use teloxide::prelude::*;
 use tracing::Level;
 
 #[apply(trace_command)]
 pub async fn show_expense(
+    db: Arc<Surreal<Any>>,
     msg: &Message,
     number: i64,
     ctx: Arc<Mutex<Context>>,
@@ -23,11 +25,11 @@ pub async fn show_expense(
     tracing::debug!(DEBUG_START);
 
     // Check if expense exists on db
-    let count_res = Expense::db_count(msg.chat.id, number).await;
+    let count_res = Expense::db_count(db.clone(), msg.chat.id, number).await;
     match count_res {
         Ok(Some(count)) if *count > 0 => {
             // Retrieve expense details from db
-            let select_to_res = ExpenseDetails::expense_details(msg.chat.id, number).await;
+            let select_to_res = ExpenseDetails::expense_details(db, msg.chat.id, number).await;
             match select_to_res {
                 Ok(Some(ExpenseDetails {
                     expense_number,

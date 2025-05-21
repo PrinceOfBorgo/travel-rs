@@ -1,6 +1,7 @@
-use crate::db::db;
+use std::sync::Arc;
+
 use serde::{Deserialize, Serialize};
-use surrealdb::RecordId;
+use surrealdb::{RecordId, Surreal, engine::any::Any};
 use travel_rs_derive::Table;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Table)]
@@ -12,10 +13,10 @@ pub struct PaidFor {
 
 impl PaidFor {
     pub async fn db_relate(
+        db: Arc<Surreal<Any>>,
         traveler: RecordId,
         expense: RecordId,
     ) -> Result<Option<Self>, surrealdb::Error> {
-        let db = db().await;
         db.query(format!("RELATE ${IN}->{TABLE}->${OUT}",))
             .bind((IN, traveler))
             .bind((OUT, expense))

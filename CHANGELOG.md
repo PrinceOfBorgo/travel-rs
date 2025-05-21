@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.1.11-SNAPSHOT]
+### Added
+- Unit tests.
+
+### Changed
+- Instead of using a `'static` database connection, connections are now stored in `Arc`s. This is necessary because each test uses a new in-memory connection.
+- Logs are now written to a subfolder of the specified `logging.path`, named after the `profile` used.
+
+### Fixed
+- Check existence of `Chat` before creating or updating the record in the database.
+
 ## [0.1.10] - 2025-04-19
 ### Added
 - N/A

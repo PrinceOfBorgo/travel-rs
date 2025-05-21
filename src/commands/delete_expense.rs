@@ -10,11 +10,13 @@ use crate::{
 use macro_rules_attribute::apply;
 use maplit::hashmap;
 use std::sync::{Arc, Mutex};
+use surrealdb::{Surreal, engine::any::Any};
 use teloxide::prelude::*;
 use tracing::Level;
 
 #[apply(trace_command)]
 pub async fn delete_expense(
+    db: Arc<Surreal<Any>>,
     msg: &Message,
     number: i64,
     ctx: Arc<Mutex<Context>>,
@@ -22,14 +24,14 @@ pub async fn delete_expense(
     tracing::debug!(DEBUG_START);
 
     // Check if expense exists on db
-    let count_res = Expense::db_count(msg.chat.id, number).await;
+    let count_res = Expense::db_count(db.clone(), msg.chat.id, number).await;
     match count_res {
         Ok(Some(count)) if *count > 0 => {
             // Delete expense from db
-            let delete_res = Expense::db_delete(msg.chat.id, number).await;
+            let delete_res = Expense::db_delete(db.clone(), msg.chat.id, number).await;
             match delete_res {
                 Ok(_) => {
-                    if let Err(err_update) = update_debts(msg.chat.id).await {
+                    if let Err(err_update) = update_debts(db, msg.chat.id).await {
                         tracing::warn!("{err_update}");
                     }
                     tracing::debug!(DEBUG_SUCCESS);

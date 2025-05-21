@@ -1,7 +1,8 @@
-use crate::db::db;
+use std::sync::Arc;
+
 use rust_decimal::prelude::*;
 use serde::{Deserialize, Serialize};
-use surrealdb::RecordId;
+use surrealdb::{RecordId, Surreal, engine::any::Any};
 use travel_rs_derive::Table;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Table)]
@@ -14,11 +15,11 @@ pub struct Split {
 
 impl Split {
     pub async fn db_relate(
+        db: Arc<Surreal<Any>>,
         amount: Decimal,
         traveler: RecordId,
         expense: RecordId,
     ) -> Result<Option<Self>, surrealdb::Error> {
-        let db = db().await;
         db.query(format!(
             "RELATE ${IN}->{TABLE}->${OUT}
             SET {AMOUNT} = <decimal> ${AMOUNT}",

@@ -9,20 +9,22 @@ use crate::{
 use macro_rules_attribute::apply;
 use maplit::hashmap;
 use std::sync::{Arc, Mutex};
+use surrealdb::{Surreal, engine::any::Any};
 use teloxide::prelude::*;
 use tracing::Level;
 
 #[apply(trace_command)]
 pub async fn list_expenses(
+    db: Arc<Surreal<Any>>,
     msg: &Message,
     description: &str,
     ctx: Arc<Mutex<Context>>,
 ) -> Result<String, CommandError> {
     tracing::debug!(DEBUG_START);
     let list_res = if description.is_empty() {
-        Expense::db_select(msg.chat.id).await
+        Expense::db_select(db, msg.chat.id).await
     } else {
-        Expense::db_select_by_descr(msg.chat.id, description.to_owned()).await
+        Expense::db_select_by_descr(db, msg.chat.id, description.to_owned()).await
     };
     match list_res {
         Ok(expenses) => {

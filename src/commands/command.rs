@@ -15,6 +15,7 @@ use rust_fuzzy_search::fuzzy_search_best_n;
 use std::sync::{Arc, Mutex};
 use std::{str::FromStr, sync::LazyLock};
 use strum::{AsRefStr, EnumIter, EnumString, IntoEnumIterator};
+use surrealdb::{Surreal, engine::any::Any};
 use teloxide::{prelude::*, utils::command::BotCommands};
 use unic_langid::LanguageIdentifier;
 
@@ -149,45 +150,91 @@ impl HelpMessage for Command {
 }
 
 pub async fn commands_handler(
+    db: Arc<Surreal<Any>>,
     bot: Bot,
     msg: Message,
     cmd: Command,
     ctx: Arc<Mutex<Context>>,
 ) -> HandlerResult {
+    let reply = command_reply(db, &msg, &cmd, ctx).await;
+    bot.send_message(msg.chat.id, reply).await?;
+    Ok(())
+}
+
+pub async fn command_reply(
+    db: Arc<Surreal<Any>>,
+    msg: &Message,
+    cmd: &Command,
+    ctx: Arc<Mutex<Context>>,
+) -> String {
     use Command::*;
 
     let result = match cmd.clone() {
-        Help { command } => help(&msg, &command, ctx.clone()),
-        SetLanguage { langid } => set_language(&msg, langid, ctx.clone()).await,
-        SetCurrency { currency } => set_currency(&msg, &currency, ctx.clone()).await,
-        AddTraveler { name } => add_traveler(&msg, name, ctx.clone()).await,
-        DeleteTraveler { name } => delete_traveler(&msg, name, ctx.clone()).await,
-        ListTravelers => list_travelers(&msg, ctx.clone()).await,
-        DeleteExpense { number } => delete_expense(&msg, number, ctx.clone()).await,
-        ListExpenses { description } => list_expenses(&msg, &description, ctx.clone()).await,
-        ShowExpense { number } => show_expense(&msg, number, ctx.clone()).await,
-        Transfer { from, to, amount } => transfer(&msg, from, to, amount, ctx.clone()).await,
-        DeleteTransfer { number } => delete_transfer(&msg, number, ctx.clone()).await,
-        ListTransfers { name } => list_transfers(&msg, name, ctx.clone()).await,
-        ShowBalances { name } => show_balances(&msg, name, ctx.clone()).await,
+        Help { command } => help(msg, &command, ctx.clone()),
+        SetLanguage { langid } => set_language(db, msg, langid, ctx.clone()).await,
+        SetCurrency { currency } => set_currency(db, msg, &currency, ctx.clone()).await,
+        AddTraveler { name } => add_traveler(db, msg, name, ctx.clone()).await,
+        DeleteTraveler { name } => delete_traveler(db, msg, name, ctx.clone()).await,
+        ListTravelers => list_travelers(db, msg, ctx.clone()).await,
+        DeleteExpense { number } => delete_expense(db, msg, number, ctx.clone()).await,
+        ListExpenses { description } => list_expenses(db, msg, &description, ctx.clone()).await,
+        ShowExpense { number } => show_expense(db, msg, number, ctx.clone()).await,
+        Transfer { from, to, amount } => transfer(db, msg, from, to, amount, ctx.clone()).await,
+        DeleteTransfer { number } => delete_transfer(db, msg, number, ctx.clone()).await,
+        ListTransfers { name } => list_transfers(db, msg, name, ctx.clone()).await,
+        ShowBalances { name } => show_balances(db, msg, name, ctx.clone()).await,
         Cancel | AddExpense => {
             unreachable!("This command is handled before calling this function.")
         }
     };
 
-    match result {
-        Ok(reply) => {
-            bot.send_message(msg.chat.id, reply).await?;
+    result.unwrap_or_else(|err| {
+        format!(
+            "{error_message}\n\n{help_message}",
+            error_message = err.translate(ctx.clone()),
+            help_message = cmd.help_message(ctx)
+        )
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    mod parse_cmd_name {
+        use super::*;
+
+        test! { valid_command_name,
+            let cmd_name = "setlanguage";
+            let parsed_cmd = Command::parse_cmd_name(cmd_name);
+            assert!(matches!(
+                parsed_cmd,
+                ParseCommand::ValidCommandName(Command::SetLanguage { .. })
+            ));
         }
-        Err(err) => {
-            let reply = format!(
-                "{error_message}\n\n{help_message}",
-                error_message = err.translate(ctx.clone()),
-                help_message = cmd.help_message(ctx)
-            );
-            bot.send_message(msg.chat.id, reply).await?;
+
+        test! { best_match_wrong_case,
+            let cmd_name = "SetLanguage";
+            let parsed_cmd = Command::parse_cmd_name(cmd_name);
+            assert!(matches!(
+                parsed_cmd,
+                ParseCommand::BestMatch(Command::SetLanguage { .. })
+            ));
+        }
+
+        test! { best_match,
+            let cmd_name = "setlang";
+            let parsed_cmd = Command::parse_cmd_name(cmd_name);
+            assert!(matches!(
+                parsed_cmd,
+                ParseCommand::BestMatch(Command::SetLanguage { .. })
+            ));
+        }
+
+        test! { unknown_command,
+            let cmd_name = "unknowncommand";
+            let parsed_cmd = Command::parse_cmd_name(cmd_name);
+            assert!(matches!(parsed_cmd, ParseCommand::UnknownCommand));
         }
     }
-
-    Ok(())
 }

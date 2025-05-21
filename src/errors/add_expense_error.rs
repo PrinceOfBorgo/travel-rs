@@ -1,9 +1,6 @@
 use super::NameValidationError;
 use crate::{
-    i18n::{
-        self, Translate, translate, translate_default, translate_with_args,
-        translate_with_args_default,
-    },
+    i18n::{self, Translate, translate, translate_with_args},
     traveler::Name,
 };
 use maplit::hashmap;
@@ -75,43 +72,6 @@ impl Translate for AddExpenseError {
             Generic(err) => err.to_string(),
         }
     }
-
-    fn translate_default(&self) -> String {
-        use AddExpenseError::*;
-        match self {
-            RepeatedTravelerName { name } => translate_with_args_default(
-                i18n::errors::ADD_EXPENSE_ERROR_REPEATED_TRAVELER_NAME,
-                &hashmap! {i18n::args::NAME.into() => name.clone().into()},
-            ),
-            TravelerNotFound { name } => translate_with_args_default(
-                i18n::errors::ADD_EXPENSE_ERROR_TRAVELER_NOT_FOUND,
-                &hashmap! {i18n::args::NAME.into() => name.clone().into()},
-            ),
-            ExpenseTooHigh { tot_amount } => translate_with_args_default(
-                i18n::errors::ADD_EXPENSE_ERROR_EXPENSE_TOO_HIGH,
-                &hashmap! {i18n::args::AMOUNT.into() => tot_amount.to_string().into()},
-            ),
-            ExpenseTooLow {
-                expense,
-                tot_amount,
-            } => translate_with_args_default(
-                i18n::errors::ADD_EXPENSE_ERROR_EXPENSE_TOO_LOW,
-                &hashmap! {
-                    i18n::args::EXPENSE.into() => expense.to_string().into(),
-                    i18n::args::AMOUNT.into() => tot_amount.to_string().into()
-                },
-            ),
-            InvalidFormat { input } => translate_with_args_default(
-                i18n::errors::ADD_EXPENSE_ERROR_INVALID_FORMAT,
-                &hashmap! {i18n::args::INPUT.into() => input.clone().into()},
-            ),
-            NoTravelersSpecified => {
-                translate_default(i18n::errors::ADD_EXPENSE_ERROR_NO_TRAVELERS_SPECIFIED)
-            }
-            NameValidation(err) => err.translate_default(),
-            Generic(err) => err.to_string(),
-        }
-    }
 }
 
 impl Display for AddExpenseError {
@@ -137,16 +97,6 @@ impl Translate for EndError {
             ClosingDialogue => translate(ctx, i18n::errors::END_ERROR_CLOSING_DIALOGUE),
             NoExpenseCreated => translate(ctx, i18n::errors::END_ERROR_EXPENSE_CREATED),
             AddExpense(err) => err.translate(ctx),
-            Generic(err) => err.to_string(),
-        }
-    }
-
-    fn translate_default(&self) -> String {
-        use EndError::*;
-        match self {
-            ClosingDialogue => translate_default(i18n::errors::END_ERROR_CLOSING_DIALOGUE),
-            NoExpenseCreated => translate_default(i18n::errors::END_ERROR_EXPENSE_CREATED),
-            AddExpense(err) => err.translate_default(),
             Generic(err) => err.to_string(),
         }
     }

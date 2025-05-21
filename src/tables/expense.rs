@@ -1,16 +1,18 @@
 use crate::{
-    db::{Count, db},
-    i18n::{
-        self, Translate, translate_with_args, translate_with_args_default, types::FORMAT_EXPENSE,
-    },
+    db::Count,
+    i18n::{self, Translate, translate_with_args, types::FORMAT_EXPENSE},
     money_wrapper::MoneyWrapper,
 };
 use maplit::hashmap;
 use rust_decimal::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::fmt::{Display, Formatter};
+use std::{
+    fmt::{Display, Formatter},
+    sync::Arc,
+};
 use surrealdb::{
-    RecordId,
+    RecordId, Surreal,
+    engine::any::Any,
     sql::statements::{BeginStatement, CommitStatement},
 };
 use teloxide::types::ChatId;
@@ -29,13 +31,13 @@ pub struct Expense {
 
 impl Expense {
     pub async fn db_create(
+        db: Arc<Surreal<Any>>,
         chat_id: ChatId,
         description: String,
         amount: Decimal,
     ) -> Result<Option<Self>, surrealdb::Error> {
         use super::chat::{ID as CHAT_ID, TABLE as CHAT_TB};
 
-        let db = db().await;
         db.query(BeginStatement::default())
             .query(format!(
                 "LET $max = math::max(
@@ -61,10 +63,13 @@ impl Expense {
             .and_then(|mut response| response.take::<Option<Self>>(1))
     }
 
-    pub async fn db_count(chat_id: ChatId, number: i64) -> Result<Option<Count>, surrealdb::Error> {
+    pub async fn db_count(
+        db: Arc<Surreal<Any>>,
+        chat_id: ChatId,
+        number: i64,
+    ) -> Result<Option<Count>, surrealdb::Error> {
         use super::chat::{ID as CHAT_ID, TABLE as CHAT_TB};
 
-        let db = db().await;
         db.query(format!(
             "SELECT count()
             FROM {TABLE}
@@ -79,10 +84,13 @@ impl Expense {
         .and_then(|mut response| response.take::<Option<Count>>(0))
     }
 
-    pub async fn db_delete(chat_id: ChatId, number: i64) -> Result<(), surrealdb::Error> {
+    pub async fn db_delete(
+        db: Arc<Surreal<Any>>,
+        chat_id: ChatId,
+        number: i64,
+    ) -> Result<(), surrealdb::Error> {
         use super::chat::{ID as CHAT_ID, TABLE as CHAT_TB};
 
-        let db = db().await;
         db.query(format!(
             "DELETE {TABLE}
              WHERE 
@@ -95,10 +103,12 @@ impl Expense {
         .map(|_| {})
     }
 
-    pub async fn db_select(chat_id: ChatId) -> Result<Vec<Self>, surrealdb::Error> {
+    pub async fn db_select(
+        db: Arc<Surreal<Any>>,
+        chat_id: ChatId,
+    ) -> Result<Vec<Self>, surrealdb::Error> {
         use super::chat::{ID as CHAT_ID, TABLE as CHAT_TB};
 
-        let db = db().await;
         db.query(format!(
             "SELECT *
             FROM {TABLE}
@@ -111,13 +121,13 @@ impl Expense {
     }
 
     pub async fn db_select_by_descr(
+        db: Arc<Surreal<Any>>,
         chat_id: ChatId,
         fuzzy_descr: String,
     ) -> Result<Vec<Self>, surrealdb::Error> {
         use super::chat::{ID as CHAT_ID, TABLE as CHAT_TB};
         const FUZZY_DESCR: &str = "fuzzy_descr";
 
-        let db = db().await;
         db.query(format!(
             "SELECT *
             FROM {TABLE}
@@ -132,10 +142,12 @@ impl Expense {
         .and_then(|mut response| response.take::<Vec<Self>>(0))
     }
 
-    pub async fn db_select_by_payer(traveler: Traveler) -> Result<Vec<Self>, surrealdb::Error> {
+    pub async fn db_select_by_payer(
+        db: Arc<Surreal<Any>>,
+        traveler: Traveler,
+    ) -> Result<Vec<Self>, surrealdb::Error> {
         use crate::{paid_for::TABLE as PAID_FOR, traveler::TABLE as TRAVELER};
 
-        let db = db().await;
         db.query(format!("${TRAVELER}->{PAID_FOR}->{TABLE}.*"))
             .bind((TRAVELER, traveler))
             .await
@@ -153,17 +165,6 @@ impl Translate for Expense {
                 i18n::args::NUMBER.into() => self.number.into(),
                 i18n::args::DESCRIPTION.into() => self.description.clone().into(),
                 i18n::args::AMOUNT.into() => amount.to_string().into(),
-            },
-        )
-    }
-
-    fn translate_default(&self) -> String {
-        translate_with_args_default(
-            FORMAT_EXPENSE,
-            &hashmap! {
-                i18n::args::NUMBER.into() => self.number.into(),
-                i18n::args::DESCRIPTION.into() => self.description.clone().into(),
-                i18n::args::AMOUNT.into() => self.amount.to_string().into(),
             },
         )
     }

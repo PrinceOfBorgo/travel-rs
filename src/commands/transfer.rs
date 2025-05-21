@@ -12,11 +12,13 @@ use macro_rules_attribute::apply;
 use maplit::hashmap;
 use rust_decimal::Decimal;
 use std::sync::{Arc, Mutex};
+use surrealdb::{Surreal, engine::any::Any};
 use teloxide::prelude::*;
 use tracing::Level;
 
 #[apply(trace_command)]
 pub async fn transfer(
+    db: Arc<Surreal<Any>>,
     msg: &Message,
     from: Name,
     to: Name,
@@ -30,18 +32,19 @@ pub async fn transfer(
     let chat_id = msg.chat.id;
 
     // Get sender from db
-    let select_from_res = Traveler::db_select_by_name(chat_id, &from).await;
+    let select_from_res = Traveler::db_select_by_name(db.clone(), chat_id, &from).await;
     match select_from_res {
         Ok(Some(sender)) => {
             // Get receiver from db
-            let select_to_res = Traveler::db_select_by_name(chat_id, &to).await;
+            let select_to_res = Traveler::db_select_by_name(db.clone(), chat_id, &to).await;
             match select_to_res {
                 Ok(Some(recv)) => {
                     // Record the new transfer on db
-                    let relate_res = TransferredTo::db_relate(amount, sender.id, recv.id).await;
+                    let relate_res =
+                        TransferredTo::db_relate(db.clone(), amount, sender.id, recv.id).await;
                     match relate_res {
                         Ok(Some(transfer)) => {
-                            if let Err(err_update) = update_debts(chat_id).await {
+                            if let Err(err_update) = update_debts(db, chat_id).await {
                                 tracing::warn!("{err_update}");
                             }
                             tracing::debug!("{DEBUG_SUCCESS} - id: {}", transfer.id);

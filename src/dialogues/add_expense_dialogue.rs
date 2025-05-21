@@ -1,7 +1,6 @@
 use crate::{
     Context, HandlerResult,
     consts::*,
-    db::db,
     errors::{AddExpenseError, EndError},
     expense::Expense,
     i18n::{self, Translate, dialogues::*, translate, translate_with_args},
@@ -20,7 +19,8 @@ use std::{
     sync::{Arc, LazyLock, Mutex},
 };
 use surrealdb::{
-    RecordId,
+    RecordId, Surreal,
+    engine::any::Any,
     sql::statements::{BeginStatement, CommitStatement},
 };
 use teloxide::{
@@ -161,6 +161,7 @@ pub async fn receive_amount(
 
 #[apply(trace_state)]
 pub async fn receive_paid_by(
+    db: Arc<Surreal<Any>>,
     bot: Bot,
     dialogue: AddExpenseDialogue,
     (description, amount): (String, Decimal), // Available from `AddExpenseState::ReceivePaidBy`.
@@ -192,7 +193,7 @@ pub async fn receive_paid_by(
     };
 
     // Select traveler from db
-    let select_res = Traveler::db_select_by_name(msg.chat.id, &name).await;
+    let select_res = Traveler::db_select_by_name(db, msg.chat.id, &name).await;
     match select_res {
         Ok(Some(traveler)) => {
             bot.send_message(msg.chat.id, translate(ctx, ADD_EXPENSE_ASK_SHARES))
@@ -237,6 +238,7 @@ pub async fn receive_paid_by(
 
 #[apply(trace_state)]
 pub async fn start_split_among(
+    db: Arc<Surreal<Any>>,
     bot: Bot,
     dialogue: AddExpenseDialogue,
     (description, amount, paid_by): (String, Decimal, Traveler), // Available from `AddExpenseState::StartSplitAmong`.
@@ -247,7 +249,7 @@ pub async fn start_split_among(
     match msg.text() {
         Some(text) => {
             tracing::debug!("Received text: `{text}`.");
-            let split_res = parse_split_among(text, msg.chat.id, BTreeMap::new()).await;
+            let split_res = parse_split_among(db.clone(), text, msg.chat.id, BTreeMap::new()).await;
             match split_res {
                 Ok((SplitAmongEnum::List, split_among)) => {
                     bot.send_message(msg.chat.id, translate(ctx, ADD_EXPENSE_CONTINUE_SPLIT))
@@ -265,6 +267,7 @@ pub async fn start_split_among(
                 Ok((SplitAmongEnum::End, split_among)) => {
                     tracing::debug!(DEBUG_SUCCESS);
                     match end(
+                        db,
                         dialogue,
                         (description, amount, paid_by, split_among),
                         msg.chat.id,
@@ -338,6 +341,7 @@ pub async fn start_split_among(
 
 #[apply(trace_state)]
 pub async fn receive_split_among(
+    db: Arc<Surreal<Any>>,
     bot: Bot,
     dialogue: AddExpenseDialogue,
     (description, amount, paid_by, split_among): (
@@ -353,7 +357,7 @@ pub async fn receive_split_among(
     match msg.text() {
         Some(text) => {
             tracing::debug!("Received text: `{text}`.");
-            let split_res = parse_split_among(text, msg.chat.id, split_among).await;
+            let split_res = parse_split_among(db.clone(), text, msg.chat.id, split_among).await;
             match split_res {
                 Ok((SplitAmongEnum::List, split_among)) => {
                     bot.send_message(msg.chat.id, translate(ctx, ADD_EXPENSE_CONTINUE_SPLIT))
@@ -371,6 +375,7 @@ pub async fn receive_split_among(
                 Ok((SplitAmongEnum::End, split_among)) => {
                     tracing::debug!(DEBUG_SUCCESS);
                     match end(
+                        db,
                         dialogue,
                         (description, amount, paid_by, split_among),
                         msg.chat.id,
@@ -448,6 +453,7 @@ pub async fn receive_split_among(
     skip_all,
 )]
 pub async fn end(
+    db: Arc<Surreal<Any>>,
     dialogue: AddExpenseDialogue,
     (description, amount, paid_by, split_among): (
         String,
@@ -460,17 +466,22 @@ pub async fn end(
     tracing::debug!(DEBUG_START);
     match compute_shares(amount, split_among) {
         Ok(shares) => {
-            let create_res = Expense::db_create(chat_id, description.clone(), amount).await;
+            let create_res =
+                Expense::db_create(db.clone(), chat_id, description.clone(), amount).await;
             match create_res {
                 Ok(Some(expense)) => {
-                    if let Err(err_relate) = relate_shares(paid_by, &expense, shares).await {
-                        if let Err(err_delete) = Expense::db_delete(chat_id, expense.number).await {
+                    if let Err(err_relate) =
+                        relate_shares(db.clone(), paid_by, &expense, shares).await
+                    {
+                        if let Err(err_delete) =
+                            Expense::db_delete(db, chat_id, expense.number).await
+                        {
                             tracing::warn!("{err_delete}");
                         }
                         tracing::error!("{err_relate}");
                         Err(EndError::ClosingDialogue)
                     } else {
-                        if let Err(err_update) = update_debts(chat_id).await {
+                        if let Err(err_update) = update_debts(db, chat_id).await {
                             tracing::warn!("{err_update}");
                         }
                         match dialogue.exit().await {
@@ -503,6 +514,7 @@ pub async fn end(
 }
 
 async fn parse_split_among(
+    db: Arc<Surreal<Any>>,
     text: &str,
     chat_id: ChatId,
     mut split_among: BTreeMap<Name, AmountEnum>,
@@ -520,7 +532,7 @@ async fn parse_split_among(
     }
     // If the expense should be split evenly among all travelers
     else if text_lower == ALL_KWORD.to_lowercase() {
-        let travelers = Traveler::db_select(chat_id)
+        let travelers = Traveler::db_select(db, chat_id)
             .await
             .map_err(|err| AddExpenseError::Generic(Box::new(err)))?;
 
@@ -576,7 +588,6 @@ async fn parse_split_among(
             };
             const NAMES: &str = "names";
 
-            let db = db().await;
             let select_res = db
                 .query(format!(
                     "SELECT *
@@ -668,6 +679,7 @@ fn compute_shares(
 }
 
 async fn relate_shares(
+    db: Arc<Surreal<Any>>,
     paid_by: Traveler,
     expense: &Expense,
     shares: BTreeMap<Name, Decimal>,
@@ -681,7 +693,6 @@ async fn relate_shares(
     };
     const PAID_BY: &str = "paid_by";
 
-    let db = db().await;
     let mut query = db
         .query(BeginStatement::default())
         .query(format!("RELATE ${PAID_BY}->{PAID_FOR_TB}->${EXPENSE}"))

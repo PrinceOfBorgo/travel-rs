@@ -1,17 +1,17 @@
-use std::fmt::{Display, Formatter};
+use std::{
+    fmt::{Display, Formatter},
+    sync::Arc,
+};
 
 use crate::{
-    db::db,
-    i18n::{
-        self, Translate, translate_with_args, translate_with_args_default, types::FORMAT_TRANSFER,
-    },
+    i18n::{self, Translate, translate_with_args, types::FORMAT_TRANSFER},
     money_wrapper::MoneyWrapper,
     traveler::Name,
 };
 use maplit::hashmap;
 use rust_decimal::prelude::*;
 use serde::{Deserialize, Serialize};
-use surrealdb::RecordId;
+use surrealdb::{RecordId, Surreal, engine::any::Any};
 use teloxide::types::ChatId;
 use travel_rs_derive::Table;
 
@@ -27,10 +27,12 @@ pub struct Transfer {
 }
 
 impl Transfer {
-    pub async fn transfers(chat_id: ChatId) -> Result<Vec<Self>, surrealdb::Error> {
+    pub async fn transfers(
+        db: Arc<Surreal<Any>>,
+        chat_id: ChatId,
+    ) -> Result<Vec<Self>, surrealdb::Error> {
         use crate::chat::TABLE as CHAT_TB;
 
-        let db = db().await;
         db.query(format!(
             "SELECT *
             FROM {FN_GET_TRANSFERS}(${CHAT})
@@ -42,6 +44,7 @@ impl Transfer {
     }
 
     pub async fn transfers_by_name(
+        db: Arc<Surreal<Any>>,
         chat_id: ChatId,
         name: Name,
     ) -> Result<Vec<Self>, surrealdb::Error> {
@@ -50,7 +53,6 @@ impl Transfer {
             traveler::{CHAT, NAME},
         };
 
-        let db = db().await;
         db.query(format!(
             "SELECT *
             FROM {FN_GET_TRANSFERS}(${CHAT})
@@ -75,18 +77,6 @@ impl Translate for Transfer {
                 i18n::args::SENDER.into() => self.sender_name.clone().into(),
                 i18n::args::RECEIVER.into() => self.receiver_name.clone().into(),
                 i18n::args::AMOUNT.into() => amount.to_string().into(),
-            },
-        )
-    }
-
-    fn translate_default(&self) -> String {
-        translate_with_args_default(
-            FORMAT_TRANSFER,
-            &hashmap! {
-                i18n::args::NUMBER.into() => self.number.into(),
-                i18n::args::SENDER.into() => self.sender_name.clone().into(),
-                i18n::args::RECEIVER.into() => self.receiver_name.clone().into(),
-                i18n::args::AMOUNT.into() => self.amount.to_string().into(),
             },
         )
     }

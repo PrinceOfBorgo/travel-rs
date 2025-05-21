@@ -15,23 +15,27 @@ use crate::{
 use macro_rules_attribute::apply;
 use maplit::hashmap;
 use std::sync::{Arc, Mutex};
+use surrealdb::{Surreal, engine::any::Any};
 use teloxide::prelude::*;
 use tracing::Level;
 
 #[apply(trace_command)]
 pub async fn show_balances(
+    db: Arc<Surreal<Any>>,
     msg: &Message,
     name: Name,
     ctx: Arc<Mutex<Context>>,
 ) -> Result<String, CommandError> {
     tracing::debug!(DEBUG_START);
     let res = if name.is_empty() {
-        show_balances_no_name(msg, ctx).await
+        show_balances_no_name(db, msg, ctx).await
     } else {
         // Check if traveler exists on db
-        let count_res = Traveler::db_count(msg.chat.id, &name).await;
+        let count_res = Traveler::db_count(db.clone(), msg.chat.id, &name).await;
         match count_res {
-            Ok(Some(count)) if *count > 0 => show_balances_with_name(msg, name.clone(), ctx).await,
+            Ok(Some(count)) if *count > 0 => {
+                show_balances_with_name(db, msg, name.clone(), ctx).await
+            }
             Ok(_) => {
                 tracing::warn!(
                     "{}",
@@ -66,10 +70,11 @@ pub async fn show_balances(
 }
 
 async fn show_balances_no_name(
+    db: Arc<Surreal<Any>>,
     msg: &Message,
     ctx: Arc<Mutex<Context>>,
 ) -> Result<String, surrealdb::Error> {
-    let list_res = Balance::balances(msg.chat.id).await;
+    let list_res = Balance::balances(db, msg.chat.id).await;
     match list_res {
         Ok(balances) => {
             let reply = if balances.is_empty() {
@@ -111,12 +116,13 @@ async fn show_balances_no_name(
 }
 
 pub async fn show_balances_with_name(
+    db: Arc<Surreal<Any>>,
     msg: &Message,
     name: Name,
     ctx: Arc<Mutex<Context>>,
 ) -> Result<String, surrealdb::Error> {
     // Retrieve balances from db
-    let list_res = Balance::balances_by_name(msg.chat.id, name.to_owned()).await;
+    let list_res = Balance::balances_by_name(db, msg.chat.id, name.to_owned()).await;
     match list_res {
         Ok(balances) => {
             let reply = if balances.is_empty() {

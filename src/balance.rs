@@ -1,7 +1,9 @@
-use crate::{db::db, traveler::Name};
+use std::sync::Arc;
+
+use crate::traveler::Name;
 use rust_decimal::prelude::*;
 use serde::{Deserialize, Serialize};
-use surrealdb::RecordId;
+use surrealdb::{RecordId, Surreal, engine::any::Any};
 use teloxide::types::ChatId;
 use travel_rs_derive::Table;
 
@@ -16,10 +18,12 @@ pub struct Balance {
 }
 
 impl Balance {
-    pub async fn balances(chat_id: ChatId) -> Result<Vec<Self>, surrealdb::Error> {
+    pub async fn balances(
+        db: Arc<Surreal<Any>>,
+        chat_id: ChatId,
+    ) -> Result<Vec<Self>, surrealdb::Error> {
         use crate::chat::TABLE as CHAT_TB;
 
-        let db = db().await;
         db.query(format!(
             "SELECT *
             FROM {FN_GET_BALANCES}(${CHAT})
@@ -34,12 +38,12 @@ impl Balance {
     }
 
     pub async fn balances_by_name(
+        db: Arc<Surreal<Any>>,
         chat_id: ChatId,
         name: Name,
     ) -> Result<Vec<Self>, surrealdb::Error> {
         use crate::{chat::TABLE as CHAT_TB, traveler::NAME};
 
-        let db = db().await;
         db.query(format!(
             "SELECT *
             FROM {FN_GET_BALANCES}(${CHAT})

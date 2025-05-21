@@ -1,12 +1,11 @@
 use crate::settings::*;
 use serde::{Deserialize, Serialize};
-use std::ops::Deref;
+use std::{ops::Deref, sync::Arc};
 use surrealdb::{
     Surreal,
     engine::any::{Any, connect},
     opt::auth::Root,
 };
-use tokio::sync::OnceCell;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Count {
@@ -36,13 +35,13 @@ async fn connect_to_db() -> surrealdb::Result<Surreal<Any>> {
 
     db.use_ns(namespace).use_db(database).await?;
 
-    #[cfg(not(test))]
-    db.signin(Root { username, password }).await?;
-
-    #[cfg(test)]
-    {
+    // Initialize the database if it is in memory
+    if address == "memory" || address == "mem://" {
         let schema = std::fs::read_to_string("build_travelers_db.surql").unwrap();
         db.query(schema).await?;
+    } else {
+        // Authenticate only if it's not an in-memory database
+        db.signin(Root { username, password }).await?;
     }
 
     tracing::info!("Connected to database {address}::{namespace}::{database}");
@@ -51,8 +50,22 @@ async fn connect_to_db() -> surrealdb::Result<Surreal<Any>> {
 }
 
 /// Panics if couldn't connect to database.
-pub async fn db() -> &'static Surreal<Any> {
-    static DB: OnceCell<Surreal<Any>> = OnceCell::const_new();
-    DB.get_or_init(async || connect_to_db().await.unwrap())
-        .await
+pub async fn db() -> Arc<Surreal<Any>> {
+    let db_instance = connect_to_db().await.unwrap();
+    Arc::new(db_instance)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    test! { test_connect_to_db,
+        let db = db().await;
+        let version = db.version().await;
+        assert!(
+            version.is_ok(),
+            "Failed to connect to the database: {:?}",
+            version.err()
+        );
+    }
 }
