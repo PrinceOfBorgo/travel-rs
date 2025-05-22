@@ -1,6 +1,6 @@
 use crate::{
     Context,
-    consts::{DEBUG_START, DEBUG_SUCCESS},
+    consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     errors::CommandError,
     expense::Expense,
     i18n::{self, Translate, translate_with_args, translate_with_args_default},
@@ -22,7 +22,7 @@ pub async fn delete_traveler(
     name: Name,
     ctx: Arc<Mutex<Context>>,
 ) -> Result<String, CommandError> {
-    tracing::debug!(DEBUG_START);
+    tracing::debug!(LOG_DEBUG_START);
     if name.is_empty() {
         return Err(CommandError::EmptyInput);
     }
@@ -42,7 +42,7 @@ pub async fn delete_traveler(
                             if let Err(err_update) = update_debts(db, msg.chat.id).await {
                                 tracing::warn!("{err_update}");
                             }
-                            tracing::debug!(DEBUG_SUCCESS);
+                            tracing::debug!(LOG_DEBUG_SUCCESS);
                             Ok(translate_with_args(
                                 ctx,
                                 i18n::commands::DELETE_TRAVELER_OK,
@@ -209,12 +209,6 @@ mod tests {
             },
         );
         bot.test_last_message(&response).await;
-
-        // Revert the state of the database
-        bot.update("/deleteexpense 1");
-        bot.dispatch().await;
-        bot.update("/deletetraveler Alice");
-        bot.dispatch().await;
     }
 
     test! { delete_traveler_empty_input,

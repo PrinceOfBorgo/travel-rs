@@ -1,6 +1,6 @@
 use crate::{
     Context,
-    consts::{DEBUG_START, DEBUG_SUCCESS},
+    consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     errors::CommandError,
     i18n::{self, translate_with_args, translate_with_args_default},
     trace_command,
@@ -21,7 +21,7 @@ pub async fn delete_transfer(
     number: i64,
     ctx: Arc<Mutex<Context>>,
 ) -> Result<String, CommandError> {
-    tracing::debug!(DEBUG_START);
+    tracing::debug!(LOG_DEBUG_START);
 
     // Check if transfer relation exists on db
     let count_res = TransferredTo::db_count(db.clone(), msg.chat.id, number).await;
@@ -34,7 +34,7 @@ pub async fn delete_transfer(
                     if let Err(err_update) = update_debts(db, msg.chat.id).await {
                         tracing::warn!("{err_update}");
                     }
-                    tracing::debug!(DEBUG_SUCCESS);
+                    tracing::debug!(LOG_DEBUG_SUCCESS);
                     Ok(translate_with_args(
                         ctx,
                         i18n::commands::DELETE_TRANSFER_OK,

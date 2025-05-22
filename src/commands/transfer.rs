@@ -1,6 +1,6 @@
 use crate::{
     Context,
-    consts::{DEBUG_START, DEBUG_SUCCESS},
+    consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     errors::CommandError,
     i18n::{self, translate, translate_with_args, translate_with_args_default},
     trace_command,
@@ -25,7 +25,7 @@ pub async fn transfer(
     amount: Decimal,
     ctx: Arc<Mutex<Context>>,
 ) -> Result<String, CommandError> {
-    tracing::debug!(DEBUG_START);
+    tracing::debug!(LOG_DEBUG_START);
     if from.is_empty() || to.is_empty() {
         return Err(CommandError::EmptyInput);
     }
@@ -47,7 +47,7 @@ pub async fn transfer(
                             if let Err(err_update) = update_debts(db, chat_id).await {
                                 tracing::warn!("{err_update}");
                             }
-                            tracing::debug!("{DEBUG_SUCCESS} - id: {}", transfer.id);
+                            tracing::debug!("{LOG_DEBUG_SUCCESS} - id: {}", transfer.id);
                             Ok(translate(ctx, i18n::commands::TRANSFER_OK))
                         }
                         Ok(None) => {

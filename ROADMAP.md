@@ -23,13 +23,13 @@
     - [ ] Commands:
       - [x] `/cancel`
       - [x] `/help`
-      - [ ] `/setlanguage`
-      - [ ] `/setcurrency`
+      - [x] `/setlanguage`
+      - [x] `/setcurrency`
       - [x] `/addtraveler`
       - [x] `/deletetraveler`
       - [x] `/listtravelers`
       - [ ] `/addexpense`
-      - [ ] `/deleteexpense`
+      - [x] `/deleteexpense`
       - [ ] `/listexpenses`
       - [ ] `/showexpense`
       - [ ] `/transfer`

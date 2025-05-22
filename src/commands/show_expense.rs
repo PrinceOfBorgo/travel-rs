@@ -1,6 +1,6 @@
 use crate::{
     Context,
-    consts::{DEBUG_START, DEBUG_SUCCESS},
+    consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     errors::CommandError,
     expense::Expense,
     expense_details::ExpenseDetails,
@@ -22,7 +22,7 @@ pub async fn show_expense(
     number: i64,
     ctx: Arc<Mutex<Context>>,
 ) -> Result<String, CommandError> {
-    tracing::debug!(DEBUG_START);
+    tracing::debug!(LOG_DEBUG_START);
 
     // Check if expense exists on db
     let count_res = Expense::db_count(db.clone(), msg.chat.id, number).await;
@@ -55,7 +55,7 @@ pub async fn show_expense(
                                 .join("\n").into(),
                         },
                     );
-                    tracing::debug!(DEBUG_SUCCESS);
+                    tracing::debug!(LOG_DEBUG_SUCCESS);
                     Ok(reply)
                 }
                 Ok(_) => {

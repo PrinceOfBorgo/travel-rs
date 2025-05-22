@@ -1,7 +1,7 @@
 use crate::{
     Context,
     commands::{Command, HelpMessage, ParseCommand},
-    consts::{DEBUG_START, DEBUG_SUCCESS},
+    consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     errors::CommandError,
     i18n::{commands::COMMAND_DESCRIPTIONS, translate},
     trace_command,
@@ -17,10 +17,10 @@ pub fn help(
     command: &str,
     ctx: Arc<Mutex<Context>>,
 ) -> Result<String, CommandError> {
-    tracing::debug!(DEBUG_START);
+    tracing::debug!(LOG_DEBUG_START);
     let command = command.trim();
     if command.is_empty() {
-        tracing::debug!(DEBUG_SUCCESS);
+        tracing::debug!(LOG_DEBUG_SUCCESS);
         return Ok(translate(ctx, COMMAND_DESCRIPTIONS));
     }
 
@@ -28,7 +28,7 @@ pub fn help(
 
     match Command::parse_cmd_name(&cmd_name) {
         ParseCommand::ValidCommandName(command) => {
-            tracing::debug!(DEBUG_SUCCESS);
+            tracing::debug!(LOG_DEBUG_SUCCESS);
             Ok(command.help_message(ctx).to_string())
         }
         ParseCommand::BestMatch(best_match) => {

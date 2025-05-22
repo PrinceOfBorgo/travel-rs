@@ -1,6 +1,6 @@
 use crate::{
     Context,
-    consts::{DEBUG_START, DEBUG_SUCCESS},
+    consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     errors::CommandError,
     expense::Expense,
     i18n::{self, translate_with_args, translate_with_args_default},
@@ -21,7 +21,7 @@ pub async fn delete_expense(
     number: i64,
     ctx: Arc<Mutex<Context>>,
 ) -> Result<String, CommandError> {
-    tracing::debug!(DEBUG_START);
+    tracing::debug!(LOG_DEBUG_START);
 
     // Check if expense exists on db
     let count_res = Expense::db_count(db.clone(), msg.chat.id, number).await;
@@ -34,7 +34,7 @@ pub async fn delete_expense(
                     if let Err(err_update) = update_debts(db, msg.chat.id).await {
                         tracing::warn!("{err_update}");
                     }
-                    tracing::debug!(DEBUG_SUCCESS);
+                    tracing::debug!(LOG_DEBUG_SUCCESS);
                     Ok(translate_with_args(
                         ctx,
                         i18n::commands::DELETE_EXPENSE_OK,
@@ -65,5 +65,118 @@ pub async fn delete_expense(
             tracing::error!("{err}");
             Err(CommandError::DeleteExpense { number })
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        db::db,
+        i18n::{self, translate_default, translate_with_args_default},
+        tests::TestBot,
+    };
+    use maplit::hashmap;
+
+    test! { delete_expense_ok,
+        let db = db().await;
+
+        // Add traveler 'Alice'
+        let mut bot = TestBot::new(db.clone(), "/addtraveler Alice");
+        bot.dispatch().await;
+
+        // Add expense
+        bot.update("/addexpense");
+        bot.dispatch().await;
+        // 1. Set description
+        bot.update("Test expense");
+        bot.dispatch().await;
+        // 2. Set amount
+        bot.update("100");
+        bot.dispatch().await;
+        // 3. Set payer
+        bot.update("Alice");
+        bot.dispatch().await;
+        // 4. Split expense
+        bot.update("all");
+        bot.dispatch().await;
+
+        // Delete expense #1
+        bot.update("/deleteexpense 1");
+        let response = translate_with_args_default(
+            i18n::commands::DELETE_EXPENSE_OK,
+            &hashmap! {i18n::args::NUMBER.into() => 1.into()},
+        );
+        bot.test_last_message(&response).await;
+    }
+
+    test! { delete_expense_not_found,
+        let db = db().await;
+
+        let mut bot = TestBot::new(db, "/deleteexpense 1");
+        let response = translate_with_args_default(
+            i18n::commands::DELETE_EXPENSE_NOT_FOUND,
+            &hashmap! {i18n::args::NUMBER.into() => 1.into()},
+        );
+        bot.test_last_message(&response).await;
+    }
+
+    test! { delete_expense_twice,
+      let db = db().await;
+
+        // Add traveler 'Alice'
+        let mut bot = TestBot::new(db.clone(), "/addtraveler Alice");
+        bot.dispatch().await;
+
+        // Add expense
+        bot.update("/addexpense");
+        bot.dispatch().await;
+        // 1. Set description
+        bot.update("Test expense");
+        bot.dispatch().await;
+        // 2. Set amount
+        bot.update("100");
+        bot.dispatch().await;
+        // 3. Set payer
+        bot.update("Alice");
+        bot.dispatch().await;
+        // 4. Split expense
+        bot.update("all");
+        bot.dispatch().await;
+
+        // Delete expense #1 -> ok
+        bot.update("/deleteexpense 1");
+        let response = translate_with_args_default(
+            i18n::commands::DELETE_EXPENSE_OK,
+            &hashmap! {i18n::args::NUMBER.into() => 1.into()},
+        );
+        bot.test_last_message(&response).await;
+
+        // Delete expense #1 again -> not found
+        let response = translate_with_args_default(
+            i18n::commands::DELETE_EXPENSE_NOT_FOUND,
+            &hashmap! {i18n::args::NUMBER.into() => 1.into()},
+        );
+        bot.test_last_message(&response).await;
+    }
+
+    test! { delete_expense_invalid_usage,
+        let db = db().await;
+
+        let mut bot = TestBot::new(db, "/deleteexpense");
+        let help_message = translate_default(i18n::help::HELP_DELETE_EXPENSE);
+        let err = translate_with_args_default(
+            i18n::commands::INVALID_COMMAND_USAGE,
+            &hashmap! {
+                i18n::args::COMMAND.into() => "/deleteexpense".into(),
+                i18n::args::HELP_MESSAGE.into() => help_message.into()
+            },
+        );
+        assert!(
+            bot.last_message()
+                .await
+                .is_some_and(|msg| msg.starts_with(&err))
+        );
+
+
     }
 }

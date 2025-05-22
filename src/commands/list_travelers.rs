@@ -1,6 +1,6 @@
 use crate::{
     Context,
-    consts::{DEBUG_START, DEBUG_SUCCESS},
+    consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     errors::CommandError,
     i18n,
     i18n::translate,
@@ -19,7 +19,7 @@ pub async fn list_travelers(
     msg: &Message,
     ctx: Arc<Mutex<Context>>,
 ) -> Result<String, CommandError> {
-    tracing::debug!(DEBUG_START);
+    tracing::debug!(LOG_DEBUG_START);
     let list_res = Traveler::db_select(db, msg.chat.id).await;
     match list_res {
         Ok(travelers) => {
@@ -32,7 +32,7 @@ pub async fn list_travelers(
                     .collect::<Vec<_>>()
                     .join("\n")
             };
-            tracing::debug!(DEBUG_SUCCESS);
+            tracing::debug!(LOG_DEBUG_SUCCESS);
             Ok(reply)
         }
         Err(err) => {

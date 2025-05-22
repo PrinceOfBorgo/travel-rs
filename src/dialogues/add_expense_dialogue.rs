@@ -86,7 +86,7 @@ pub async fn start(
     msg: Message,
     ctx: Arc<Mutex<Context>>,
 ) -> HandlerResult {
-    tracing::debug!(DEBUG_START);
+    tracing::debug!(LOG_DEBUG_START);
     let reply = format!(
         "{start}\n\n{ask_description}",
         start = translate(ctx.clone(), ADD_EXPENSE_START),
@@ -94,7 +94,7 @@ pub async fn start(
     );
     bot.send_message(msg.chat.id, reply).await?;
     dialogue.update(AddExpenseState::ReceiveDescription).await?;
-    tracing::debug!(DEBUG_SUCCESS);
+    tracing::debug!(LOG_DEBUG_SUCCESS);
     Ok(())
 }
 
@@ -105,7 +105,7 @@ pub async fn receive_description(
     msg: Message,
     ctx: Arc<Mutex<Context>>,
 ) -> HandlerResult {
-    tracing::debug!(DEBUG_START);
+    tracing::debug!(LOG_DEBUG_START);
     match msg.text() {
         Some(text) => {
             bot.send_message(msg.chat.id, translate(ctx, ADD_EXPENSE_ASK_AMOUNT))
@@ -115,7 +115,7 @@ pub async fn receive_description(
                     description: text.to_owned(),
                 })
                 .await?;
-            tracing::debug!(DEBUG_SUCCESS);
+            tracing::debug!(LOG_DEBUG_SUCCESS);
         }
         None => {
             tracing::warn!("Invalid description: received `None`.");
@@ -135,7 +135,7 @@ pub async fn receive_amount(
     msg: Message,
     ctx: Arc<Mutex<Context>>,
 ) -> HandlerResult {
-    tracing::debug!(DEBUG_START);
+    tracing::debug!(LOG_DEBUG_START);
     let parsed_text = msg.text().map(|text| text.parse::<Decimal>());
     match parsed_text {
         Some(Ok(amount)) => {
@@ -147,7 +147,7 @@ pub async fn receive_amount(
                     amount,
                 })
                 .await?;
-            tracing::debug!(DEBUG_SUCCESS);
+            tracing::debug!(LOG_DEBUG_SUCCESS);
         }
         _ => {
             tracing::warn!("Invalid amount: received `{parsed_text:?}`.");
@@ -168,7 +168,7 @@ pub async fn receive_paid_by(
     msg: Message,
     ctx: Arc<Mutex<Context>>,
 ) -> HandlerResult {
-    tracing::debug!(DEBUG_START);
+    tracing::debug!(LOG_DEBUG_START);
     let text = msg.text();
     let name = match text {
         Some(text) => match Name::from_str(text) {
@@ -205,7 +205,7 @@ pub async fn receive_paid_by(
                     paid_by: traveler,
                 })
                 .await?;
-            tracing::debug!(DEBUG_SUCCESS);
+            tracing::debug!(LOG_DEBUG_SUCCESS);
         }
         Ok(None) => {
             tracing::warn!("Invalid traveler: received {name}.");
@@ -245,7 +245,7 @@ pub async fn start_split_among(
     msg: Message,
     ctx: Arc<Mutex<Context>>,
 ) -> HandlerResult {
-    tracing::debug!(DEBUG_START);
+    tracing::debug!(LOG_DEBUG_START);
     match msg.text() {
         Some(text) => {
             tracing::debug!("Received text: `{text}`.");
@@ -262,10 +262,10 @@ pub async fn start_split_among(
                             split_among,
                         })
                         .await?;
-                    tracing::debug!(DEBUG_SUCCESS);
+                    tracing::debug!(LOG_DEBUG_SUCCESS);
                 }
                 Ok((SplitAmongEnum::End, split_among)) => {
-                    tracing::debug!(DEBUG_SUCCESS);
+                    tracing::debug!(LOG_DEBUG_SUCCESS);
                     match end(
                         db,
                         dialogue,
@@ -353,7 +353,7 @@ pub async fn receive_split_among(
     msg: Message,
     ctx: Arc<Mutex<Context>>,
 ) -> HandlerResult {
-    tracing::debug!(DEBUG_START);
+    tracing::debug!(LOG_DEBUG_START);
     match msg.text() {
         Some(text) => {
             tracing::debug!("Received text: `{text}`.");
@@ -370,10 +370,10 @@ pub async fn receive_split_among(
                             split_among,
                         })
                         .await?;
-                    tracing::debug!(DEBUG_SUCCESS);
+                    tracing::debug!(LOG_DEBUG_SUCCESS);
                 }
                 Ok((SplitAmongEnum::End, split_among)) => {
-                    tracing::debug!(DEBUG_SUCCESS);
+                    tracing::debug!(LOG_DEBUG_SUCCESS);
                     match end(
                         db,
                         dialogue,
@@ -463,7 +463,7 @@ pub async fn end(
     ),
     chat_id: ChatId,
 ) -> Result<Expense, EndError> {
-    tracing::debug!(DEBUG_START);
+    tracing::debug!(LOG_DEBUG_START);
     match compute_shares(amount, split_among) {
         Ok(shares) => {
             let create_res =
@@ -486,7 +486,7 @@ pub async fn end(
                         }
                         match dialogue.exit().await {
                             Ok(_) => {
-                                tracing::debug!("{DEBUG_SUCCESS} - id: {}", expense.id);
+                                tracing::debug!("{LOG_DEBUG_SUCCESS} - id: {}", expense.id);
                                 Ok(expense)
                             }
                             Err(err_closing) => {

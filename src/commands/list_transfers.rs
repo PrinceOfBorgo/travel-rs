@@ -1,6 +1,6 @@
 use crate::{
     Context,
-    consts::{DEBUG_START, DEBUG_SUCCESS},
+    consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     errors::CommandError,
     i18n::{self, Translate, translate, translate_with_args},
     trace_command,
@@ -21,7 +21,7 @@ pub async fn list_transfers(
     name: Name,
     ctx: Arc<Mutex<Context>>,
 ) -> Result<String, CommandError> {
-    tracing::debug!(DEBUG_START);
+    tracing::debug!(LOG_DEBUG_START);
 
     let list_res = if name.is_empty() {
         Transfer::transfers(db, msg.chat.id).await
@@ -48,7 +48,7 @@ pub async fn list_transfers(
                     .collect::<Vec<_>>()
                     .join("\n")
             };
-            tracing::debug!(DEBUG_SUCCESS);
+            tracing::debug!(LOG_DEBUG_SUCCESS);
             Ok(reply)
         }
         Err(err) => {

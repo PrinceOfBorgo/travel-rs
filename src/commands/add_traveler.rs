@@ -1,6 +1,6 @@
 use crate::{
     Context,
-    consts::{DEBUG_START, DEBUG_SUCCESS},
+    consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     errors::CommandError,
     i18n::{self, translate_with_args, translate_with_args_default},
     trace_command,
@@ -20,7 +20,7 @@ pub async fn add_traveler(
     name: Name,
     ctx: Arc<Mutex<Context>>,
 ) -> Result<String, CommandError> {
-    tracing::debug!(DEBUG_START);
+    tracing::debug!(LOG_DEBUG_START);
     if name.is_empty() {
         return Err(CommandError::EmptyInput);
     }
@@ -47,7 +47,7 @@ pub async fn add_traveler(
             let create_res = Traveler::db_create(db, msg.chat.id, &name).await;
             match create_res {
                 Ok(_) => {
-                    tracing::debug!(DEBUG_SUCCESS);
+                    tracing::debug!(LOG_DEBUG_SUCCESS);
                     Ok(translate_with_args(
                         ctx,
                         i18n::commands::ADD_TRAVELER_OK,
@@ -88,10 +88,6 @@ mod tests {
             &hashmap! {i18n::args::NAME.into() => "Alice".into()},
         );
         bot.test_last_message(&response).await;
-
-        // Revert the state of the database
-        bot.update("/deletetraveler Alice");
-        bot.dispatch().await;
     }
 
     test! { add_traveler_already_added,
@@ -107,10 +103,6 @@ mod tests {
             &hashmap! {i18n::args::NAME.into() => "Alice".into()},
         );
         bot.test_last_message(&response).await;
-
-        // Revert the state of the database
-        bot.update("/deletetraveler Alice");
-        bot.dispatch().await;
     }
 
     test! { add_traveler_empty_input,

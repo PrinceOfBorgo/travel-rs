@@ -1,7 +1,7 @@
 use crate::{
     Context,
     balance::Balance,
-    consts::{DEBUG_START, DEBUG_SUCCESS},
+    consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     errors::CommandError,
     i18n::{
         self,
@@ -26,7 +26,7 @@ pub async fn show_balances(
     name: Name,
     ctx: Arc<Mutex<Context>>,
 ) -> Result<String, CommandError> {
-    tracing::debug!(DEBUG_START);
+    tracing::debug!(LOG_DEBUG_START);
     let res = if name.is_empty() {
         show_balances_no_name(db, msg, ctx).await
     } else {
@@ -59,7 +59,7 @@ pub async fn show_balances(
 
     match res {
         Ok(reply) => {
-            tracing::debug!(DEBUG_SUCCESS);
+            tracing::debug!(LOG_DEBUG_SUCCESS);
             Ok(reply)
         }
         Err(err) => {

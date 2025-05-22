@@ -1,6 +1,6 @@
 use crate::{
     Context,
-    consts::{DEBUG_START, DEBUG_SUCCESS},
+    consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     errors::CommandError,
     expense::Expense,
     i18n::{self, Translate, translate, translate_with_args},
@@ -20,12 +20,14 @@ pub async fn list_expenses(
     description: &str,
     ctx: Arc<Mutex<Context>>,
 ) -> Result<String, CommandError> {
-    tracing::debug!(DEBUG_START);
+    tracing::debug!(LOG_DEBUG_START);
+
     let list_res = if description.is_empty() {
         Expense::db_select(db, msg.chat.id).await
     } else {
         Expense::db_select_by_descr(db, msg.chat.id, description.to_owned()).await
     };
+
     match list_res {
         Ok(expenses) => {
             let reply = if expenses.is_empty() {
@@ -45,7 +47,7 @@ pub async fn list_expenses(
                     .collect::<Vec<_>>()
                     .join("\n")
             };
-            tracing::debug!(DEBUG_SUCCESS);
+            tracing::debug!(LOG_DEBUG_SUCCESS);
             Ok(reply)
         }
         Err(err) => {

@@ -1,7 +1,10 @@
-use crate::{deps, handler_tree};
-use std::sync::Arc;
+use crate::{Context, deps, handler_tree};
+use std::sync::{Arc, Mutex};
 use surrealdb::{Surreal, engine::any::Any};
-use teloxide::types::{Chat, ChatId};
+use teloxide::{
+    dptree::di::DependencySupplier,
+    types::{Chat, ChatId},
+};
 use teloxide_tests::{MockBot, MockMessageText, mock_bot::DistributionKey};
 
 pub(crate) struct TestBot {
@@ -64,6 +67,11 @@ impl TestBot {
             .last()
             .and_then(|msg| msg.text())
             .map(|s| s.to_owned())
+    }
+
+    pub fn context(&self) -> Arc<Mutex<Context>> {
+        let arc: Arc<Arc<Mutex<Context>>> = self.bot.dependencies.get();
+        Arc::clone(&arc)
     }
 }
 
