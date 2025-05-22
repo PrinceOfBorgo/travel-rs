@@ -63,7 +63,7 @@ help-add-expense =
     - Send a message with the description of the expense.
     - Send a message with the amount of the expense.
     - Send a message with the name of the traveler who paid the expense.
-    - Send a message with the travelers who partecipate in the expense and their shares.
+    - Send one or more messages with the travelers who partecipate in the expense and their shares.
 
     The process can be interrupted at any time by sending `/{-cancel-command}`. 
 

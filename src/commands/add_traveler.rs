@@ -93,11 +93,11 @@ mod tests {
     test! { add_traveler_already_added,
         let db = db().await;
 
-        // Add traveler 'Alice'
+        // Add traveler "Alice"
         let mut bot = TestBot::new(db, "/addtraveler Alice");
         bot.dispatch().await;
 
-        // Try to add traveler 'Alice' again
+        // Try to add traveler "Alice" again
         let response = translate_with_args_default(
             i18n::commands::ADD_TRAVELER_ALREADY_ADDED,
             &hashmap! {i18n::args::NAME.into() => "Alice".into()},

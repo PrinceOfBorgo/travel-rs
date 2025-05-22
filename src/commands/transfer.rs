@@ -117,3 +117,94 @@ pub async fn transfer(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        db::db,
+        errors::CommandError,
+        i18n::{self, Translate, translate_default, translate_with_args_default},
+        tests::TestBot,
+    };
+    use maplit::hashmap;
+
+    test! { transfer_ok,
+        let db = db().await;
+        let mut bot = TestBot::new(db, "");
+
+        // Add travelers "Alice" and "Bob"
+        add_traveler(&mut bot, "Alice").await;
+        add_traveler(&mut bot, "Bob").await;
+
+        // Transfer 100 from Alice to Bob
+        bot.update("/transfer Alice Bob 100");
+        let response = translate_default(i18n::commands::TRANSFER_OK);
+        bot.test_last_message(&response).await;
+    }
+
+    test! { transfer_receiver_not_found,
+        let db = db().await;
+        let mut bot = TestBot::new(db, "");
+
+        // Add traveler "Alice"
+        add_traveler(&mut bot, "Alice").await;
+
+        // Try to transfer 100 from Alice to Bob -> Bob not found
+        bot.update("/transfer Alice Bob 100");
+        let response = translate_with_args_default(
+            i18n::commands::TRANSFER_RECEIVER_NOT_FOUND,
+            &hashmap! {i18n::args::NAME.into() => "Bob".into()},
+        );
+        bot.test_last_message(&response).await;
+    }
+
+    test! { transfer_sender_not_found,
+        let db = db().await;
+        let mut bot = TestBot::new(db, "");
+
+        // Add traveler "Bob"
+        add_traveler(&mut bot, "Bob").await;
+
+        // Try to transfer 100 from Alice to Bob -> Alice not found
+        bot.update("/transfer Alice Bob 100");
+        let response = translate_with_args_default(
+            i18n::commands::TRANSFER_SENDER_NOT_FOUND,
+            &hashmap! {i18n::args::NAME.into() => "Alice".into()},
+        );
+        bot.test_last_message(&response).await;
+    }
+
+    test! { transfer_empty_input,
+        let db = db().await;
+
+        // Missing receiver
+        let mut bot = TestBot::new(db, "/transfer Alice  100");
+        let err = CommandError::EmptyInput.translate_default();
+        assert!(
+            bot.last_message()
+                .await
+                .is_some_and(|msg| msg.starts_with(&err))
+        );
+
+        // Missing sender
+        bot.update("/transfer  Bob 100");
+        assert!(
+            bot.last_message()
+                .await
+                .is_some_and(|msg| msg.starts_with(&err))
+        );
+
+        // Missing both
+        bot.update("/transfer   100");
+        assert!(
+            bot.last_message()
+                .await
+                .is_some_and(|msg| msg.starts_with(&err))
+        );
+    }
+
+    async fn add_traveler(bot: &mut TestBot, name: &str) {
+        bot.update(&format!("/addtraveler {name}"));
+        bot.dispatch().await;
+    }
+}

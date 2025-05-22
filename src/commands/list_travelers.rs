@@ -53,14 +53,14 @@ mod tests {
     test! { list_travelers_ok,
         let db = db().await;
 
-        // Add traveler 'Alice'
+        // Add traveler "Alice"
         let mut bot = TestBot::new(db.clone(), "/addtraveler Alice");
         bot.dispatch().await;
-        // Add traveler 'Bob'
+        // Add traveler "Bob"
         bot.update("/addtraveler Bob");
         bot.dispatch().await;
 
-        // List travelers -> 'Alice', 'Bob'
+        // List travelers -> "Alice", "Bob"
         bot.update("/listtravelers");
         let response = "Alice\nBob";
         bot.test_last_message(response).await;

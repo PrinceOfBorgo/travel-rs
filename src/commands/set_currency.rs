@@ -73,7 +73,7 @@ mod tests {
     test! { set_currency_format_ok,
         let db = db().await;
 
-        // Add traveler 'Alice'
+        // Add traveler "Alice"
         let mut bot = TestBot::new(db.clone(), "/addtraveler Alice");
         bot.dispatch().await;
 
@@ -93,7 +93,7 @@ mod tests {
         bot.update("all");
         bot.dispatch().await;
 
-        // Retrieve traveler 'Alice' and their expenses
+        // Retrieve traveler "Alice" and their expenses
         let traveler =
             Traveler::db_select_by_name(db.clone(), ChatId(bot.chat_id()), &Name::from_str("Alice").unwrap())
                 .await

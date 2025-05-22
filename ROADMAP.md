@@ -30,11 +30,11 @@
       - [x] `/listtravelers`
       - [ ] `/addexpense`
       - [x] `/deleteexpense`
-      - [ ] `/listexpenses`
+      - [x] `/listexpenses`
       - [ ] `/showexpense`
-      - [ ] `/transfer`
-      - [ ] `/deletetransfer`
-      - [ ] `/listtransfers`
+      - [x] `/transfer`
+      - [x] `/deletetransfer`
+      - [x] `/listtransfers`
       - [ ] `/showbalances`
   - [ ] Integration tests
 - [ ] Add assertion/events to check if `in.chat = out.chat` for relationships.

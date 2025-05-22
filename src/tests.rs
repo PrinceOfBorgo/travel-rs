@@ -10,7 +10,6 @@ use teloxide_tests::{MockBot, MockMessageText, mock_bot::DistributionKey};
 pub(crate) struct TestBot {
     bot: MockBot<Box<dyn std::error::Error + Send + Sync>, DistributionKey>,
     chat_id: i64,
-    db_instance: Arc<Surreal<Any>>,
 }
 
 impl TestBot {
@@ -27,11 +26,7 @@ impl TestBot {
         let mock_msg = mock_text_from_chat_id(text, chat_id);
         let mut bot = MockBot::new(mock_msg, handler_tree());
         bot.dependencies(deps(db_instance.clone()));
-        Self {
-            bot,
-            chat_id,
-            db_instance,
-        }
+        Self { bot, chat_id }
     }
 
     pub fn chat_id(&self) -> i64 {

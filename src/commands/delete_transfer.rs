@@ -67,3 +67,101 @@ pub async fn delete_transfer(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        db::db,
+        i18n::{self, translate_default, translate_with_args_default},
+        tests::TestBot,
+    };
+    use maplit::hashmap;
+
+    test! { delete_transfer_ok,
+        let db = db().await;
+        let mut bot = TestBot::new(db, "");
+
+        // Transfer 100 from Alice to Bob
+        add_travelers_and_transfer(&mut bot, "Alice", "Bob", 100.0).await;
+
+        // Delete transfer #1
+        bot.update("/deletetransfer 1");
+        let response = translate_with_args_default(
+            i18n::commands::DELETE_TRANSFER_OK,
+            &hashmap! {i18n::args::NUMBER.into() => 1.into()},
+        );
+        bot.test_last_message(&response).await;
+    }
+
+    test! { delete_transfer_not_found,
+        let db = db().await;
+
+        let mut bot = TestBot::new(db, "/deletetransfer 1");
+        let response = translate_with_args_default(
+            i18n::commands::DELETE_TRANSFER_NOT_FOUND,
+            &hashmap! {i18n::args::NUMBER.into() => 1.into()},
+        );
+        bot.test_last_message(&response).await;
+    }
+
+    test! { delete_transfer_twice,
+        let db = db().await;
+        let mut bot = TestBot::new(db, "");
+
+        // Transfer 100 from Alice to Bob
+        add_travelers_and_transfer(&mut bot, "Alice", "Bob", 100.0).await;
+
+        // Delete transfer #1 -> ok
+        bot.update("/deletetransfer 1");
+        let response = translate_with_args_default(
+            i18n::commands::DELETE_TRANSFER_OK,
+            &hashmap! {i18n::args::NUMBER.into() => 1.into()},
+        );
+        bot.test_last_message(&response).await;
+
+        // Delete transfer #1 again -> not found
+        let response = translate_with_args_default(
+            i18n::commands::DELETE_TRANSFER_NOT_FOUND,
+            &hashmap! {i18n::args::NUMBER.into() => 1.into()},
+        );
+        bot.test_last_message(&response).await;
+    }
+
+    test! { delete_transfer_invalid_usage,
+        let db = db().await;
+
+        let mut bot = TestBot::new(db, "/deletetransfer");
+        let help_message = translate_default(i18n::help::HELP_DELETE_TRANSFER);
+        let err = translate_with_args_default(
+            i18n::commands::INVALID_COMMAND_USAGE,
+            &hashmap! {
+                i18n::args::COMMAND.into() => "/deletetransfer".into(),
+                i18n::args::HELP_MESSAGE.into() => help_message.into()
+            },
+        );
+        assert!(
+            bot.last_message()
+                .await
+                .is_some_and(|msg| msg.starts_with(&err))
+        );
+    }
+
+    async fn add_travelers_and_transfer(
+        bot: &mut TestBot,
+        sender: &str,
+        receiver: &str,
+        amount: f64,
+    ) {
+        // Add sender
+        bot.update(&format!("/addtraveler {sender}"));
+        bot.dispatch().await;
+
+        // Add receiver
+        bot.update(&format!("/addtraveler {receiver}"));
+        bot.dispatch().await;
+
+        // Transfer amount from sender to receiver
+        bot.update(&format!("/transfer {sender} {receiver} {amount}"));
+        bot.dispatch().await;
+    }
+}

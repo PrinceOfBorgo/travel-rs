@@ -80,7 +80,7 @@ mod tests {
     test! { delete_expense_ok,
         let db = db().await;
 
-        // Add traveler 'Alice'
+        // Add traveler "Alice"
         let mut bot = TestBot::new(db.clone(), "/addtraveler Alice");
         bot.dispatch().await;
 
@@ -121,9 +121,9 @@ mod tests {
     }
 
     test! { delete_expense_twice,
-      let db = db().await;
+        let db = db().await;
 
-        // Add traveler 'Alice'
+        // Add traveler "Alice"
         let mut bot = TestBot::new(db.clone(), "/addtraveler Alice");
         bot.dispatch().await;
 
@@ -176,7 +176,5 @@ mod tests {
                 .await
                 .is_some_and(|msg| msg.starts_with(&err))
         );
-
-
     }
 }

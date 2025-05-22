@@ -63,7 +63,7 @@ help-add-expense =
     - Inviare un messaggio con la descrizione della spesa.
     - Inviare un messaggio con l'importo della spesa.
     - Inviare un messaggio con il nome del viaggiatore che ha pagato la spesa.
-    - Inviare un messaggio con i viaggiatori che partecipano alla spesa e le loro quote.
+    - Inviare uno o più messaggi con i viaggiatori che partecipano alla spesa e le loro quote.
 
     Il processo può essere interrotto in qualsiasi momento inviando `/{-cancel-command}`. 
 

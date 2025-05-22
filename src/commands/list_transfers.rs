@@ -57,3 +57,123 @@ pub async fn list_transfers(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        db::db,
+        i18n::{self, Translate, translate_default, translate_with_args_default},
+        tests::TestBot,
+        transfer::Transfer,
+        traveler::Name,
+    };
+    use maplit::hashmap;
+    use std::str::FromStr;
+    use teloxide::types::ChatId;
+
+    test! { list_transfers_ok,
+        let db = db().await;
+        let mut bot = TestBot::new(db.clone(), "");
+
+        // Add travelers "Alice", "Bob" and "Charlie"
+        add_traveler(&mut bot, "Alice").await;
+        add_traveler(&mut bot, "Bob").await;
+        add_traveler(&mut bot, "Charlie").await;
+
+        // Transfer 100 from Alice to Bob
+        transfer(&mut bot, "Alice", "Bob", 100.0).await;
+        // Transfer 50 from Bob to Charlie
+        transfer(&mut bot, "Bob", "Charlie", 50.0).await;
+
+        // List transfers
+        bot.update("/listtransfers");
+        let transfers = Transfer::transfers(db, ChatId(bot.chat_id())).await.unwrap();
+        // Check that two transfers has been recorded
+        assert_eq!(transfers.len(), 2);
+        let response = transfers
+            .into_iter()
+            .map(|transfer| transfer.translate_default())
+            .collect::<Vec<_>>()
+            .join("\n");
+        bot.test_last_message(&response).await;
+    }
+
+    test! { list_transfers_by_name_ok,
+        let db = db().await;
+        let mut bot = TestBot::new(db.clone(), "");
+
+        // Add travelers "Alice", "Bob" and "Charlie"
+        add_traveler(&mut bot, "Alice").await;
+        add_traveler(&mut bot, "Bob").await;
+        add_traveler(&mut bot, "Charlie").await;
+
+        // Transfer 100 from Alice to Bob
+        transfer(&mut bot, "Alice", "Bob", 100.0).await;
+        // Transfer 50 from Bob to Charlie
+        transfer(&mut bot, "Bob", "Charlie", 50.0).await;
+
+        // List transfers related to Alice
+        bot.update("/listtransfers Alice");
+        let transfers = Transfer::transfers_by_name(db.clone(), ChatId(bot.chat_id()), Name::from_str("Alice").unwrap()).await.unwrap();
+        // Check that only one transfer is returned
+        assert_eq!(transfers.len(), 1);
+        let response = transfers
+            .into_iter()
+            .map(|transfer| transfer.translate_default())
+            .collect::<Vec<_>>()
+            .join("\n");
+        bot.test_last_message(&response).await;
+
+        // List transfers related to Bob
+        bot.update("/listtransfers Bob");
+        let transfers = Transfer::transfers_by_name(db, ChatId(bot.chat_id()), Name::from_str("Bob").unwrap()).await.unwrap();
+        // Check that two transfers are returned
+        assert_eq!(transfers.len(), 2);
+        let response = transfers
+            .into_iter()
+            .map(|transfer| transfer.translate_default())
+            .collect::<Vec<_>>()
+            .join("\n");
+        bot.test_last_message(&response).await;
+    }
+
+    test! { list_transfers_not_found,
+        let db = db().await;
+
+        let mut bot = TestBot::new(db, "/listtransfers");
+        let response = translate_default(
+            i18n::commands::LIST_TRANSFERS_NOT_FOUND,
+        );
+        bot.test_last_message(&response).await;
+    }
+
+    test! { list_transfers_name_not_found,
+        let db = db().await;
+        let mut bot = TestBot::new(db.clone(), "");
+
+        // Add travelers "Alice" and "Bob"
+        add_traveler(&mut bot, "Alice").await;
+        add_traveler(&mut bot, "Bob").await;
+
+        // Transfer 100 from Alice to Bob
+        transfer(&mut bot, "Alice", "Bob", 100.0).await;
+
+        // List transfers related to Charlie -> not found
+        bot.update("/listtransfers Charlie");
+        let response = translate_with_args_default(
+            i18n::commands::LIST_TRANSFERS_NAME_NOT_FOUND,
+            &hashmap! {i18n::args::NAME.into() => "Charlie".into()},
+        );
+        bot.test_last_message(&response).await;
+    }
+
+    async fn add_traveler(bot: &mut TestBot, name: &str) {
+        bot.update(&format!("/addtraveler {name}"));
+        bot.dispatch().await;
+    }
+
+    async fn transfer(bot: &mut TestBot, sender: &str, receiver: &str, amount: f64) {
+        bot.update(&format!("/transfer {sender} {receiver} {amount}"));
+        bot.dispatch().await;
+    }
+}

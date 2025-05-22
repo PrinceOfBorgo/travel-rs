@@ -120,11 +120,11 @@ mod tests {
     test! { delete_traveler_ok,
         let db = db().await;
 
-        // Add traveler 'Alice'
+        // Add traveler "Alice"
         let mut bot = TestBot::new(db, "/addtraveler Alice");
         bot.dispatch().await;
 
-        // Delete traveler 'Alice'
+        // Delete traveler "Alice"
         bot.update("/deletetraveler Alice");
         let response = translate_with_args_default(
             i18n::commands::DELETE_TRAVELER_OK,
@@ -147,11 +147,11 @@ mod tests {
     test! { delete_traveler_twice,
         let db = db().await;
 
-        // Add traveler 'Alice'
+        // Add traveler "Alice"
         let mut bot = TestBot::new(db, "/addtraveler Alice");
         bot.dispatch().await;
 
-        // Delete traveler 'Alice' -> ok
+        // Delete traveler "Alice" -> ok
         bot.update("/deletetraveler Alice");
         let response = translate_with_args_default(
             i18n::commands::DELETE_TRAVELER_OK,
@@ -159,7 +159,7 @@ mod tests {
         );
         bot.test_last_message(&response).await;
 
-        // Delete traveler 'Alice' again -> not found
+        // Delete traveler "Alice" again -> not found
         let response = translate_with_args_default(
             i18n::commands::DELETE_TRAVELER_NOT_FOUND,
             &hashmap! {i18n::args::NAME.into() => "Alice".into()},
@@ -170,7 +170,7 @@ mod tests {
     test! { delete_traveler_has_expenses,
         let db = db().await;
 
-        // Add traveler 'Alice'
+        // Add traveler "Alice"
         let mut bot = TestBot::new(db.clone(), "/addtraveler Alice");
         bot.dispatch().await;
 
@@ -190,16 +190,18 @@ mod tests {
         bot.update("all");
         bot.dispatch().await;
 
-        // Retrieve traveler 'Alice' and their expenses
+        // Retrieve traveler "Alice" and their expenses
         let traveler =
             Traveler::db_select_by_name(db.clone(), ChatId(bot.chat_id()), &Name::from_str("Alice").unwrap())
                 .await
                 .unwrap()
                 .unwrap();
         let expenses = Expense::db_select_by_payer(db, traveler).await.unwrap();
+        // Check that only one expense is returned
+        assert_eq!(expenses.len(), 1);
         let expense = expenses.first().unwrap();
 
-        // Delete traveler 'Alice' -> has expenses
+        // Delete traveler "Alice" -> has expenses
         bot.update("/deletetraveler Alice");
         let response = translate_with_args_default(
             i18n::commands::DELETE_TRAVELER_HAS_EXPENSES,
