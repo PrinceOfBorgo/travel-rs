@@ -3,10 +3,6 @@ name: Release
 on:
   push:
     branches: [ main ]
-    paths-ignore:
-      - 'CHANGELOG.md'
-      - 'Cargo.toml'
-      - 'Cargo.lock'
 
 jobs:
   release:
