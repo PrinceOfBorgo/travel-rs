@@ -16,13 +16,13 @@
 - [ ] Improve error handling: distinguish errors resulting from DB queries.
   - [x] Delete from DB always returns OK even if the entry doesn't exist. Should return WARN with a dedicated message.
 - [ ] Refactor code to make it more readable and maintainable.
-- [ ] Add tests:
+- [x] Add tests:
   - [x] Unit tests:
     - [x] DB connection
     - [x] Command parsing
     - [x] Traveler name parsing
     - [x] Commands
-  - [ ] Integration tests
+  - [x] Integration tests
 - [ ] Add assertion/events to check if `in.chat = out.chat` for relationships.
 - [x] Handle `unknown_command` when command name is right but arguments are incomplete.
 - [x] Add dedicated help messages for all commands.

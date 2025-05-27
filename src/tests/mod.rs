@@ -1,3 +1,5 @@
+mod integration_test;
+
 use crate::{Context, deps, handler_tree};
 use std::sync::{Arc, Mutex};
 use surrealdb::{Surreal, engine::any::Any};

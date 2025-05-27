@@ -1,8 +1,8 @@
 # Changelog
 
-## [0.1.11-SNAPSHOT]
+## [0.1.11] - 2025-05-27
 ### Added
-- Unit tests.
+- Unit and integration tests.
 
 ### Changed
 - Instead of using a `'static` database connection, connections are now stored in `Arc`s. This is necessary because each test uses a new in-memory connection.

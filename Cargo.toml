@@ -1,6 +1,6 @@
 [package]
 name = "travel-rs"
-version = "0.1.10"
+version = "0.1.11"
 authors = ["Michele Medori <princeofborgo@hotmail.com>"]
 edition = "2024"
 
@@ -9,9 +9,9 @@ edition = "2024"
 [dependencies]
 teloxide = { version = "0.15.0", features = ["macros"] }
 log = "0.4.27"
-tokio = { version = "1.45.0", features = ["rt-multi-thread", "macros"] }
+tokio = { version = "1.45.1", features = ["rt-multi-thread", "macros"] }
 rust_decimal = "1.37.1"
-surrealdb = { version = "2.3.2", features = ["kv-mem"] }
+surrealdb = { version = "2.3.3", features = ["kv-mem"] }
 config = "0.15.11"
 anyhow = "1.0.98"
 serde = "1.0.219"
