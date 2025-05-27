@@ -3,7 +3,7 @@ use crate::{
     consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     errors::CommandError,
     i18n::{self, translate_with_args, translate_with_args_default},
-    trace_command,
+    trace_command_db,
     transferred_to::TransferredTo,
     utils::update_debts,
 };
@@ -14,7 +14,7 @@ use surrealdb::{Surreal, engine::any::Any};
 use teloxide::prelude::*;
 use tracing::Level;
 
-#[apply(trace_command)]
+#[apply(trace_command_db)]
 pub async fn delete_transfer(
     db: Arc<Surreal<Any>>,
     msg: &Message,

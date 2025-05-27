@@ -4,7 +4,7 @@ use crate::{
     errors::CommandError,
     expense::Expense,
     i18n::{self, translate_with_args, translate_with_args_default},
-    trace_command,
+    trace_command_db,
     utils::update_debts,
 };
 use macro_rules_attribute::apply;
@@ -14,7 +14,7 @@ use surrealdb::{Surreal, engine::any::Any};
 use teloxide::prelude::*;
 use tracing::Level;
 
-#[apply(trace_command)]
+#[apply(trace_command_db)]
 pub async fn delete_expense(
     db: Arc<Surreal<Any>>,
     msg: &Message,

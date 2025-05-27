@@ -61,12 +61,6 @@ show-balances-traveler-not-found = Impossibile trovare il viaggiatore "{$name}" 
 ## /showexpense
 
 show-expense-not-found = Impossibile trovare la spesa #{$number} per mostrare i dettagli.
-show-expense-ok = 
-    Numero: {$number} - Descrizione: {$description}
-    Importo: {$amount}
-    Pagato da: {$creditor}
-    Quote:
-    {$shares}
 
 ## /transfer
 

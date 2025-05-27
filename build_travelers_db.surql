@@ -91,7 +91,7 @@ DEFINE FUNCTION fn::calc_debts($chat: record<chat>) {
     // Return the summed debts
     RETURN $sum_debts;
 } COMMENT 'Calculate and simplify debts between users in a chat' PERMISSIONS FULL;
-DEFINE FUNCTION fn::clear_debts($chat: record<chat>) { DELETE owes WHERE in.chat = $chat; } COMMENT 'Utility function to clear all debts' PERMISSIONS FULL;
+DEFINE FUNCTION fn::clear_debts($chat: record<chat>) { DELETE owes WHERE in.chat.id = $chat; } COMMENT 'Utility function to clear all debts' PERMISSIONS FULL;
 DEFINE FUNCTION fn::delete_traveler($chat: record<chat>, $name: string) {
     LET $traveler = (SELECT * FROM traveler WHERE chat = $chat AND name = $name)[0];
     DELETE ($traveler->paid_for->expense).id;

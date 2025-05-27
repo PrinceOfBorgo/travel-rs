@@ -32,7 +32,6 @@ pub const SHOW_BALANCES_TRAVELER_NOT_FOUND: &str = "show-balances-traveler-not-f
 pub const SHOW_BALANCES_TRAVELER_SETTLED_UP: &str = "show-balances-traveler-settled-up";
 
 pub const SHOW_EXPENSE_NOT_FOUND: &str = "show-expense-not-found";
-pub const SHOW_EXPENSE_OK: &str = "show-expense-ok";
 
 pub const TRANSFER_OK: &str = "transfer-ok";
 pub const TRANSFER_RECEIVER_NOT_FOUND: &str = "transfer-receiver-not-found";

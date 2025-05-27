@@ -4,7 +4,7 @@ use std::{
 };
 
 use crate::{
-    i18n::{self, Translate, translate_with_args, types::FORMAT_TRANSFER},
+    i18n::{self, Translate, format::FORMAT_TRANSFER, translate_with_args},
     money_wrapper::MoneyWrapper,
     traveler::Name,
 };

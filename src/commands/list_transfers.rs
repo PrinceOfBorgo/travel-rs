@@ -3,7 +3,7 @@ use crate::{
     consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     errors::CommandError,
     i18n::{self, Translate, translate, translate_with_args},
-    trace_command,
+    trace_command_db,
     transfer::Transfer,
     traveler::Name,
 };
@@ -14,7 +14,7 @@ use surrealdb::{Surreal, engine::any::Any};
 use teloxide::prelude::*;
 use tracing::Level;
 
-#[apply(trace_command)]
+#[apply(trace_command_db)]
 pub async fn list_transfers(
     db: Arc<Surreal<Any>>,
     msg: &Message,

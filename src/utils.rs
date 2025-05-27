@@ -38,11 +38,39 @@ attribute_alias! {
 }
 
 attribute_alias! {
+    #[apply(trace_command_db)] =
+    #[tracing::instrument(
+        err(level = Level::ERROR),
+        ret(level = Level::DEBUG),
+        skip(db, msg, ctx),
+        fields(
+            chat_id = %msg.chat.id,
+            sender_id = %msg.from.as_ref().unwrap().id
+        )
+    )
+    ];
+}
+
+attribute_alias! {
     #[apply(trace_state)] =
     #[tracing::instrument(
         err(level = Level::ERROR),
         ret(level = Level::DEBUG),
         skip(bot, dialogue, msg),
+        fields(
+            chat_id = %msg.chat.id,
+            sender_id = %msg.from.as_ref().unwrap().id
+        )
+    )
+    ];
+}
+
+attribute_alias! {
+    #[apply(trace_state_db)] =
+    #[tracing::instrument(
+        err(level = Level::ERROR),
+        ret(level = Level::DEBUG),
+        skip(db, bot, dialogue, msg),
         fields(
             chat_id = %msg.chat.id,
             sender_id = %msg.from.as_ref().unwrap().id
@@ -102,40 +130,40 @@ fn simplify_balances(debts: &mut Vec<Debt>) {
     debts.clear();
 
     // Simplify the balances by creating new debt transactions
-    while let (Some((debtor, debtor_amount)), Some((creditor, creditor_amount))) =
-        (debtors.last(), creditors.last())
-    {
+    while !debtors.is_empty() && !creditors.is_empty() {
+        let (debtor, mut debtor_amount) = debtors.pop().unwrap();
+        let (creditor, mut creditor_amount) = creditors.pop().unwrap();
+
         // Determine the amount to be transferred
-        let amount = debtor_amount.abs().min(*creditor_amount);
+        let amount = debtor_amount.abs().min(creditor_amount);
+
         // Retrieve the original RecordId for the debtor and creditor
-        let debtor = keys
-            .get(debtor)
-            .expect("Debtor with id {debtor} should exist")
+        let debtor_id = keys
+            .get(&debtor)
+            .unwrap_or_else(|| panic!("Debtor with id {debtor} should exist"))
             .clone();
-        let creditor = keys
-            .get(creditor)
-            .expect("Creditor with id {creditor} should exist")
+        let creditor_id = keys
+            .get(&creditor)
+            .unwrap_or_else(|| panic!("Creditor with id {creditor} should exist"))
             .clone();
 
         // Create a new debt transaction
         debts.push(Debt {
-            debtor,
-            creditor,
+            debtor: debtor_id,
+            creditor: creditor_id,
             debt: amount,
         });
 
         // Update the debtor's balance
-        if debtor_amount + amount == Decimal::ZERO {
-            debtors.pop();
-        } else if let Some((_, amt)) = debtors.last_mut() {
-            *amt += amount;
+        debtor_amount += amount;
+        if debtor_amount < Decimal::ZERO {
+            debtors.push((debtor, debtor_amount));
         }
 
         // Update the creditor's balance
-        if creditor_amount - amount == Decimal::ZERO {
-            creditors.pop();
-        } else if let Some((_, amt)) = creditors.last_mut() {
-            *amt -= amount;
+        creditor_amount -= amount;
+        if creditor_amount > Decimal::ZERO {
+            creditors.push((creditor, creditor_amount));
         }
     }
 }

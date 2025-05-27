@@ -4,7 +4,7 @@ use crate::{
     errors::CommandError,
     expense::Expense,
     i18n::{self, Translate, translate_with_args, translate_with_args_default},
-    trace_command,
+    trace_command_db,
     traveler::{Name, Traveler},
     utils::update_debts,
 };
@@ -15,7 +15,7 @@ use surrealdb::{Surreal, engine::any::Any};
 use teloxide::prelude::*;
 use tracing::Level;
 
-#[apply(trace_command)]
+#[apply(trace_command_db)]
 pub async fn delete_traveler(
     db: Arc<Surreal<Any>>,
     msg: &Message,

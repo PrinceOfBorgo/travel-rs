@@ -4,7 +4,7 @@ use crate::{
     errors::{AddExpenseError, EndError},
     expense::Expense,
     i18n::{self, Translate, dialogues::*, translate, translate_with_args},
-    trace_state,
+    trace_state, trace_state_db,
     traveler::{Name, Traveler},
     update_debts,
 };
@@ -172,7 +172,7 @@ pub async fn receive_amount(
     Ok(())
 }
 
-#[apply(trace_state)]
+#[apply(trace_state_db)]
 pub async fn receive_paid_by(
     db: Arc<Surreal<Any>>,
     bot: Bot,
@@ -249,7 +249,7 @@ pub async fn receive_paid_by(
     Ok(())
 }
 
-#[apply(trace_state)]
+#[apply(trace_state_db)]
 pub async fn start_split_among(
     db: Arc<Surreal<Any>>,
     bot: Bot,
@@ -272,7 +272,7 @@ pub async fn start_split_among(
     .await
 }
 
-#[apply(trace_state)]
+#[apply(trace_state_db)]
 pub async fn receive_split_among(
     db: Arc<Surreal<Any>>,
     bot: Bot,

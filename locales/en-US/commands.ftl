@@ -62,12 +62,6 @@ show-balances-traveler-not-found = Couldn't find traveler "{$name}" to show the 
 ## /showexpense
 
 show-expense-not-found = Couldn't find expense #{$number} to show the details.
-show-expense-ok = 
-    Number: {$number} - Description: {$description}
-    Amount: {$amount}
-    Paid by: {$creditor}
-    Shares:
-    {$shares}
 
 ## /transfer
 

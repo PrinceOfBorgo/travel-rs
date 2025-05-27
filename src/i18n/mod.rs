@@ -2,10 +2,10 @@ pub mod args;
 pub mod commands;
 pub mod dialogues;
 pub mod errors;
+pub mod format;
 pub mod help;
 pub mod terms;
 mod translate;
-pub mod types;
 
 pub use translate::Translate;
 

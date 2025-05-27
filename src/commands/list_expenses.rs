@@ -4,7 +4,7 @@ use crate::{
     errors::CommandError,
     expense::Expense,
     i18n::{self, Translate, translate, translate_with_args},
-    trace_command,
+    trace_command_db,
 };
 use macro_rules_attribute::apply;
 use maplit::hashmap;
@@ -13,7 +13,7 @@ use surrealdb::{Surreal, engine::any::Any};
 use teloxide::prelude::*;
 use tracing::Level;
 
-#[apply(trace_command)]
+#[apply(trace_command_db)]
 pub async fn list_expenses(
     db: Arc<Surreal<Any>>,
     msg: &Message,

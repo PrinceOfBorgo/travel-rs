@@ -17,26 +17,11 @@
   - [x] Delete from DB always returns OK even if the entry doesn't exist. Should return WARN with a dedicated message.
 - [ ] Refactor code to make it more readable and maintainable.
 - [ ] Add tests:
-  - [ ] Unit tests:
+  - [x] Unit tests:
     - [x] DB connection
     - [x] Command parsing
     - [x] Traveler name parsing
-    - [ ] Commands:
-      - [x] `/cancel`
-      - [x] `/help`
-      - [x] `/setlanguage`
-      - [x] `/setcurrency`
-      - [x] `/addtraveler`
-      - [x] `/deletetraveler`
-      - [x] `/listtravelers`
-      - [x] `/addexpense`
-      - [x] `/deleteexpense`
-      - [x] `/listexpenses`
-      - [ ] `/showexpense`
-      - [x] `/transfer`
-      - [x] `/deletetransfer`
-      - [x] `/listtransfers`
-      - [ ] `/showbalances`
+    - [x] Commands
   - [ ] Integration tests
 - [ ] Add assertion/events to check if `in.chat = out.chat` for relationships.
 - [x] Handle `unknown_command` when command name is right but arguments are incomplete.

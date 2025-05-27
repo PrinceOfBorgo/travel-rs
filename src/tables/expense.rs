@@ -1,6 +1,6 @@
 use crate::{
     db::Count,
-    i18n::{self, Translate, translate_with_args, types::FORMAT_EXPENSE},
+    i18n::{self, Translate, format::FORMAT_EXPENSE, translate_with_args},
     money_wrapper::MoneyWrapper,
 };
 use maplit::hashmap;

@@ -1,5 +1,5 @@
 use crate::{
-    i18n::{self, Translate, translate_with_args, types::FORMAT_SHARE_DETAILS},
+    i18n::{self, Translate, format::FORMAT_SHARE_DETAILS, translate_with_args},
     money_wrapper::MoneyWrapper,
     traveler::Name,
 };
@@ -65,5 +65,28 @@ impl ExpenseDetails {
         .bind((EXPENSE_NUMBER, number))
         .await
         .and_then(|mut response| response.take::<Option<Self>>(0))
+    }
+}
+
+impl Translate for ExpenseDetails {
+    fn translate(&self, ctx: Arc<std::sync::Mutex<crate::Context>>) -> String {
+        let amount = MoneyWrapper::new_with_context(self.expense_amount, ctx.clone());
+        let shares_str = self
+            .shares
+            .iter()
+            .map(|share_details| share_details.translate(ctx.clone()))
+            .collect::<Vec<_>>()
+            .join("\n");
+        translate_with_args(
+            ctx,
+            i18n::format::FORMAT_EXPENSE_DETAILS,
+            &hashmap! {
+                i18n::args::NUMBER.into() => self.expense_number.to_string().into(),
+                i18n::args::DESCRIPTION.into() => self.expense_description.clone().into(),
+                i18n::args::AMOUNT.into() => amount.to_string().into(),
+                i18n::args::CREDITOR.into() => self.creditor_name.clone().into(),
+                i18n::args::SHARES.into() => shares_str.into(),
+            },
+        )
     }
 }

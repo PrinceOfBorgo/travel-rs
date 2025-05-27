@@ -4,7 +4,7 @@ use crate::{
     consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     errors::CommandError,
     i18n::{self, translate_with_args},
-    trace_command,
+    trace_command_db,
 };
 use macro_rules_attribute::apply;
 use maplit::hashmap;
@@ -14,7 +14,7 @@ use teloxide::prelude::*;
 use tracing::Level;
 use unic_langid::LanguageIdentifier;
 
-#[apply(trace_command)]
+#[apply(trace_command_db)]
 pub async fn set_language(
     db: Arc<Surreal<Any>>,
     msg: &Message,

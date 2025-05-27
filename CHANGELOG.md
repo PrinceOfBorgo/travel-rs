@@ -7,11 +7,15 @@
 ### Changed
 - Instead of using a `'static` database connection, connections are now stored in `Arc`s. This is necessary because each test uses a new in-memory connection.
 - Logs are now written to a subfolder of the specified `logging.path`, named after the `profile` used.
+- Translation for `ExpenseDetails` moved from `commands.ftl` to `format.ftl`.
+- `types.rs` renamed to `format.rs`.
 
 ### Fixed
 - Check existence of `Chat` before creating or updating the record in the database.
 - Exceeding the total amount when adding an expense reported that shares had been cleared, but they were not. Now, shares are cleared correctly.
 - Setting fixed shares that summed up to the total amount caused a division by zero.
+- Fixed `clear_debts` DB function.
+- If balances are all zero after rounding, calling `ShowBalances` command now correctly shows that travelers are all settled up.
 
 ## [0.1.10] - 2025-04-19
 ### Added

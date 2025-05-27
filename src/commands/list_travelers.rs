@@ -4,7 +4,7 @@ use crate::{
     errors::CommandError,
     i18n,
     i18n::translate,
-    trace_command,
+    trace_command_db,
     traveler::Traveler,
 };
 use macro_rules_attribute::apply;
@@ -13,7 +13,7 @@ use surrealdb::{Surreal, engine::any::Any};
 use teloxide::prelude::*;
 use tracing::Level;
 
-#[apply(trace_command)]
+#[apply(trace_command_db)]
 pub async fn list_travelers(
     db: Arc<Surreal<Any>>,
     msg: &Message,

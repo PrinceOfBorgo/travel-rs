@@ -1,10 +1,9 @@
 use crate::{
-    Context,
     commands::{Command, HelpMessage, ParseCommand},
     consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     errors::CommandError,
     i18n::{commands::COMMAND_DESCRIPTIONS, translate},
-    trace_command,
+    trace_command, Context,
 };
 use macro_rules_attribute::apply;
 use std::sync::{Arc, Mutex};
@@ -55,7 +54,7 @@ mod tests {
     use crate::{
         db::db,
         errors::CommandError,
-        i18n::{self, Translate, translate_default},
+        i18n::{self, translate_default, Translate},
         tests::TestBot,
     };
 
