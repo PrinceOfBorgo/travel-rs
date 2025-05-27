@@ -104,17 +104,19 @@ jobs:
           # Update version in Cargo.toml
           cargo set-version "${next_version}"
           
-          # Create new snapshot section
-          NEW_SNAPSHOT="## [${next_version}] - Unreleased
+          NEW_SNAPSHOT=$(cat << 'EOF'
+          ## [${next_version}] - Unreleased
 
-### Added
-- N/A
+          ### Added
+          \- N/A
 
-### Changed
-- N/A
+          ### Changed
+          \- N/A
 
-### Fixed
-- N/A"
+          ### Fixed
+          \- N/A
+          EOF
+          )
 
           # Update CHANGELOG.md with new snapshot version
           echo -e "${NEW_SNAPSHOT}\n\n$(cat CHANGELOG.md)" > CHANGELOG.md
