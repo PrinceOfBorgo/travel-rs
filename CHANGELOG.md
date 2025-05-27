@@ -1,6 +1,7 @@
 # Changelog
 
-## [0.1.12-SNAPSHOT] - Unreleased
+## [0.2.0] - 2025-05-27
+### ✨ Minor Release
 ### Added
 - GitHub CI configurations.
 
