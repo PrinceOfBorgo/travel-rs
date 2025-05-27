@@ -124,7 +124,7 @@ mod tests {
         db::db,
         errors::CommandError,
         i18n::{self, Translate, translate_default, translate_with_args_default},
-        tests::TestBot,
+        tests::{TestBot, helpers},
     };
     use maplit::hashmap;
 
@@ -133,8 +133,8 @@ mod tests {
         let mut bot = TestBot::new(db, "");
 
         // Add travelers "Alice" and "Bob"
-        add_traveler(&mut bot, "Alice").await;
-        add_traveler(&mut bot, "Bob").await;
+        helpers::add_traveler(&mut bot, "Alice").await;
+        helpers::add_traveler(&mut bot, "Bob").await;
 
         // Transfer 100 from Alice to Bob
         bot.update("/transfer Alice Bob 100");
@@ -147,7 +147,7 @@ mod tests {
         let mut bot = TestBot::new(db, "");
 
         // Add traveler "Alice"
-        add_traveler(&mut bot, "Alice").await;
+        helpers::add_traveler(&mut bot, "Alice").await;
 
         // Try to transfer 100 from Alice to Bob -> Bob not found
         bot.update("/transfer Alice Bob 100");
@@ -163,7 +163,7 @@ mod tests {
         let mut bot = TestBot::new(db, "");
 
         // Add traveler "Bob"
-        add_traveler(&mut bot, "Bob").await;
+        helpers::add_traveler(&mut bot, "Bob").await;
 
         // Try to transfer 100 from Alice to Bob -> Alice not found
         bot.update("/transfer Alice Bob 100");
@@ -181,7 +181,7 @@ mod tests {
         let mut bot = TestBot::new(db, "/transfer Alice  100");
         let err = CommandError::EmptyInput.translate_default();
         assert!(
-            bot.last_message()
+            bot.dispatch_and_last_message()
                 .await
                 .is_some_and(|msg| msg.starts_with(&err))
         );
@@ -189,7 +189,7 @@ mod tests {
         // Missing sender
         bot.update("/transfer  Bob 100");
         assert!(
-            bot.last_message()
+            bot.dispatch_and_last_message()
                 .await
                 .is_some_and(|msg| msg.starts_with(&err))
         );
@@ -197,14 +197,9 @@ mod tests {
         // Missing both
         bot.update("/transfer   100");
         assert!(
-            bot.last_message()
+            bot.dispatch_and_last_message()
                 .await
                 .is_some_and(|msg| msg.starts_with(&err))
         );
-    }
-
-    async fn add_traveler(bot: &mut TestBot, name: &str) {
-        bot.update(&format!("/addtraveler {name}"));
-        bot.dispatch().await;
     }
 }

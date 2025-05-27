@@ -115,7 +115,6 @@ mod tests {
     };
     use maplit::hashmap;
     use std::str::FromStr;
-    use teloxide::types::ChatId;
 
     test! { delete_traveler_ok,
         let db = db().await;
@@ -192,7 +191,7 @@ mod tests {
 
         // Retrieve traveler "Alice" and their expenses
         let traveler =
-            Traveler::db_select_by_name(db.clone(), ChatId(bot.chat_id()), &Name::from_str("Alice").unwrap())
+            Traveler::db_select_by_name(db.clone(), bot.chat_id(), &Name::from_str("Alice").unwrap())
                 .await
                 .unwrap()
                 .unwrap();
@@ -219,7 +218,7 @@ mod tests {
         let mut bot = TestBot::new(db, "/deletetraveler");
         let err = CommandError::EmptyInput.translate_default();
         assert!(
-            bot.last_message()
+            bot.dispatch_and_last_message()
                 .await
                 .is_some_and(|msg| msg.starts_with(&err))
         );

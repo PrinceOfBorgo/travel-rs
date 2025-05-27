@@ -2,10 +2,10 @@
 ## Roadmap
 
 - [x] Use stable channel when `std::sync::LazyLock` will be stabilized (1.80 - 25 July, 2024).
-- [ ] Currency support
+- [ ] Currency support:
   - [ ] Exchange using external APIs. https://crates.io/crates/freecurrencyapi-rs
   - [x] Handle different currencies with their specific precision instead of Decimal.
-- [ ] Add localization
+- [ ] Add localization:
   - [ ] Add languages:
     - [x] en-US
     - [x] it-IT
@@ -20,6 +20,7 @@
   - [ ] Unit tests:
     - [x] DB connection
     - [x] Command parsing
+    - [x] Traveler name parsing
     - [ ] Commands:
       - [x] `/cancel`
       - [x] `/help`
@@ -28,7 +29,7 @@
       - [x] `/addtraveler`
       - [x] `/deletetraveler`
       - [x] `/listtravelers`
-      - [ ] `/addexpense`
+      - [x] `/addexpense`
       - [x] `/deleteexpense`
       - [x] `/listexpenses`
       - [ ] `/showexpense`

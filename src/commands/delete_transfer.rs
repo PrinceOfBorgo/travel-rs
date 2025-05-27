@@ -73,7 +73,7 @@ mod tests {
     use crate::{
         db::db,
         i18n::{self, translate_default, translate_with_args_default},
-        tests::TestBot,
+        tests::{TestBot, helpers},
     };
     use maplit::hashmap;
 
@@ -82,7 +82,7 @@ mod tests {
         let mut bot = TestBot::new(db, "");
 
         // Transfer 100 from Alice to Bob
-        add_travelers_and_transfer(&mut bot, "Alice", "Bob", 100.0).await;
+        helpers::add_travelers_and_transfer(&mut bot, "Alice", "Bob", 100.into()).await;
 
         // Delete transfer #1
         bot.update("/deletetransfer 1");
@@ -109,7 +109,7 @@ mod tests {
         let mut bot = TestBot::new(db, "");
 
         // Transfer 100 from Alice to Bob
-        add_travelers_and_transfer(&mut bot, "Alice", "Bob", 100.0).await;
+        helpers::add_travelers_and_transfer(&mut bot, "Alice", "Bob", 100.into()).await;
 
         // Delete transfer #1 -> ok
         bot.update("/deletetransfer 1");
@@ -140,28 +140,9 @@ mod tests {
             },
         );
         assert!(
-            bot.last_message()
+            bot.dispatch_and_last_message()
                 .await
                 .is_some_and(|msg| msg.starts_with(&err))
         );
-    }
-
-    async fn add_travelers_and_transfer(
-        bot: &mut TestBot,
-        sender: &str,
-        receiver: &str,
-        amount: f64,
-    ) {
-        // Add sender
-        bot.update(&format!("/addtraveler {sender}"));
-        bot.dispatch().await;
-
-        // Add receiver
-        bot.update(&format!("/addtraveler {receiver}"));
-        bot.dispatch().await;
-
-        // Transfer amount from sender to receiver
-        bot.update(&format!("/transfer {sender} {receiver} {amount}"));
-        bot.dispatch().await;
     }
 }

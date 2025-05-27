@@ -170,3 +170,47 @@ impl Traveler {
         .and_then(|mut response| response.take::<Option<Self>>(0))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::consts;
+    use crate::errors::NameValidationError;
+
+    #[test]
+    fn test_name_from_str() {
+        // Valid name
+        assert!(Name::from_str("Valid Name").is_ok());
+
+        // Invalid name: starts with slash
+        assert_eq!(
+            Name::from_str("/StartsWithSlash"),
+            Err(NameValidationError::StartsWithSlash(String::from(
+                "/StartsWithSlash"
+            ),))
+        );
+
+        // Invalid name: invalid character
+        assert_eq!(
+            Name::from_str("Invalid,Name"),
+            Err(NameValidationError::InvalidCharacter(
+                String::from("Invalid,Name"),
+                ','
+            ))
+        );
+
+        // Invalid name: reserved keyword
+        assert_eq!(
+            Name::from_str(consts::ALL_KWORD),
+            Err(NameValidationError::ReservedKeyword(String::from(
+                consts::ALL_KWORD
+            ),))
+        );
+    }
+
+    #[test]
+    fn test_name_display() {
+        let name = Name(String::from("Test Name"));
+        assert_eq!(name.to_string(), "Test Name");
+    }
+}

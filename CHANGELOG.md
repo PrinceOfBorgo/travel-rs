@@ -10,6 +10,8 @@
 
 ### Fixed
 - Check existence of `Chat` before creating or updating the record in the database.
+- Exceeding the total amount when adding an expense reported that shares had been cleared, but they were not. Now, shares are cleared correctly.
+- Setting fixed shares that summed up to the total amount caused a division by zero.
 
 ## [0.1.10] - 2025-04-19
 ### Added

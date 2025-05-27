@@ -25,7 +25,7 @@ pub async fn show_expense(
     tracing::debug!(LOG_DEBUG_START);
 
     // Check if expense exists on db
-    let count_res = Expense::db_count(db.clone(), msg.chat.id, number).await;
+    let count_res = Expense::db_count_by_number(db.clone(), msg.chat.id, number).await;
     match count_res {
         Ok(Some(count)) if *count > 0 => {
             // Retrieve expense details from db

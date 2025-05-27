@@ -4,7 +4,7 @@ use maplit::hashmap;
 
 use crate::i18n::{self, Translate, translate_with_args};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum NameValidationError {
     StartsWithSlash(String),
     InvalidCharacter(String, char),

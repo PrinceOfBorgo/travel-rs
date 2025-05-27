@@ -89,7 +89,7 @@ mod tests {
         }
         .translate_default();
         assert!(
-            bot.last_message()
+            bot.dispatch_and_last_message()
                 .await
                 .is_some_and(|msg| msg.starts_with(&err))
         );
@@ -105,7 +105,7 @@ mod tests {
         }
         .translate_default();
         assert!(
-            bot.last_message()
+            bot.dispatch_and_last_message()
                 .await
                 .is_some_and(|msg| msg.starts_with(&err))
         );

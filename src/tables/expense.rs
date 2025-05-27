@@ -63,7 +63,7 @@ impl Expense {
             .and_then(|mut response| response.take::<Option<Self>>(1))
     }
 
-    pub async fn db_count(
+    pub async fn db_count_by_number(
         db: Arc<Surreal<Any>>,
         chat_id: ChatId,
         number: i64,
@@ -84,7 +84,7 @@ impl Expense {
         .and_then(|mut response| response.take::<Option<Count>>(0))
     }
 
-    pub async fn db_delete(
+    pub async fn db_delete_by_number(
         db: Arc<Surreal<Any>>,
         chat_id: ChatId,
         number: i64,
@@ -152,6 +152,26 @@ impl Expense {
             .bind((TRAVELER, traveler))
             .await
             .and_then(|mut response| response.take::<Vec<Self>>(0))
+    }
+
+    pub async fn db_select_by_number(
+        db: Arc<Surreal<Any>>,
+        chat_id: ChatId,
+        number: i64,
+    ) -> Result<Option<Self>, surrealdb::Error> {
+        use super::chat::{ID as CHAT_ID, TABLE as CHAT_TB};
+
+        db.query(format!(
+            "SELECT *
+            FROM {TABLE}
+            WHERE 
+                {CHAT} = ${CHAT_ID}
+                && {NUMBER} = ${NUMBER}",
+        ))
+        .bind((CHAT_ID, RecordId::from_table_key(CHAT_TB, chat_id.0)))
+        .bind((NUMBER, number))
+        .await
+        .and_then(|mut response| response.take::<Option<Self>>(0))
     }
 }
 

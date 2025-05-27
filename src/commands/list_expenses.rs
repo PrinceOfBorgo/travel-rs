@@ -65,39 +65,38 @@ mod tests {
         db::db,
         expense::Expense,
         i18n::{self, Translate, translate_default, translate_with_args_default},
-        tests::TestBot,
+        tests::{TestBot, helpers},
     };
     use maplit::hashmap;
-    use teloxide::types::ChatId;
 
     test! { list_expenses_ok,
         let db = db().await;
         let mut bot = TestBot::new(db.clone(), "");
 
         // Add travelers "Alice" and "Bob"
-        add_traveler(&mut bot, "Alice").await;
-        add_traveler(&mut bot, "Bob").await;
+        helpers::add_traveler(&mut bot, "Alice").await;
+        helpers::add_traveler(&mut bot, "Bob").await;
 
         // Add first expense
-        add_expense(
+        helpers::add_expense(
             &mut bot,
             "Test expense 1",
-            100.0,
+            100.into(),
             "Alice",
             &["all"],
         ).await;
         // Add another expense
-        add_expense(
+        helpers::add_expense(
             &mut bot,
             "Test expense 2",
-            100.0,
+            100.into(),
             "Bob",
             &["Alice:70;Bob", "end"],
         ).await;
 
         // List expenses
         bot.update("/listexpenses");
-        let expenses = Expense::db_select(db, ChatId(bot.chat_id())).await.unwrap();
+        let expenses = Expense::db_select(db, bot.chat_id()).await.unwrap();
         // Check that two expenses has been recorded
         assert_eq!(expenses.len(), 2);
         let response = expenses
@@ -113,29 +112,29 @@ mod tests {
         let mut bot = TestBot::new(db.clone(), "");
 
         // Add travelers "Alice" and "Bob"
-        add_traveler(&mut bot, "Alice").await;
-        add_traveler(&mut bot, "Bob").await;
+        helpers::add_traveler(&mut bot, "Alice").await;
+        helpers::add_traveler(&mut bot, "Bob").await;
 
         // Add first expense
-        add_expense(
+        helpers::add_expense(
             &mut bot,
             "Test expense 1",
-            100.0,
+            100.into(),
             "Alice",
             &["all"],
         ).await;
         // Add another expense
-        add_expense(
+        helpers::add_expense(
             &mut bot,
             "Test expense 2",
-            100.0,
+            100.into(),
             "Bob",
             &["Alice:70;Bob", "end"],
         ).await;
 
         // List expenses with description matching "1"
         bot.update("/listexpenses 1");
-        let expenses = Expense::db_select_by_descr(db, ChatId(bot.chat_id()), String::from("1")).await.unwrap();
+        let expenses = Expense::db_select_by_descr(db, bot.chat_id(), String::from("1")).await.unwrap();
         // Check that only one expense is returned
         assert_eq!(expenses.len(), 1);
         let response = expenses
@@ -161,14 +160,14 @@ mod tests {
         let mut bot = TestBot::new(db.clone(), "");
 
         // Add travelers "Alice" and "Bob"
-        add_traveler(&mut bot, "Alice").await;
-        add_traveler(&mut bot, "Bob").await;
+        helpers::add_traveler(&mut bot, "Alice").await;
+        helpers::add_traveler(&mut bot, "Bob").await;
 
         // Add one expense
-        add_expense(
+        helpers::add_expense(
             &mut bot,
             "Test expense 1",
-            100.0,
+            100.into(),
             "Alice",
             &["all"],
         ).await;
@@ -180,35 +179,5 @@ mod tests {
             &hashmap! {i18n::args::DESCRIPTION.into() => "2".into()},
         );
         bot.test_last_message(&response).await;
-    }
-
-    async fn add_traveler(bot: &mut TestBot, name: &str) {
-        bot.update(&format!("/addtraveler {name}"));
-        bot.dispatch().await;
-    }
-
-    async fn add_expense(
-        bot: &mut TestBot,
-        description: &str,
-        amount: f64,
-        payer: &str,
-        split: &[&str],
-    ) {
-        bot.update("/addexpense");
-        bot.dispatch().await;
-        // 1. Set description
-        bot.update(description);
-        bot.dispatch().await;
-        // 2. Set amount
-        bot.update(&amount.to_string());
-        bot.dispatch().await;
-        // 3. Set payer
-        bot.update(payer);
-        bot.dispatch().await;
-        // 4. Split expense
-        for s in split {
-            bot.update(s);
-            bot.dispatch().await;
-        }
     }
 }

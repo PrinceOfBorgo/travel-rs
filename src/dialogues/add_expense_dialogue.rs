@@ -79,6 +79,19 @@ pub enum AmountEnum {
     Dynamic,
 }
 
+// Helper struct to handle split among input and update dialogue or end
+struct SplitAmongInput {
+    db: Arc<Surreal<Any>>,
+    bot: Bot,
+    dialogue: AddExpenseDialogue,
+    description: String,
+    amount: Decimal,
+    paid_by: Traveler,
+    split_among: BTreeMap<Name, AmountEnum>,
+    msg: Message,
+    ctx: Arc<Mutex<Context>>,
+}
+
 #[apply(trace_state)]
 pub async fn start(
     bot: Bot,
@@ -245,98 +258,18 @@ pub async fn start_split_among(
     msg: Message,
     ctx: Arc<Mutex<Context>>,
 ) -> HandlerResult {
-    tracing::debug!(LOG_DEBUG_START);
-    match msg.text() {
-        Some(text) => {
-            tracing::debug!("Received text: `{text}`.");
-            let split_res = parse_split_among(db.clone(), text, msg.chat.id, BTreeMap::new()).await;
-            match split_res {
-                Ok((SplitAmongEnum::List, split_among)) => {
-                    bot.send_message(msg.chat.id, translate(ctx, ADD_EXPENSE_CONTINUE_SPLIT))
-                        .await?;
-                    dialogue
-                        .update(AddExpenseState::ReceiveSplitAmong {
-                            description,
-                            amount,
-                            paid_by,
-                            split_among,
-                        })
-                        .await?;
-                    tracing::debug!(LOG_DEBUG_SUCCESS);
-                }
-                Ok((SplitAmongEnum::End, split_among)) => {
-                    tracing::debug!(LOG_DEBUG_SUCCESS);
-                    match end(
-                        db,
-                        dialogue,
-                        (description, amount, paid_by, split_among),
-                        msg.chat.id,
-                    )
-                    .await
-                    {
-                        Ok(expense) => {
-                            let reply = format!(
-                                "{expense_added}\n\n{format_expense}",
-                                expense_added = translate(ctx.clone(), ADD_EXPENSE_OK),
-                                format_expense = expense.translate(ctx)
-                            );
-                            bot.send_message(msg.chat.id, reply).await?;
-                        }
-                        Err(err) => match err {
-                            EndError::ClosingDialogue | EndError::NoExpenseCreated => {
-                                bot.send_message(msg.chat.id, err.translate(ctx)).await?;
-                            }
-                            EndError::AddExpense(err) => {
-                                let mut reply =
-                                    translate(ctx.clone(), ADD_EXPENSE_ERROR_ON_COMPUTING_SHARES);
-                                if !matches!(err, AddExpenseError::Generic(_)) {
-                                    reply += "\n";
-                                    reply += &err.translate(ctx.clone());
-                                    if matches!(
-                                        err,
-                                        AddExpenseError::ExpenseTooHigh { tot_amount: _ }
-                                    ) {
-                                        reply += "\n";
-                                        reply += &translate(ctx, ADD_EXPENSE_SHARES_CLEARED);
-                                    }
-                                }
-
-                                bot.send_message(msg.chat.id, reply).await?;
-                            }
-                            EndError::Generic(_) => {
-                                bot.send_message(
-                                    msg.chat.id,
-                                    translate(ctx, ADD_EXPENSE_CREATING_EXPENSE_GENERIC_ERROR),
-                                )
-                                .await?;
-                            }
-                        },
-                    }
-                }
-                Err(err) => {
-                    tracing::error!("{err}");
-                    let mut reply = translate(ctx.clone(), ADD_EXPENSE_SHARES_PARSING_ERROR);
-                    if !matches!(err, AddExpenseError::Generic(_)) {
-                        reply += "\n";
-                        reply += &err.translate(ctx.clone());
-                        if matches!(err, AddExpenseError::ExpenseTooHigh { tot_amount: _ }) {
-                            reply += "\n";
-                            reply += &translate(ctx, ADD_EXPENSE_SHARES_CLEARED);
-                        }
-                    }
-
-                    bot.send_message(msg.chat.id, reply).await?;
-                }
-            }
-        }
-        None => {
-            tracing::warn!("Invalid text: received `None`.");
-            bot.send_message(msg.chat.id, translate(ctx, ADD_EXPENSE_INVALID_SHARES))
-                .await?;
-        }
-    }
-
-    Ok(())
+    handle_split_among_input(SplitAmongInput {
+        db,
+        bot,
+        dialogue,
+        description,
+        amount,
+        paid_by,
+        split_among: BTreeMap::new(),
+        msg,
+        ctx,
+    })
+    .await
 }
 
 #[apply(trace_state)]
@@ -353,13 +286,38 @@ pub async fn receive_split_among(
     msg: Message,
     ctx: Arc<Mutex<Context>>,
 ) -> HandlerResult {
+    handle_split_among_input(SplitAmongInput {
+        db,
+        bot,
+        dialogue,
+        description,
+        amount,
+        paid_by,
+        split_among,
+        msg,
+        ctx,
+    })
+    .await
+}
+
+async fn handle_split_among_input(input: SplitAmongInput) -> HandlerResult {
+    let SplitAmongInput {
+        db,
+        bot,
+        dialogue,
+        description,
+        amount,
+        paid_by,
+        mut split_among,
+        msg,
+        ctx,
+    } = input;
     tracing::debug!(LOG_DEBUG_START);
     match msg.text() {
         Some(text) => {
             tracing::debug!("Received text: `{text}`.");
-            let split_res = parse_split_among(db.clone(), text, msg.chat.id, split_among).await;
-            match split_res {
-                Ok((SplitAmongEnum::List, split_among)) => {
+            match parse_split_among(db.clone(), text, msg.chat.id, &mut split_among).await {
+                Ok(SplitAmongEnum::List) => {
                     bot.send_message(msg.chat.id, translate(ctx, ADD_EXPENSE_CONTINUE_SPLIT))
                         .await?;
                     dialogue
@@ -372,12 +330,12 @@ pub async fn receive_split_among(
                         .await?;
                     tracing::debug!(LOG_DEBUG_SUCCESS);
                 }
-                Ok((SplitAmongEnum::End, split_among)) => {
+                Ok(SplitAmongEnum::End) => {
                     tracing::debug!(LOG_DEBUG_SUCCESS);
                     match end(
                         db,
-                        dialogue,
-                        (description, amount, paid_by, split_among),
+                        &dialogue,
+                        (&description, amount, &paid_by, split_among),
                         msg.chat.id,
                     )
                     .await
@@ -397,19 +355,27 @@ pub async fn receive_split_among(
                             EndError::AddExpense(err) => {
                                 let mut reply =
                                     translate(ctx.clone(), ADD_EXPENSE_ERROR_ON_COMPUTING_SHARES);
+                                let expense_is_too_high =
+                                    matches!(err, AddExpenseError::ExpenseTooHigh { .. });
                                 if !matches!(err, AddExpenseError::Generic(_)) {
                                     reply += "\n";
                                     reply += &err.translate(ctx.clone());
-                                    if matches!(
-                                        err,
-                                        AddExpenseError::ExpenseTooHigh { tot_amount: _ }
-                                    ) {
+                                    if expense_is_too_high {
                                         reply += "\n";
                                         reply += &translate(ctx, ADD_EXPENSE_SHARES_CLEARED);
                                     }
                                 }
-
                                 bot.send_message(msg.chat.id, reply).await?;
+                                if expense_is_too_high {
+                                    dialogue
+                                        .update(AddExpenseState::ReceiveSplitAmong {
+                                            description,
+                                            amount,
+                                            paid_by,
+                                            split_among: BTreeMap::new(),
+                                        })
+                                        .await?;
+                                }
                             }
                             EndError::Generic(_) => {
                                 bot.send_message(
@@ -424,16 +390,26 @@ pub async fn receive_split_among(
                 Err(err) => {
                     tracing::error!("{err}");
                     let mut reply = translate(ctx.clone(), ADD_EXPENSE_SHARES_PARSING_ERROR);
+                    let expense_is_too_high = matches!(err, AddExpenseError::ExpenseTooHigh { .. });
                     if !matches!(err, AddExpenseError::Generic(_)) {
                         reply += "\n";
                         reply += &err.translate(ctx.clone());
-                        if matches!(err, AddExpenseError::ExpenseTooHigh { tot_amount: _ }) {
+                        if expense_is_too_high {
                             reply += "\n";
                             reply += &translate(ctx, ADD_EXPENSE_SHARES_CLEARED);
                         }
                     }
-
                     bot.send_message(msg.chat.id, reply).await?;
+                    if expense_is_too_high {
+                        dialogue
+                            .update(AddExpenseState::ReceiveSplitAmong {
+                                description,
+                                amount,
+                                paid_by,
+                                split_among: BTreeMap::new(),
+                            })
+                            .await?;
+                    }
                 }
             }
         }
@@ -443,7 +419,6 @@ pub async fn receive_split_among(
                 .await?;
         }
     }
-
     Ok(())
 }
 
@@ -454,11 +429,11 @@ pub async fn receive_split_among(
 )]
 pub async fn end(
     db: Arc<Surreal<Any>>,
-    dialogue: AddExpenseDialogue,
+    dialogue: &AddExpenseDialogue,
     (description, amount, paid_by, split_among): (
-        String,
+        &str,
         Decimal,
-        Traveler,
+        &Traveler,
         BTreeMap<Name, AmountEnum>,
     ),
     chat_id: ChatId,
@@ -467,14 +442,14 @@ pub async fn end(
     match compute_shares(amount, split_among) {
         Ok(shares) => {
             let create_res =
-                Expense::db_create(db.clone(), chat_id, description.clone(), amount).await;
+                Expense::db_create(db.clone(), chat_id, String::from(description), amount).await;
             match create_res {
                 Ok(Some(expense)) => {
                     if let Err(err_relate) =
                         relate_shares(db.clone(), paid_by, &expense, shares).await
                     {
                         if let Err(err_delete) =
-                            Expense::db_delete(db, chat_id, expense.number).await
+                            Expense::db_delete_by_number(db, chat_id, expense.number).await
                         {
                             tracing::warn!("{err_delete}");
                         }
@@ -517,15 +492,15 @@ async fn parse_split_among(
     db: Arc<Surreal<Any>>,
     text: &str,
     chat_id: ChatId,
-    mut split_among: BTreeMap<Name, AmountEnum>,
-) -> Result<(SplitAmongEnum, BTreeMap<Name, AmountEnum>), AddExpenseError> {
+    split_among: &mut BTreeMap<Name, AmountEnum>,
+) -> Result<SplitAmongEnum, AddExpenseError> {
     let text = text.trim();
     let text_lower = text.to_lowercase();
 
     // If the user wants to end the dialogue
     if text_lower == END_KWORD.to_lowercase() {
         if !split_among.is_empty() {
-            Ok((SplitAmongEnum::End, split_among))
+            Ok(SplitAmongEnum::End)
         } else {
             Err(AddExpenseError::NoTravelersSpecified)
         }
@@ -543,7 +518,7 @@ async fn parse_split_among(
                 .map(|traveler| (traveler.name, AmountEnum::Dynamic))
                 .collect(),
         );
-        Ok((SplitAmongEnum::End, split_among))
+        Ok(SplitAmongEnum::End)
     }
     // If the user specified a list of travelers
     else {
@@ -604,7 +579,7 @@ async fn parse_split_among(
             match select_res {
                 Ok(travelers) => {
                     if travelers.len() == split_among.len() {
-                        Ok((SplitAmongEnum::List, split_among))
+                        Ok(SplitAmongEnum::List)
                     } else {
                         let not_found = split_among
                             .keys()
@@ -612,12 +587,12 @@ async fn parse_split_among(
                             .expect(
                                 "There must be at least one traveler that has not been found on db",
                             );
-                        return Err(AddExpenseError::TravelerNotFound {
+                        Err(AddExpenseError::TravelerNotFound {
                             name: not_found.to_owned(),
-                        });
+                        })
                     }
                 }
-                Err(err) => return Err(AddExpenseError::Generic(Box::new(err))),
+                Err(err) => Err(AddExpenseError::Generic(Box::new(err))),
             }
         }
     }
@@ -627,41 +602,56 @@ fn compute_shares(
     tot_amount: Decimal,
     mut split_among: BTreeMap<Name, AmountEnum>,
 ) -> Result<BTreeMap<Name, Decimal>, AddExpenseError> {
+    // Start with the total amount to be split
     let mut residual = tot_amount;
-    let mut count_blanks = 0;
+    let mut count_dynamics = 0;
 
+    // First pass: subtract fixed shares and count dynamic shares
     for share in split_among.values() {
         match share {
             AmountEnum::Fixed(amount) => {
                 residual -= amount;
-                if residual.is_sign_negative() {
+                // If the sum of fixed shares exceeds the total, return error
+                if residual < Decimal::ZERO {
                     return Err(AddExpenseError::ExpenseTooHigh { tot_amount });
                 }
             }
-            AmountEnum::Dynamic => count_blanks += 1,
-            AmountEnum::Percentage(_) => {} // Do nothing for now
+            AmountEnum::Dynamic => count_dynamics += 1,
+            AmountEnum::Percentage(_) => {} // Percentages handled in next pass
         }
     }
+
+    // Save the current residual for percentage calculation
     let residual_backup = residual;
+    // Second pass: convert percentage shares to fixed amounts
     split_among.values_mut().for_each(|share| {
-        // Evaluate percentages of the residual amount
         if let AmountEnum::Percentage(amount) = share {
+            // Calculate fixed amount for this percentage
             let fixed = residual_backup * *amount / Decimal::from(100);
             *share = AmountEnum::Fixed(fixed);
             residual -= fixed;
         }
     });
 
-    if count_blanks == 0 && residual > Decimal::ZERO {
+    // If there are no dynamic shares and residual remains, it's too low
+    if count_dynamics == 0 && residual > Decimal::ZERO {
         return Err(AddExpenseError::ExpenseTooLow {
             expense: tot_amount - residual,
             tot_amount,
         });
     }
 
-    let split_residual = residual
-        .checked_div(Decimal::from(count_blanks))
-        .expect("count_blanks should be positive");
+    // Divide the remaining residual equally among dynamic shares
+    let split_residual = if count_dynamics > 0 {
+        residual
+            .checked_div(Decimal::from(count_dynamics))
+            .expect("count_blanks should be positive")
+    } else {
+        // No dynamic shares, so the remaining residual is not assigned to anyone
+        Decimal::ZERO
+    };
+
+    // Build the final shares map
     Ok(split_among
         .into_iter()
         .map(|(name, share)| {
@@ -672,7 +662,6 @@ fn compute_shares(
                     unreachable!("Already converted to fixed amounts")
                 }
             };
-
             (name, amount)
         })
         .collect())
@@ -680,7 +669,7 @@ fn compute_shares(
 
 async fn relate_shares(
     db: Arc<Surreal<Any>>,
-    paid_by: Traveler,
+    paid_by: &Traveler,
     expense: &Expense,
     shares: BTreeMap<Name, Decimal>,
 ) -> Result<(), surrealdb::Error> {
@@ -696,7 +685,7 @@ async fn relate_shares(
     let mut query = db
         .query(BeginStatement::default())
         .query(format!("RELATE ${PAID_BY}->{PAID_FOR_TB}->${EXPENSE}"))
-        .bind((PAID_BY, paid_by.id))
+        .bind((PAID_BY, paid_by.id.clone()))
         .bind((EXPENSE, expense.id.clone()))
         .bind((CHAT, expense.chat.clone()));
 
@@ -718,4 +707,363 @@ async fn relate_shares(
 
     query = query.query(CommitStatement::default());
     query.await.map(|_| {})
+}
+
+#[cfg(test)]
+mod tests {
+    use std::str::FromStr;
+
+    use crate::{
+        consts,
+        db::db,
+        errors::{AddExpenseError, NameValidationError},
+        expense::Expense,
+        i18n::{self, Translate, translate_default, translate_with_args_default},
+        tests::{TestBot, helpers},
+        traveler::Name,
+    };
+    use maplit::hashmap;
+    use rust_decimal::Decimal;
+
+    test! { add_expense_all_ok,
+        let db = db().await;
+        let mut bot = TestBot::new(db.clone(), "");
+
+        // Add travelers "Alice", "Bob" and "Charlie"
+        helpers::add_traveler(&mut bot, "Alice").await;
+        helpers::add_traveler(&mut bot, "Bob").await;
+        helpers::add_traveler(&mut bot, "Charlie").await;
+
+        // Add expense
+        helpers::add_expense(
+            &mut bot,
+            "Test expense",
+            Decimal::from_str("100.7").unwrap(),
+            "Alice",
+            &["all"]
+        ).await;
+        let last_message = bot.last_message().unwrap();
+
+        // Retrieve expense #1
+        let expense = Expense::db_select_by_number(db, bot.chat_id(), 1).await.unwrap().unwrap();
+
+        let response = format!(
+            "{expense_added}\n\n{format_expense}",
+            expense_added = translate_default(i18n::dialogues::ADD_EXPENSE_OK),
+            format_expense = expense.translate_default()
+        );
+        // Check that the last message is the expected response
+        assert_eq!(last_message, response);
+    }
+
+    test! { add_expense_end_ok,
+        let db = db().await;
+        let mut bot = TestBot::new(db.clone(), "");
+
+        // Add travelers "Alice", "Bob" and "Charlie"
+        helpers::add_traveler(&mut bot, "Alice").await;
+        helpers::add_traveler(&mut bot, "Bob").await;
+        helpers::add_traveler(&mut bot, "Charlie").await;
+
+        // Add expense
+        helpers::add_expense(
+            &mut bot,
+            "Test expense",
+            Decimal::from_str("100.7").unwrap(),
+            "Bob",
+            &["Alice:70", "Bob:20%;Charlie", "end"],
+        ).await;
+        let last_message = bot.last_message().unwrap();
+
+        // Retrieve expense #1
+        let expense = Expense::db_select_by_number(db, bot.chat_id(), 1).await.unwrap().unwrap();
+
+        let response = format!(
+            "{expense_added}\n\n{format_expense}",
+            expense_added = translate_default(i18n::dialogues::ADD_EXPENSE_OK),
+            format_expense = expense.translate_default()
+        );
+        // Check that the last message is the expected response
+        assert_eq!(last_message, response);
+    }
+
+    test! { add_expense_invalid_amount,
+        let db = db().await;
+        let mut bot = TestBot::new(db.clone(), "");
+
+        // Add travelers "Alice", "Bob" and "Charlie"
+        helpers::add_traveler(&mut bot, "Alice").await;
+        helpers::add_traveler(&mut bot, "Bob").await;
+        helpers::add_traveler(&mut bot, "Charlie").await;
+
+        // Add expense
+        bot.update("/addexpense");
+        bot.dispatch().await;
+        // 1. Set description
+        bot.update("Test expense");
+        bot.dispatch().await;
+        // 2. Set amount
+        bot.update("invalid amount");
+        let response = translate_default(i18n::dialogues::ADD_EXPENSE_INVALID_AMOUNT);
+        bot.test_last_message(&response).await;
+    }
+
+    test! { add_expense_invalid_paid_by,
+        let db = db().await;
+        let mut bot = TestBot::new(db.clone(), "");
+
+        // Add travelers "Alice", "Bob" and "Charlie"
+        helpers::add_traveler(&mut bot, "Alice").await;
+        helpers::add_traveler(&mut bot, "Bob").await;
+        helpers::add_traveler(&mut bot, "Charlie").await;
+
+        // Add expense
+        bot.update("/addexpense");
+        bot.dispatch().await;
+        // 1. Set description
+        bot.update("Test expense");
+        bot.dispatch().await;
+        // 2. Set amount
+        bot.update("100.7");
+        bot.dispatch().await;
+        // 3.1. Set payer to "/Alice" -> invalid name: starts with a slash
+        bot.update("/Alice");
+        let response = format!(
+            "{invalid_paid_by}\n\n{reason}",
+            invalid_paid_by = translate_default(i18n::dialogues::ADD_EXPENSE_INVALID_PAID_BY),
+            reason = NameValidationError::StartsWithSlash(String::from("/Alice")).translate_default()
+        );
+        bot.test_last_message(&response).await;
+
+        // 3.2. Set payer to "Alice," -> invalid name: ends with a comma
+        bot.update("Alice,");
+        let response = format!(
+            "{invalid_paid_by}\n\n{reason}",
+            invalid_paid_by = translate_default(i18n::dialogues::ADD_EXPENSE_INVALID_PAID_BY),
+            reason = NameValidationError::InvalidCharacter(String::from("Alice,"), ',').translate_default()
+        );
+        bot.test_last_message(&response).await;
+
+        // 3.3. Set payer to "all" -> invalid name: reserved keyword
+        bot.update(consts::ALL_KWORD);
+        let response = format!(
+            "{invalid_paid_by}\n\n{reason}",
+            invalid_paid_by = translate_default(i18n::dialogues::ADD_EXPENSE_INVALID_PAID_BY),
+            reason = NameValidationError::ReservedKeyword(String::from(consts::ALL_KWORD)).translate_default()
+        );
+        bot.test_last_message(&response).await;
+    }
+
+    test! { add_expense_traveler_not_found,
+        let db = db().await;
+        let mut bot = TestBot::new(db.clone(), "");
+
+        // Add travelers "Alice" and "Bob"
+        helpers::add_traveler(&mut bot, "Alice").await;
+        helpers::add_traveler(&mut bot, "Bob").await;
+
+        // Add expense
+        bot.update("/addexpense");
+        bot.dispatch().await;
+        // 1. Set description
+        bot.update("Test expense");
+        bot.dispatch().await;
+        // 2. Set amount
+        bot.update("100.7");
+        bot.dispatch().await;
+        // 3. Set payer
+        bot.update("Charlie");
+        let response = translate_with_args_default(
+            i18n::dialogues::ADD_EXPENSE_TRAVELER_NOT_FOUND,
+            &hashmap! {i18n::args::NAME.into() => "Charlie".into()},
+        );
+        bot.test_last_message(&response).await;
+    }
+
+    test! { add_expense_too_high,
+        let db = db().await;
+        let mut bot = TestBot::new(db.clone(), "");
+
+        // Add travelers "Alice", "Bob"
+        helpers::add_traveler(&mut bot, "Alice").await;
+        helpers::add_traveler(&mut bot, "Bob").await;
+
+        // Add expense with shares that sum to more than the total amount
+        // (e.g. Alice:80;Bob:30 -> total 110 > 100)
+        helpers::add_expense(
+            &mut bot,
+            "Test expense",
+            100.into(),
+            "Alice",
+            &["Alice:80;Bob:30", "end"],
+        ).await;
+        let last_message = bot.last_message().unwrap();
+
+        let response = format!(
+            "{}\n{}\n{}",
+            translate_default(i18n::dialogues::ADD_EXPENSE_ERROR_ON_COMPUTING_SHARES),
+            AddExpenseError::ExpenseTooHigh { tot_amount: 100.into() }.translate_default(),
+            translate_default(i18n::dialogues::ADD_EXPENSE_SHARES_CLEARED)
+        );
+        // Check that the last message is the expected response
+        assert_eq!(last_message, response);
+
+        // Now try to add shares again, which should clear the previous shares
+        // and allow the user to set new shares
+        bot.update("Alice:100");
+        bot.dispatch().await;
+        bot.update("end");
+        let last_message = bot.dispatch_and_last_message().await.unwrap();
+
+        // Retrieve expense #1
+        let expense = Expense::db_select_by_number(db, bot.chat_id(), 1).await.unwrap().unwrap();
+
+        let response = format!(
+            "{expense_added}\n\n{format_expense}",
+            expense_added = translate_default(i18n::dialogues::ADD_EXPENSE_OK),
+            format_expense = expense.translate_default()
+        );
+        // Check that the last message is the expected response
+        assert_eq!(last_message, response);
+    }
+
+    test! { add_expense_too_low,
+        let db = db().await;
+        let mut bot = TestBot::new(db, "");
+
+        // Add travelers "Alice", "Bob"
+        helpers::add_traveler(&mut bot, "Alice").await;
+        helpers::add_traveler(&mut bot, "Bob").await;
+
+        // Add expense with shares that sum to less than the total amount
+        // (e.g. Alice:20;Bob:30 -> total 50 < 100)
+        helpers::add_expense(
+            &mut bot,
+            "Test expense",
+            100.into(),
+            "Alice",
+            &["Alice:20;Bob:30", "end"],
+        ).await;
+        let last_message = bot.last_message().unwrap();
+
+        let response = format!(
+            "{}\n{}",
+            translate_default(i18n::dialogues::ADD_EXPENSE_ERROR_ON_COMPUTING_SHARES),
+            AddExpenseError::ExpenseTooLow { expense: 50.into(), tot_amount: 100.into() }.translate_default(),
+        );
+        // Check that the last message is the expected response
+        assert_eq!(last_message, response);
+    }
+
+    mod parse_shares {
+        use super::*;
+
+        test! { add_expense_repeated_traveler_name,
+            let db = db().await;
+            let mut bot = TestBot::new(db.clone(), "");
+
+            // Add travelers "Alice" and "Bob"
+            helpers::add_traveler(&mut bot, "Alice").await;
+            helpers::add_traveler(&mut bot, "Bob").await;
+
+            // Add expense with repeated traveler name in shares
+            helpers::add_expense(
+                &mut bot,
+                "Test expense",
+                100.into(),
+                "Alice",
+                &["Alice:50;Bob:30;Alice:20"],
+            ).await;
+            let last_message = bot.last_message().unwrap();
+
+            let response = format!(
+                "{}\n{}",
+                translate_default(i18n::dialogues::ADD_EXPENSE_SHARES_PARSING_ERROR),
+                AddExpenseError::RepeatedTravelerName { name: Name::from_str("Alice").unwrap() }.translate_default(),
+            );
+            // Check that the last message is the expected response
+            assert_eq!(last_message, response);
+        }
+
+        test! { add_expense_invalid_shares_format,
+            let db = db().await;
+            let mut bot = TestBot::new(db.clone(), "");
+
+            // Add travelers "Alice" and "Bob"
+            helpers::add_traveler(&mut bot, "Alice").await;
+            helpers::add_traveler(&mut bot, "Bob").await;
+
+            // Add expense with invalid shares format (missing amount after colon)
+            helpers::add_expense(
+                &mut bot,
+                "Test expense",
+                100.into(),
+                "Alice",
+                &["Alice:;Bob:30"],
+            ).await;
+            let last_message = bot.last_message().unwrap();
+
+            let response = format!(
+                "{}\n{}",
+                translate_default(i18n::dialogues::ADD_EXPENSE_SHARES_PARSING_ERROR),
+                AddExpenseError::InvalidFormat { input: "Alice:".to_string() }.translate_default(),
+            );
+            // Check that the last message is the expected response
+            assert_eq!(last_message, response);
+        }
+
+        test! { add_expense_invalid_name,
+            let db = db().await;
+            let mut bot = TestBot::new(db.clone(), "");
+
+            // Add travelers "Alice" and "Bob"
+            helpers::add_traveler(&mut bot, "Alice").await;
+            helpers::add_traveler(&mut bot, "Bob").await;
+
+            // Add expense with invalid shares format (missing amount after colon)
+            helpers::add_expense(
+                &mut bot,
+                "Test expense",
+                100.into(),
+                "Alice",
+                &["all:30;Bob"],
+            ).await;
+            let last_message = bot.last_message().unwrap();
+
+            let response = format!(
+                "{}\n{}",
+                translate_default(i18n::dialogues::ADD_EXPENSE_SHARES_PARSING_ERROR),
+                AddExpenseError::NameValidation(NameValidationError::ReservedKeyword(String::from(consts::ALL_KWORD))).translate_default(),
+            );
+            // Check that the last message is the expected response
+            assert_eq!(last_message, response);
+        }
+
+        test! { add_expense_no_travelers_specified,
+            let db = db().await;
+            let mut bot = TestBot::new(db.clone(), "");
+
+            // Add travelers "Alice" and "Bob"
+            helpers::add_traveler(&mut bot, "Alice").await;
+            helpers::add_traveler(&mut bot, "Bob").await;
+
+            // Add expense with invalid shares format (missing amount after colon)
+            helpers::add_expense(
+                &mut bot,
+                "Test expense",
+                100.into(),
+                "Alice",
+                &["end"],
+            ).await;
+            let last_message = bot.last_message().unwrap();
+
+            let response = format!(
+                "{}\n{}",
+                translate_default(i18n::dialogues::ADD_EXPENSE_SHARES_PARSING_ERROR),
+                AddExpenseError::NoTravelersSpecified.translate_default(),
+            );
+            // Check that the last message is the expected response
+            assert_eq!(last_message, response);
+        }
+    }
 }

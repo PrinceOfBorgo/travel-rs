@@ -24,11 +24,11 @@ pub async fn delete_expense(
     tracing::debug!(LOG_DEBUG_START);
 
     // Check if expense exists on db
-    let count_res = Expense::db_count(db.clone(), msg.chat.id, number).await;
+    let count_res = Expense::db_count_by_number(db.clone(), msg.chat.id, number).await;
     match count_res {
         Ok(Some(count)) if *count > 0 => {
             // Delete expense from db
-            let delete_res = Expense::db_delete(db.clone(), msg.chat.id, number).await;
+            let delete_res = Expense::db_delete_by_number(db.clone(), msg.chat.id, number).await;
             match delete_res {
                 Ok(_) => {
                     if let Err(err_update) = update_debts(db, msg.chat.id).await {
@@ -172,7 +172,7 @@ mod tests {
             },
         );
         assert!(
-            bot.last_message()
+            bot.dispatch_and_last_message()
                 .await
                 .is_some_and(|msg| msg.starts_with(&err))
         );

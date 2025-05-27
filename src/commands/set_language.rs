@@ -67,31 +67,30 @@ mod tests {
     test! { set_language_ok,
         let db = db().await;
 
-        // Dispatch once to set the language
         let mut bot = TestBot::new(db, "/setlanguage it-IT");
-        bot.dispatch().await;
+        let last_message = bot.dispatch_and_last_message().await.unwrap();
 
-        // Dispatch again to test if the language has been set correctly
         let response = translate_with_args(
-            bot.context(),
+            bot.context(),  // Use the new context to retrieve the updated language
             i18n::commands::SET_LANGUAGE_OK,
             &hashmap! {i18n::args::LANGID.into() => "it-IT".into()},
         );
-        bot.test_last_message(&response).await;
+        // Check that the last message is the expected response
+        assert_eq!(last_message, response);
     }
 
     test! { set_currency_not_available,
         let db = db().await;
 
-        // Dispatch once to set the language
         let mut bot = TestBot::new(db, "/setlanguage ab-CD");
+        let last_message = bot.dispatch_and_last_message().await.unwrap();
 
-        // Dispatch again to test if the language has been set correctly
         let response = translate_with_args(
-            bot.context(),
+            bot.context(),  // Use the new context to retrieve the updated language
             i18n::commands::SET_LANGUAGE_NOT_AVAILABLE,
             &hashmap! {i18n::args::LANGID.into() => "ab-CD".into()},
         );
-        bot.test_last_message(&response).await;
+        // Check that the last message is the expected response
+        assert_eq!(last_message, response);
     }
 }
