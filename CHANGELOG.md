@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.1.12-SNAPSHOT] - Unreleased
+### Added
+- GitHub CI configurations.
+
+### Changed
+- N/A
+
+### Fixed
+- N/A
+
 ## [0.1.11] - 2025-05-27
 ### Added
 - Unit and integration tests.

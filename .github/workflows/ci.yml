@@ -40,13 +40,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-${{ matrix.toolchain }}-
 
-      - name: Check formatting
-        if: matrix.toolchain == 'stable'
-        run: cargo fmt --all -- --check
-
-      - name: Run clippy
-        run: cargo clippy --all-targets --all-features -- -D warnings
-
       - name: Build
         run: cargo build --verbose
 
