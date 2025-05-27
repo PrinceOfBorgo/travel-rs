@@ -1,0 +1,125 @@
+name: Release
+
+on:
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - 'CHANGELOG.md'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+
+jobs:
+  release:
+    if: |
+      contains(github.event.head_commit.message, '[release]') || 
+      contains(github.event.head_commit.message, '[release:minor]') || 
+      contains(github.event.head_commit.message, '[release:major]')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Git user
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo-edit
+        run: cargo install cargo-edit
+
+      - name: Get current version
+        id: current_version
+        run: |
+          version=$(grep '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
+          echo "VERSION=$version" >> $GITHUB_ENV
+
+      - name: Bump version
+        id: bump_version
+        run: |
+          if [[ "${{ github.event.head_commit.message }}" == *"[release:major]"* ]]; then
+            cargo set-version --bump major
+          elif [[ "${{ github.event.head_commit.message }}" == *"[release:minor]"* ]]; then
+            cargo set-version --bump minor
+          else
+            cargo set-version --bump patch
+          fi
+          new_version=$(grep '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
+          echo "NEW_VERSION=$new_version" >> $GITHUB_ENV
+
+      - name: Update CHANGELOG.md
+        run: |
+          DATE=$(date +%Y-%m-%d)
+          RELEASE_TYPE=""
+          if [[ "${{ github.event.head_commit.message }}" == *"[release:major]"* ]]; then
+            RELEASE_TYPE="### 💥 Major Release"
+          elif [[ "${{ github.event.head_commit.message }}" == *"[release:minor]"* ]]; then
+            RELEASE_TYPE="### ✨ Minor Release"
+          else
+            RELEASE_TYPE="### 🔧 Patch Release"
+          fi
+          
+          NEW_CONTENT="## [${{ env.NEW_VERSION }}] - $DATE\n$RELEASE_TYPE"
+          sed -i "s/## \[.*-SNAPSHOT\].*/$NEW_CONTENT/" CHANGELOG.md
+
+      - name: Commit changes
+        run: |
+          git add Cargo.toml Cargo.lock CHANGELOG.md
+          git commit -m "chore: release version ${{ env.NEW_VERSION }} [skip ci]"
+
+      - name: Create Tag
+        run: |
+          git tag -a "v${{ env.NEW_VERSION }}" -m "Release version ${{ env.NEW_VERSION }}"
+          git push origin main --tags
+
+      - name: Generate Release Notes
+        run: |
+          previous_tag=$(git describe --tags --abbrev=0 "v${{ env.VERSION }}" 2>/dev/null || git rev-list --max-parents=0 HEAD)
+          echo "## What's Changed" > release_notes.md
+          echo "" >> release_notes.md
+          git log --pretty=format:"* %s" $previous_tag..HEAD >> release_notes.md
+
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "v${{ env.NEW_VERSION }}" \
+            --title "Release v${{ env.NEW_VERSION }}" \
+            --notes-file release_notes.md
+
+      - name: Set next snapshot version
+        run: |
+          # Get the current version components
+          IFS='.' read -r major minor patch <<< "${{ env.NEW_VERSION }}"
+          
+          # Increment minor version and add SNAPSHOT suffix
+          next_version="${major}.${minor}.$((patch + 1))-SNAPSHOT"
+          
+          # Update version in Cargo.toml
+          cargo set-version "${next_version}"
+          
+          # Create new snapshot section
+          NEW_SNAPSHOT="## [${next_version}] - Unreleased
+
+### Added
+- N/A
+
+### Changed
+- N/A
+
+### Fixed
+- N/A"
+
+          # Update CHANGELOG.md with new snapshot version
+          echo -e "${NEW_SNAPSHOT}\n\n$(cat CHANGELOG.md)" > CHANGELOG.md
+          
+          # Commit changes
+          git add Cargo.toml Cargo.lock CHANGELOG.md
+          git commit -m "chore: prepare for next development iteration [skip ci]"
+          git push origin main

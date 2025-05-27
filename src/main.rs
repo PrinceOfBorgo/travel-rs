@@ -134,66 +134,68 @@ fn deps(db_instance: Arc<Surreal<Any>>) -> DependencyMap {
 }
 
 pub(crate) fn handler_tree() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'static>> {
+    let command_branch = dptree::entry()
+        // Check if a command is received...
+        .filter_command::<Command>()
+        // Cancel command
+        .branch(
+            case![Command::Cancel]
+                .endpoint(cancel::<InMemStorage<AddExpenseState>, AddExpenseState>),
+        )
+        // AddExpense command -> starts a new dialogue to add an expense
+        .branch(
+            case![Command::AddExpense]
+                .enter_dialogue::<Message, InMemStorage<AddExpenseState>, AddExpenseState>()
+                .branch(case![AddExpenseState::Start].endpoint(add_expense_dialogue::start))
+                // The dialogue has already been started...
+                .endpoint(
+                    dialogues::Dialogue::<InMemStorage<AddExpenseState>, AddExpenseState>::handle_already_running,
+                ),
+        )
+        // Otherwise -> handle other commands
+        .endpoint(commands_handler);
+
+    let dialogue_branch = {
+        use {AddExpenseState::*, add_expense_dialogue::*};
+        dptree::entry()
+            // Check if a process is running, otherwise skip the branch...
+            .filter_async(
+                dialogues::Dialogue::<InMemStorage<AddExpenseState>, AddExpenseState>::is_already_running,
+            )
+            // Check if the message is a response to an add expense dialogue...
+            .enter_dialogue::<Message, InMemStorage<AddExpenseState>, AddExpenseState>()
+            .branch(case![ReceiveDescription].endpoint(receive_description))
+            .branch(case![ReceiveAmount { description }].endpoint(receive_amount))
+            .branch(
+                case![ReceivePaidBy {
+                    description,
+                    amount
+                }]
+                .endpoint(receive_paid_by),
+            )
+            .branch(
+                case![StartSplitAmong {
+                    description,
+                    amount,
+                    paid_by
+                }]
+                .endpoint(start_split_among),
+            )
+            .branch(
+                case![ReceiveSplitAmong {
+                    description,
+                    amount,
+                    paid_by,
+                    split_among
+                }]
+                .endpoint(receive_split_among),
+            )
+    };
+
     Update::filter_message()
         .map_async(update_chat_db) // Create chat record on db if it does not exist yet or update it
-        .branch(
-            dptree::entry()
-                // Check if a command is received...
-                .filter_command::<Command>()
-                // Cancel command
-                .branch(
-                    case![Command::Cancel]
-                        .endpoint(cancel::<InMemStorage<AddExpenseState>, AddExpenseState>),
-                )
-                // AddExpense command -> starts a new dialogue to add an expense
-                .branch(
-                    case![Command::AddExpense]
-                        .enter_dialogue::<Message, InMemStorage<AddExpenseState>, AddExpenseState>()
-                        .branch(case![AddExpenseState::Start].endpoint(add_expense_dialogue::start))
-                        // The dialogue has already been started...
-                        .endpoint(
-                            dialogues::Dialogue::<InMemStorage<AddExpenseState>, AddExpenseState>::handle_already_running,
-                        ),
-                )
-                // Otherwise -> handle other commands
-                .endpoint(commands_handler),
-        )
-        .branch({
-            use {AddExpenseState::*, add_expense_dialogue::*};
-            dptree::entry()
-                // Check if a process is running, otherwise skip the branch...
-                .filter_async(
-                    dialogues::Dialogue::<InMemStorage<AddExpenseState>, AddExpenseState>::is_already_running,
-                )
-                // Check if the message is a response to an add expense dialogue...
-                .enter_dialogue::<Message, InMemStorage<AddExpenseState>, AddExpenseState>()
-                .branch(case![ReceiveDescription].endpoint(receive_description))
-                .branch(case![ReceiveAmount { description }].endpoint(receive_amount))
-                .branch(
-                    case![ReceivePaidBy {
-                        description,
-                        amount
-                    }]
-                    .endpoint(receive_paid_by),
-                )
-                .branch(
-                    case![StartSplitAmong {
-                        description,
-                        amount,
-                        paid_by
-                    }]
-                    .endpoint(start_split_among),
-                )
-                .branch(
-                    case![ReceiveSplitAmong {
-                        description,
-                        amount,
-                        paid_by,
-                        split_among
-                    }]
-                    .endpoint(receive_split_among),
-                )
-        })
+        .branch(command_branch)
+        .branch(dialogue_branch)
         .endpoint(unknown_command)
 }
 

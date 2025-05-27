@@ -1,4 +1,4 @@
-mod integration_test;
+mod integration_tests;
 
 use crate::{Context, deps, handler_tree};
 use std::sync::{Arc, Mutex};
