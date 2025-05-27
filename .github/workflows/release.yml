@@ -64,13 +64,10 @@ jobs:
           NEW_CONTENT="## [${{ env.NEW_VERSION }}] - $DATE\n$RELEASE_TYPE"
           sed -i "s/## \[.*-SNAPSHOT\].*/$NEW_CONTENT/" CHANGELOG.md
 
-      - name: Commit changes
+      - name: Commit and Tag Release
         run: |
           git add Cargo.toml Cargo.lock CHANGELOG.md
           git commit -m "chore: release version ${{ env.NEW_VERSION }} [skip ci]"
-
-      - name: Create Tag
-        run: |
           git tag -a "v${{ env.NEW_VERSION }}" -m "Release version ${{ env.NEW_VERSION }}"
           git push origin main --tags
 
@@ -94,25 +91,13 @@ jobs:
           # Get the current version components
           IFS='.' read -r major minor patch <<< "${{ env.NEW_VERSION }}"
           
-          # Increment minor version and add SNAPSHOT suffix
+          # Increment patch version and add SNAPSHOT suffix
           next_version="${major}.${minor}.$((patch + 1))-SNAPSHOT"
           
           # Update version in Cargo.toml
           cargo set-version "${next_version}"
           
-          NEW_SNAPSHOT=$(cat << 'EOF'
-          ## [${next_version}] - Unreleased
-
-          ### Added
-          \- N/A
-
-          ### Changed
-          \- N/A
-
-          ### Fixed
-          \- N/A
-          EOF
-          )
+          NEW_SNAPSHOT="## [${next_version}] - Unreleased\n### Added\n- N/A\n\n### Changed\n- N/A\n\n### Fixed\n- N/A"
 
           # Update CHANGELOG.md with new snapshot version
           echo -e "${NEW_SNAPSHOT}\n\n$(cat CHANGELOG.md)" > CHANGELOG.md
