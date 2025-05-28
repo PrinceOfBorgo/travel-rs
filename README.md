@@ -1,8 +1,12 @@
 <div align="center">
-  <img src="assets/logo.svg" width="256"/>
+    <img src="assets/logo.svg" width="256"/>
 </div>
 
 # Travel-RS Bot
+
+[![Github Link][github badge]][github link]
+[![Cargo Build & Test][build & test badge]][build & test link]
+[![Release][release badge]][release link]
 
 Travel-RS Bot is a Rust-based Telegram bot designed to assist with managing travel-related expenses, debts, and balances. It provides a seamless experience for tracking financial transactions among travelers, offering localization support, and enabling flexible configurations.
 
@@ -33,10 +37,10 @@ Once added and configured, the bot will be ready to assist with managing travel-
 
 Travel-RS Bot was created to avoid the use of third-party applications for managing group expenses. Here are some examples of how it can be used:
 
-* **Trip with Friends:** A group of friends goes on vacation together. They use the bot to track shared expenses like accommodation, meals, and activities.
-* **Business Trip:** Colleagues traveling for a project can use the bot to split reimbursable travel expenses.
-* **School Trip:** Students and teachers can manage expenses during a school trip, ensuring everyone pays their fair share.
-* **Event Planning:** Event organizers can use the bot to manage shared costs among participants.
+* **Trip with Friends**: A group of friends goes on vacation together. They use the bot to track shared expenses like accommodation, meals, and activities.
+* **Business Trip**: Colleagues traveling for a project can use the bot to split reimbursable travel expenses.
+* **School Trip**: Students and teachers can manage expenses during a school trip, ensuring everyone pays their fair share.
+* **Event Planning**: Event organizers can use the bot to manage shared costs among participants.
 
 ## Available Commands
 
@@ -97,9 +101,9 @@ These commands provide a comprehensive way to interact with the bot and effectiv
 
 Here are some detailed examples of how to use the bot to manage expenses for a group trip:
 
-1.  **Adding Travelers:**
+1.  **Adding Travelers**:
 
-    A group of friends, Alice, Bob, and Charles, are organizing a trip. Add them using `/addtraveler` command:
+    A group of friends, Alice, Bob, and Charles, are organizing a trip. Add them using the `/addtraveler` command:
 
     ```
     User: /addtraveler Alice
@@ -112,9 +116,9 @@ Here are some detailed examples of how to use the bot to manage expenses for a g
     Bot:  Traveler Charles added successfully.
     ```
 
-2.  **Viewing Travelers:**
+2.  **Viewing Travelers**:
 
-    To confirm that everyone has been added correctly, use `/listtravelers` command:
+    To confirm that everyone has been added correctly, use the `/listtravelers` command:
 
     ```
     User: /listtravelers
@@ -123,9 +127,9 @@ Here are some detailed examples of how to use the bot to manage expenses for a g
           Charles
     ```
 
-3.  **Adding an Expense:**
+3.  **Adding an Expense**:
 
-    Alice pays $50 for the highway toll. To record the expense, use `/addexpense` command, to start a conversation with the bot:
+    Alice pays $50 for the highway toll. To record the expense, use the `/addexpense` command to start a conversation with the bot:
 
     ```
     User: /addexpense
@@ -146,18 +150,18 @@ Here are some detailed examples of how to use the bot to manage expenses for a g
 
     This will record an expense of $50 paid by Alice, divided equally among Alice, Bob, and Charles.
 
-4.  **Cancelling a Dialogue:**
+4.  **Cancelling a Dialogue**:
 
-    To interrupt an ongoing dialogue, use `/cancel` command:
+    To interrupt an ongoing dialogue, use the `/cancel` command:
 
     ```
     User: /cancel
     Bot:  The process was cancelled.
     ```
 
-5.  **Viewing Expenses:**
+5.  **Viewing Expenses**:
 
-    To see all the expenses recorded so far, use `/listexpenses` command:
+    To see all the expenses recorded so far, use the `/listexpenses` command:
 
     ```
     User: /listexpenses
@@ -165,7 +169,7 @@ Here are some detailed examples of how to use the bot to manage expenses for a g
           Expense #2: Hotel - $150
     ```
 
-    You can filter expenses specifying a search term:
+    You can filter expenses by specifying a search term:
 
     ```
     User: /listexpenses Toll
@@ -174,7 +178,7 @@ Here are some detailed examples of how to use the bot to manage expenses for a g
 
     The bot will display a list of expenses, including the expense numeric IDs.
 
-6.  **Deleting an Expense:**
+6.  **Deleting an Expense**:
 
     If there is an error in entering an expense, it can be deleted using `/deleteexpense` followed by the expense ID:
 
@@ -183,7 +187,7 @@ Here are some detailed examples of how to use the bot to manage expenses for a g
     Bot:  Expense #2 deleted successfully.
     ```
 
-7.  **Viewing Expense Details:**
+7.  **Viewing Expense Details**:
 
     The `/listexpenses` command provides a concise summary of expenses, displaying their numeric IDs, descriptions, and total amounts. To view detailed information about a specific expense, use the `/showexpense` command followed by the expense ID:
 
@@ -205,9 +209,9 @@ Here are some detailed examples of how to use the bot to manage expenses for a g
     - The name of the payer
     - A breakdown of the shares for each participant
 
-8.  **Viewing Balances:**
+8.  **Viewing Balances**:
 
-    To see how much everyone owes or is owed, use `/showbalances` command:
+    To see how much everyone owes or is owed, use the `/showbalances` command:
 
     ```
     User: /showbalances
@@ -224,18 +228,18 @@ Here are some detailed examples of how to use the bot to manage expenses for a g
 
     The bot will display the simplified balances.
 
-9.  **Recording a Transfer:**
+9.  **Recording a Transfer**:
 
-    Bob pays $16.67 to Alice for his share of the toll. To record the transfer use `/tansfer` followed by the sender name, the receiver name, and the transferred amount:
+    Bob pays $16.67 to Alice for his share of the toll. To record the transfer, use `/transfer` followed by the sender name, the receiver name, and the transferred amount:
 
     ```
     User: /transfer Bob Alice 16.67
     Bot:  Transfer recorded successfully.
     ```
 
-10. **Viewing Transfers:**
+10. **Viewing Transfers**:
 
-    To see all the transfers made use `/listtransfers` command:
+    To see all the transfers made, use the `/listtransfers` command:
 
     ```
     User: /listtransfers
@@ -296,9 +300,9 @@ The profile-specific configuration files are structured into sections, each serv
 
 * `[i18n]`
 
-    * **`default_locale`**: Specifies the default locale for the bot (e.g. `"en-US"`).
+    * **`default_locale`**: Specifies the default locale for the bot (e.g., `"en-US"`).
     * **`locales_path`**: Path to the directory containing localization files.
-    * **`default_currency`**: Sets the default currency for formatting purposes (e.g. `"USD"`).
+    * **`default_currency`**: Sets the default currency for formatting purposes (e.g., `"USD"`).
 
 This modular structure allows users to easily configure the bot's behavior for different environments or use cases.
 
@@ -310,7 +314,7 @@ Logs are written to files in a directory specified in the profile file under the
 
 ### Customizing Fluent Localization Files
 
-Travel-RS Bot uses [Fluent](https://projectfluent.org/) localization files to support multiple languages, making it easy to customize and extend language support. Localization files are organized into folders named after the locale code (e.g. `en-US`, `it-IT`) in the `locales/` directory. Each locale folder contains `.ftl` files and may include subfolders for further organization.
+Travel-RS Bot uses [Fluent](https://projectfluent.org/) localization files to support multiple languages, making it easy to customize and extend language support. Localization files are organized into folders named after the locale code (e.g., `en-US`, `it-IT`) in the `locales/` directory. Each locale folder contains `.ftl` files and may include subfolders for further organization.
 
 #### Available Fluent Localization Files
 
@@ -318,13 +322,13 @@ Each locale directory contains the following `.ftl` files, each serving a specif
 
 * `commands.ftl`: Includes translations for bot command responses, ensuring users can interact with the bot in their preferred language.
 * `errors.ftl`: Provides localized error messages to help users understand issues in their language.
-* `format.ftl`: Contains translations for formatting-related strings of custom types formats, such as details for expenses, shares or trasnsfers.
+* `format.ftl`: Contains translations for formatting-related strings of custom type formats, such as details for expenses, shares, or transfers.
 * `help.ftl`: Includes descriptions, help text, and usage instructions for various bot commands.
 * The `dialogues/` folder contains translation files for interactive dialogues:
 
     * `dialogues/add-expense.ftl`: Handles translations for dialogues related to adding expenses, including prompts and confirmations.
 
-These files are organized by locale (e.g. `en-US/messages.ftl`, `it-IT/messages.ftl`) to ensure seamless language support and easy customization.
+These files are organized by locale (e.g., `en-US/messages.ftl`, `it-IT/messages.ftl`) to ensure seamless language support and easy customization.
 
 #### Adding or Modifying Translations
 
@@ -339,8 +343,8 @@ These files are organized by locale (e.g. `en-US/messages.ftl`, `it-IT/messages.
 
 #### Adding a New Language
 
-1.  **Create a New Locale Folder**: Add a new folder in the `locales/` directory with the appropriate locale code (e.g. `fr-FR` for French).
-2.  **`Add .ftl Files`**: Populate the folder with `.ftl` files containing translations for all required messages.
+1.  **Create a New Locale Folder**: Add a new folder in the `locales/` directory with the appropriate locale code (e.g., `fr-FR` for French).
+2.  **Add .ftl Files**: Populate the folder with `.ftl` files containing translations for all required messages.
 3.  **Update Configuration**: Ensure the new language is listed in the bot's configuration or accessible via the `/setlanguage` command.
 
 This structure ensures that localization is both flexible and scalable, allowing contributors to easily adapt the bot for different languages and regions. Users can switch languages using the `/setlanguage` command.
@@ -362,3 +366,12 @@ For a history of changes and updates, see the [CHANGELOG.md](CHANGELOG.md) file.
 For questions or support, please contact the project maintainers or open an issue on GitHub.
 
 © 2025 Michele Medori. All rights reserved.
+
+[github badge]: https://img.shields.io/badge/github-PrinceOfBorgo%2Ftravel--rs-8da0cb?logo=github
+[github link]: https://github.com/PrinceOfBorgo/travel-rs
+
+[build & test badge]: https://img.shields.io/github/actions/workflow/status/PrinceOfBorgo/travel-rs/ci.yml?logo=github&label=Cargo%20Build%20%26%20Test
+[build & test link]: https://github.com/PrinceOfBorgo/travel-rs/actions/workflows/ci.yml
+
+[release badge]: https://img.shields.io/github/actions/workflow/status/PrinceOfBorgo/travel-rs/release.yml?logo=github&label=Release
+[release link]: https://github.com/PrinceOfBorgo/travel-rs/actions/workflows/release.yml
