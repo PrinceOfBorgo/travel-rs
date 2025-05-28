@@ -7,6 +7,7 @@
 [![Github Link][github badge]][github link]
 [![Cargo Build & Test][build & test badge]][build & test link]
 [![Release][release badge]][release link]
+[![Codecov][codecov badge]][codecov link]
 
 Travel-RS Bot is a Rust-based Telegram bot designed to assist with managing travel-related expenses, debts, and balances. It provides a seamless experience for tracking financial transactions among travelers, offering localization support, and enabling flexible configurations.
 
@@ -367,11 +368,14 @@ For questions or support, please contact the project maintainers or open an issu
 
 © 2025 Michele Medori. All rights reserved.
 
-[github badge]: https://img.shields.io/badge/github-PrinceOfBorgo%2Ftravel--rs-8da0cb?logo=github
+[github badge]: https://img.shields.io/badge/github-PrinceOfBorgo%2Ftravel--rs-8da0cb?logo=github&logoColor=white
 [github link]: https://github.com/PrinceOfBorgo/travel-rs
 
-[build & test badge]: https://img.shields.io/github/actions/workflow/status/PrinceOfBorgo/travel-rs/ci.yml?logo=github&label=Cargo%20Build%20%26%20Test
+[build & test badge]: https://img.shields.io/github/actions/workflow/status/PrinceOfBorgo/travel-rs/ci.yml?logo=githubactions&logoColor=white&label=Cargo%20Build%20%26%20Test
 [build & test link]: https://github.com/PrinceOfBorgo/travel-rs/actions/workflows/ci.yml
 
-[release badge]: https://img.shields.io/github/actions/workflow/status/PrinceOfBorgo/travel-rs/release.yml?logo=github&label=Release
+[release badge]: https://img.shields.io/github/actions/workflow/status/PrinceOfBorgo/travel-rs/release.yml?logo=githubactions&logoColor=white&label=Release
 [release link]: https://github.com/PrinceOfBorgo/travel-rs/actions/workflows/release.yml
+
+[codecov badge]: https://img.shields.io/codecov/c/github/PrinceOfBorgo/travel-rs?logo=codecov&logoColor=white
+[codecov link]: https://codecov.io/gh/PrinceOfBorgo/travel-rs
