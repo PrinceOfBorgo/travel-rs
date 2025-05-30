@@ -309,7 +309,7 @@ This modular structure allows users to easily configure the bot's behavior for d
 
 ### Logging Configuration
 
-Logs are written to files in a directory specified in the profile file under the `[logging]` section. Each log file is timestamped for easy reference. Logging behavior, including the log directory and log level, can be customized in the profile-specific configuration.
+Logs are written to files within a **profile-specific subfolder** located under the **path** specified in the `[logging]` section of your profile's `.toml` file. For instance, if the specified profile is `dev` and the `path` in `dev.toml` is set to `logs`, you'll find your logs in `./logs/dev/`. Each log file is timestamped for easy reference. You can customize logging behavior, including the log directory and log level, directly within your profile-specific configuration.
 
 ## Localization
 
