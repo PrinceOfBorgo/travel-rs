@@ -100,7 +100,7 @@ jobs:
           NEW_SNAPSHOT="## [${next_version}] - Unreleased\n### Added\n- N/A\n\n### Changed\n- N/A\n\n### Fixed\n- N/A"
 
           # Update CHANGELOG.md with new snapshot version
-          echo -e "${NEW_SNAPSHOT}\n\n$(cat CHANGELOG.md)" > CHANGELOG.md
+          sed -i "/^# Changelog/a \\\n${NEW_SNAPSHOT}" CHANGELOG.md
           
           # Commit changes
           git add Cargo.toml Cargo.lock CHANGELOG.md
