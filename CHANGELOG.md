@@ -1,6 +1,7 @@
 # Changelog
 
-## [0.2.1-SNAPSHOT] - Unreleased
+## [0.2.1] - 2025-06-02
+### 🔧 Patch Release
 ### Added
 - Docker configuration.
 - `build.rs` to copy configuration and locales folders into the build location.
