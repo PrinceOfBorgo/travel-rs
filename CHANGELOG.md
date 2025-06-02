@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.2.2-SNAPSHOT] - Unreleased
+### Added
+- N/A
+
+### Changed
+- N/A
+
+### Fixed
+- N/A
+
 ## [0.2.1] - 2025-06-02
 ### 🔧 Patch Release
 ### Added
