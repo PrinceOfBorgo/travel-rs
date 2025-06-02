@@ -354,6 +354,83 @@ This structure ensures that localization is both flexible and scalable, allowing
 
 The bot uses a database for persistent storage. To set up the database, initialize the schema using the `build_travelers_db.surql` script.
 
+## Docker Setup
+
+Travel-RS Bot can be run as a Docker container. The container is published to GitHub Container Registry with each release.
+
+### Running from GitHub Container Registry
+
+Pull and run the latest version:
+```powershell
+# Pull the latest image
+docker pull ghcr.io/princeofborgo/travel-rs:latest
+
+# Run the container (PowerShell)
+docker run -d `
+    -v "C:/path/to/config":/app/config `
+    -v "C:/path/to/locales":/app/locales `
+    -v "C:/path/to/logs":/app/logs `
+    --name travel-rs `
+    ghcr.io/princeofborgo/travel-rs:latest
+
+# Example using the current directory (PowerShell)
+docker run -d `
+    -v "$PWD/config":/app/config `
+    -v "$PWD/locales":/app/locales `
+    -v "$PWD/logs":/app/logs `
+    --name travel-rs `
+    ghcr.io/princeofborgo/travel-rs:latest
+```
+
+For Linux/Unix systems:
+```bash
+# Pull the latest image
+docker pull ghcr.io/princeofborgo/travel-rs:latest
+
+# Run the container (Linux/Unix)
+docker run -d \
+    -v "/path/to/config":/app/config \
+    -v "/path/to/locales":/app/locales \
+    -v "/path/to/logs":/app/logs \
+    --name travel-rs \
+    ghcr.io/princeofborgo/travel-rs:latest
+
+# Example using the current directory (Linux/Unix)
+docker run -d \
+    -v "$(pwd)/config":/app/config \
+    -v "$(pwd)/locales":/app/locales \
+    -v "$(pwd)/logs":/app/logs \
+    --name travel-rs \
+    ghcr.io/princeofborgo/travel-rs:latest
+```
+
+### Configuration
+
+The container expects configuration files to be mounted at `/app/config`. Make sure your local `config` directory contains:
+- `config.toml`: Main configuration file
+- `profiles/`: Directory containing profile-specific configurations
+
+### Volume Configuration
+
+The container requires three volume mounts to function properly:
+
+1. **`config` Volume** (mounted at `/app/config`)
+   - Contains essential configuration files
+   - Required for bot token and profile settings
+   - Must include:
+     - `config.toml`: Main configuration file
+     - `profiles/`: Directory with environment-specific settings
+
+2. **`locales` Volume** (mounted at `/app/locales`)
+   - Contains Fluent translation files
+   - Required for multi-language support
+   - Organized by locale (e.g., `en-US`, `it-IT`)
+
+3. **`logs` Volume** (mounted at `/app/logs`)
+   - Persists application logs across container restarts
+   - Enables log access from the host machine
+   - Files are organized by profile and date
+
 ## Roadmap
 
 Planned features and improvements are documented in the [ROADMAP.md](ROADMAP.md) file.

@@ -2,10 +2,13 @@
 
 ## [0.2.1-SNAPSHOT] - Unreleased
 ### Added
-- N/A
+- Docker configuration.
+- `build.rs` to copy configuration and locales folders into the build location.
 
 ### Changed
-- N/A
+- Updated dependencies.
+- Enhanced `README.md` with Docker setup instructions.
+- Removed the `Generate Release Notes` step from `release.yml` in favor of GitHub built-in release notes generation.
 
 ### Fixed
 - N/A

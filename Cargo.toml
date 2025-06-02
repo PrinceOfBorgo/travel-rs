@@ -20,7 +20,7 @@ tracing-subscriber = { version = "0.3.19", features = [
     "local-time",
     "env-filter",
 ] }
-macro_rules_attribute = "0.2.0"
+macro_rules_attribute = "0.2.2"
 regex = "1.11.1"
 strum = { version = "0.27.1", features = ["derive"] }
 rust-fuzzy-search = "0.1.1"
@@ -30,9 +30,11 @@ unic-langid = { version = "0.9.6", features = ["serde"] }
 fluent-templates = "0.13.0"
 maplit = "1.0.2"
 rusty-money = { version = "0.4.1", features = ["iso", "crypto"] }
-clap = { version = "4.5.38", features = ["derive"] }
+clap = { version = "4.5.39", features = ["derive"] }
 tracing-appender = "0.2.3"
 
 [dev-dependencies]
 teloxide_tests = "0.3.0"
 rand = "0.9.1"
+
+[build-dependencies]

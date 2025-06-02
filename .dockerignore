@@ -1,0 +1,40 @@
+# Build artifacts
+target/
+debug/
+release/
+
+# Version control
+.git/
+.github/
+.gitignore
+
+# Development files
+.env
+.env.*
+*.pdb
+*.log
+
+# Documentation
+*.md
+README*
+
+# Project specific
+config/
+locales/
+Dockerfile
+.dockerignore
+
+# IDE specific
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Dependencies
+vendor/
+
+# Telegram bot token
+token.txt
+
+# Logs folder
+logs/
