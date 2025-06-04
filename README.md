@@ -367,17 +367,17 @@ docker pull ghcr.io/princeofborgo/travel-rs:latest
 
 # Run the container (PowerShell)
 docker run -d `
-    -v "C:/path/to/config":/app/config `
-    -v "C:/path/to/locales":/app/locales `
-    -v "C:/path/to/logs":/app/logs `
+    -v "C:/path/to/config:/app/config" `
+    -v "C:/path/to/locales:/app/locales" `
+    -v "C:/path/to/logs:/app/logs" `
     --name travel-rs `
     ghcr.io/princeofborgo/travel-rs:latest
 
 # Example using the current directory (PowerShell)
 docker run -d `
-    -v "$PWD/config":/app/config `
-    -v "$PWD/locales":/app/locales `
-    -v "$PWD/logs":/app/logs `
+    -v "$PWD/config:/app/config" `
+    -v "$PWD/locales:/app/locales" `
+    -v "$PWD/logs:/app/logs" `
     --name travel-rs `
     ghcr.io/princeofborgo/travel-rs:latest
 ```
@@ -389,17 +389,17 @@ docker pull ghcr.io/princeofborgo/travel-rs:latest
 
 # Run the container (Linux/Unix)
 docker run -d \
-    -v "/path/to/config":/app/config \
-    -v "/path/to/locales":/app/locales \
-    -v "/path/to/logs":/app/logs \
+    -v "/path/to/config:/app/config" \
+    -v "/path/to/locales:/app/locales" \
+    -v "/path/to/logs:/app/logs" \
     --name travel-rs \
     ghcr.io/princeofborgo/travel-rs:latest
 
 # Example using the current directory (Linux/Unix)
 docker run -d \
-    -v "$(pwd)/config":/app/config \
-    -v "$(pwd)/locales":/app/locales \
-    -v "$(pwd)/logs":/app/logs \
+    -v "$(pwd)/config:/app/config" \
+    -v "$(pwd)/locales:/app/locales" \
+    -v "$(pwd)/logs:/app/logs" \
     --name travel-rs \
     ghcr.io/princeofborgo/travel-rs:latest
 ```
