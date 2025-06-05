@@ -105,6 +105,18 @@ jobs:
           labels: |
             org.opencontainers.image.version=${{ env.NEW_VERSION }}
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.description="Travel-RS - A Telegram bot for travel planning"
+          provenance: true
+
+      - name: Update package visibility
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Making package public..."
+          ghcr_url="ghcr.io/${{ env.REPO_LOWER }}"
+          gh api --method PATCH \
+            "/user/packages/container/${ghcr_url#*/}/visibility" \
+            -f visibility='public'
 
       - name: Set next snapshot version
         run: |

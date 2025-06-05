@@ -5,7 +5,7 @@
 - N/A
 
 ### Changed
-- N/A
+- Updated `release.yml` to set the generated Docker package visibility to public.
 
 ### Fixed
 - N/A
