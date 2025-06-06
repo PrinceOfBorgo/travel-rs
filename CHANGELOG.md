@@ -8,6 +8,7 @@
 - Updated release workflow to set the generated Docker package visibility to public.
 - Enhanced release workflow with concurrency control.
 - Added more target platforms for building Docker container images to release workflow.
+- Restructured the release workflow to prevent partial releases from being created in case of build failures.
 
 ### Fixed
 - Typo in italian translations file for `AddExpense` command.
