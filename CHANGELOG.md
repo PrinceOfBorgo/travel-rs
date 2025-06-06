@@ -5,7 +5,9 @@
 - N/A
 
 ### Changed
-- Updated `release.yml` to set the generated Docker package visibility to public.
+- Updated release workflow to set the generated Docker package visibility to public.
+- Enhanced release workflow with concurrency control.
+- Added more target platforms for building Docker container images to release workflow.
 
 ### Fixed
 - Typo in italian translations file for `AddExpense` command.
