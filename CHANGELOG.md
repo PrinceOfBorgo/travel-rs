@@ -8,7 +8,7 @@
 - Updated `release.yml` to set the generated Docker package visibility to public.
 
 ### Fixed
-- N/A
+- Typo in italian translations file for `AddExpense` command.
 
 ## [0.2.1] - 2025-06-02
 ### 🔧 Patch Release
