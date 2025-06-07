@@ -186,21 +186,36 @@ jobs:
             --title "Release v${NEW_VERSION}" \
             --generate-notes
 
-      - name: Update package visibility
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Rollback on failure
+        if: failure()
         run: |
-          echo "Making package public..."
-          REPO_LOWER="${{ needs.prepare_release_data.outputs.repo_lower }}"
+          echo "Rolling back release changes..."
+          NEW_VERSION="${{ needs.prepare_release_data.outputs.new_version }}"
+          
+          # Delete the tag if it exists
+          git push --delete origin "v${NEW_VERSION}" || true
+          
+          # Delete the GitHub release if it exists
+          gh release delete "v${NEW_VERSION}" --yes || true
+          
+          # Delete the container image if it exists
           PACKAGE_NAME=$(echo "${{ github.repository }}" | cut -d '/' -f 2)
-          gh api --method PATCH \
-            "/user/packages/container/${PACKAGE_NAME}/visibility" \
-            -f visibility='public'
+          gh api --method DELETE \
+            "/orgs/${{ github.repository_owner }}/packages/container/${PACKAGE_NAME}/versions/v${NEW_VERSION}" || true
+          
+          echo "Rollback completed"
+          exit 1
+
+      - name: Mark release as successful
+        id: mark_success
+        if: success()
+        run: echo "success=true" >> "$GITHUB_OUTPUT"
 
 
   # Job 4: Prepare for next development iteration (only if the release is fully successful)
   prepare_next_snapshot:
-    needs: finalize_release # This job depends on the release being fully successful
+    needs: finalize_release
+    if: needs.finalize_release.outputs.success == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write # Needed for commit/push
