@@ -5,7 +5,7 @@ add-expense-ask-description = Imposta una descrizione per questa spesa.
 
 ## receive_description
 
-add-expense-ask-amount = A quanto ammonta è la spesa?
+add-expense-ask-amount = A quanto ammonta la spesa?
 add-expense-invalid-description = Hai inviato un testo non valido, per favore riprova.
 
 ## receive_amount
