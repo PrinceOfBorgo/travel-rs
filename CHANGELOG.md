@@ -1,6 +1,7 @@
 # Changelog
 
-## [0.2.2-SNAPSHOT] - Unreleased
+## [0.2.2] - 2025-06-08
+### 🔧 Patch Release
 ### Added
 - N/A
 
