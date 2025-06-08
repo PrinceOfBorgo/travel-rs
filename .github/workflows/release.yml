@@ -5,20 +5,31 @@ on:
     branches: [ main ]
 
 jobs:
-  release:
+  # Job 1: Prepare the release (bump version, update changelog).
+  # This job does NOT commit or push any changes yet.
+  prepare_release_data:
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
     if: |
-      contains(github.event.head_commit.message, '[release]') || 
-      contains(github.event.head_commit.message, '[release:minor]') || 
+      contains(github.event.head_commit.message, '[release]') ||
+      contains(github.event.head_commit.message, '[release:minor]') ||
       contains(github.event.head_commit.message, '[release:major]')
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      packages: write
+      contents: write # Needed for modifying files locally
+      packages: write # Keep for now if needed by internal actions
+      id-token: write # Keep for provenance, etc.
+
+    outputs:
+      new_version: ${{ steps.bump_version.outputs.new_version }}
+      repo_lower: ${{ steps.repo_lower_case.outputs.repo_lower }}
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0 # Need full history to avoid issues with git operations
 
       - name: Set up Git user
         run: |
@@ -31,14 +42,8 @@ jobs:
       - name: Install cargo-edit
         run: cargo install cargo-edit
 
-      - name: Get current version
-        id: current_version
-        run: |
-          version=$(grep '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
-          echo "VERSION=$version" >> $GITHUB_ENV
-
       - name: Bump version
-        id: bump_version
+        id: bump_version # Use an ID to capture output
         run: |
           if [[ "${{ github.event.head_commit.message }}" == *"[release:major]"* ]]; then
             cargo set-version --bump major
@@ -48,7 +53,8 @@ jobs:
             cargo set-version --bump patch
           fi
           new_version=$(grep '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
-          echo "NEW_VERSION=$new_version" >> $GITHUB_ENV
+          # Output the new version so subsequent jobs can use it
+          echo "new_version=$new_version" >> "$GITHUB_OUTPUT"
 
       - name: Update CHANGELOG.md
         run: |
@@ -61,24 +67,51 @@ jobs:
           else
             RELEASE_TYPE="### 🔧 Patch Release"
           fi
-          
-          NEW_CONTENT="## [${{ env.NEW_VERSION }}] - $DATE\n$RELEASE_TYPE"
-          sed -i "s/## \[.*-SNAPSHOT\].*/$NEW_CONTENT/" CHANGELOG.md
+          NEW_CONTENT="## [${{ steps.bump_version.outputs.new_version }}] - $DATE\n$RELEASE_TYPE"
+          sed -i "0,/^## \[.*-SNAPSHOT\].*/s|^## \[.*-SNAPSHOT\].*|$NEW_CONTENT|" CHANGELOG.md
 
-      - name: Commit and Tag Release
+      - name: Set lowercase repository name
+        id: repo_lower_case
         run: |
-          git add Cargo.toml Cargo.lock CHANGELOG.md
-          git commit -m "chore: release version ${{ env.NEW_VERSION }} [skip ci]"
-          git tag -a "v${{ env.NEW_VERSION }}" -m "Release version ${{ env.NEW_VERSION }}"
-          git push origin main --tags
+          echo "repo_lower=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
 
-      - name: Create GitHub Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release create "v${{ env.NEW_VERSION }}" \
-            --title "Release v${{ env.NEW_VERSION }}" \
-            --generate-notes
+      - name: Upload release files artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-files
+          path: |
+            Cargo.toml
+            Cargo.lock
+            CHANGELOG.md
+          retention-days: 1 # Keep artifact for a short period
+
+
+  # Job 2: Build and Push Docker Image (only runs if prepare_release_data succeeds)
+  build_and_push_docker:
+    needs: prepare_release_data # This job depends on the successful output of the previous job
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # Only read access needed for source code
+      packages: write # Needed for pushing to ghcr.io
+      id-token: write # Needed for provenance (SLSA) and potentially OIDC login
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download release files artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release-files
+          path: . # Download files to the current directory
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          install: true
+          driver: docker-container # Using 'docker-container' driver for multi-arch builds
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
@@ -87,42 +120,120 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Set lowercase repository name
-        run: |
-          echo "REPO_LOWER=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
-
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
+          platforms: |
+            linux/amd64
+            linux/arm64
+            linux/arm/v7
           push: true
           tags: |
-            ghcr.io/${{ env.REPO_LOWER }}:latest
-            ghcr.io/${{ env.REPO_LOWER }}:v${{ env.NEW_VERSION }}
+            ghcr.io/${{ needs.prepare_release_data.outputs.repo_lower }}:latest
+            ghcr.io/${{ needs.prepare_release_data.outputs.repo_lower }}:v${{ needs.prepare_release_data.outputs.new_version }}
           labels: |
-            org.opencontainers.image.version=${{ env.NEW_VERSION }}
+            org.opencontainers.image.version=${{ needs.prepare_release_data.outputs.new_version }}
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.description="Travel-RS - A Telegram bot for travel planning"
+          provenance: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      - name: Set next snapshot version
+
+  # Job 3: Finalize Release (commit, tag, GitHub release, set visibility).
+  # This job only runs if the Docker build succeeded.
+  finalize_release:
+    needs: [build_and_push_docker, prepare_release_data]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Needed for commit/push/tag
+      packages: write # Needed for gh api to set package visibility
+      id-token: write # Needed for gh api
+
+    outputs:
+      success: ${{ steps.mark_success.outputs.success }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Ensure full history for tagging and pushing
+
+      - name: Download release files artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release-files
+          path: . # Download files to the current directory
+
+      - name: Set up Git user
         run: |
-          # Get the current version components
-          IFS='.' read -r major minor patch <<< "${{ env.NEW_VERSION }}"
-          
-          # Increment patch version and add SNAPSHOT suffix
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+
+      - name: Install cargo-edit
+        run: cargo install cargo-edit
+        
+      - name: Commit and Tag Release
+        run: |
+          NEW_VERSION="${{ needs.prepare_release_data.outputs.new_version }}"
+          echo "Tagging with version: $NEW_VERSION"
+          git add Cargo.toml Cargo.lock CHANGELOG.md # Add the modified files
+          git commit -m "chore: release version ${NEW_VERSION} [skip ci]"
+          git tag -a "v${NEW_VERSION}" -m "Release version ${NEW_VERSION}"
+          git push origin main
+          git push origin "v${NEW_VERSION}" # Push the tag separately
+
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          NEW_VERSION="${{ needs.prepare_release_data.outputs.new_version }}"
+          gh release create "v${NEW_VERSION}" \
+            --title "Release v${NEW_VERSION}" \
+            --generate-notes
+
+      - name: Bump to next snapshot version
+        run: |
+          # Get the current version components from the *just-released* version
+          CURRENT_RELEASE_VERSION=$(grep '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
+          IFS='.' read -r major minor patch <<< "${CURRENT_RELEASE_VERSION}"
+
           next_version="${major}.${minor}.$((patch + 1))-SNAPSHOT"
-          
-          # Update version in Cargo.toml
+
           cargo set-version "${next_version}"
-          
+
           NEW_SNAPSHOT="## [${next_version}] - Unreleased\n### Added\n- N/A\n\n### Changed\n- N/A\n\n### Fixed\n- N/A"
 
-          # Update CHANGELOG.md with new snapshot version
-          sed -i "/^# Changelog/a \\\n${NEW_SNAPSHOT}" CHANGELOG.md
-          
-          # Commit changes
+          sed -i "1s|^# Changelog|# Changelog\n\n${NEW_SNAPSHOT}|" CHANGELOG.md
+
           git add Cargo.toml Cargo.lock CHANGELOG.md
           git commit -m "chore: prepare for next development iteration [skip ci]"
           git push origin main
+
+      - name: Rollback on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Rolling back release changes..."
+          NEW_VERSION="${{ needs.prepare_release_data.outputs.new_version }}"
+
+          # Delete the tag if it exists
+          git push --delete origin "v${NEW_VERSION}" || true
+
+          # Delete the GitHub release if it exists
+          gh release delete "v${NEW_VERSION}" --yes || true
+
+          # Delete the container image if it exists
+          PACKAGE_NAME=$(echo "${{ github.repository }}" | cut -d '/' -f 2)
+          gh api --method DELETE \
+            "/orgs/${{ github.repository_owner }}/packages/container/${PACKAGE_NAME}/versions/v${NEW_VERSION}" || true
+
+          echo "Rollback completed"
+          exit 1
+
+      - name: Mark release as successful
+        id: mark_success
+        if: success()
+        run: echo "success=true" >> "$GITHUB_OUTPUT"
