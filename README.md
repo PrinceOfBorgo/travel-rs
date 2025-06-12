@@ -352,7 +352,7 @@ This structure ensures that localization is both flexible and scalable, allowing
 
 ## Database Setup
 
-The bot uses a database for persistent storage. To set up the database, initialize the schema using the `build_travelers_db.surql` script.
+
 
 ## Docker Setup
 

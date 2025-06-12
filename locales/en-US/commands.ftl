@@ -4,7 +4,11 @@ process-already-running = Another process is already running, please cancel it f
 
 ## /setlanguage
 
-set-language-not-available = Couldn't set the language. {$langid} is not available. 
+set-language-not-available =
+    Couldn't set the language. "{$langid}" is not available.
+
+    Available langauges:
+    {$available-langs}
 set-language-ok = Chat language correctly set to {$langid}.
 
 ## /setcurrency

@@ -4,7 +4,11 @@ process-already-running = Un altro processo è già in esecuzione, per favore an
 
 ## /setlanguage
 
-set-language-not-available = Impossibile impostare la lingua. {$langid} non è disponibile.
+set-language-not-available =
+    Impossibile impostare la lingua. "{$langid}" non è disponibile.
+
+    Lingue disponibili:
+    {$available-langs}
 set-language-ok = Lingua della chat impostata correttamente su {$langid}.
 
 ## /setcurrency

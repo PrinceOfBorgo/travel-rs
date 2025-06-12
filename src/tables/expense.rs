@@ -1,6 +1,6 @@
 use crate::{
     db::Count,
-    i18n::{self, Translate, format::FORMAT_EXPENSE, translate_with_args},
+    i18n::{self, ToFluentDateTime, Translate, format::FORMAT_EXPENSE, translate_with_args},
     money_wrapper::MoneyWrapper,
 };
 use maplit::hashmap;
@@ -11,7 +11,7 @@ use std::{
     sync::Arc,
 };
 use surrealdb::{
-    RecordId, Surreal,
+    Datetime, RecordId, Surreal,
     engine::any::Any,
     sql::statements::{BeginStatement, CommitStatement},
 };
@@ -27,6 +27,7 @@ pub struct Expense {
     pub number: i64,
     pub description: String,
     pub amount: Decimal,
+    pub timestamp_utc: Datetime,
 }
 
 impl Expense {
@@ -185,6 +186,7 @@ impl Translate for Expense {
                 i18n::args::NUMBER.into() => self.number.into(),
                 i18n::args::DESCRIPTION.into() => self.description.clone().into(),
                 i18n::args::AMOUNT.into() => amount.to_string().into(),
+                i18n::args::DATETIME.into() => self.timestamp_utc.to_fluent_datetime().unwrap().into(),
             },
         )
     }

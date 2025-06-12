@@ -4,7 +4,7 @@ use crate::db::Count;
 use rust_decimal::prelude::*;
 use serde::{Deserialize, Serialize};
 use surrealdb::{
-    RecordId, Surreal,
+    Datetime, RecordId, Surreal,
     engine::any::Any,
     sql::statements::{BeginStatement, CommitStatement},
 };
@@ -18,6 +18,7 @@ pub struct TransferredTo {
     pub amount: Decimal,
     pub r#in: RecordId,
     pub out: RecordId,
+    pub timestamp_utc: Datetime,
 }
 
 impl TransferredTo {

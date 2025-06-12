@@ -12,60 +12,71 @@ fn main() {
 
     // Copy config directory
     println!("cargo:warning=Copying config directory...");
-    copy_dir_recursive("config", target_dir.join("config"));
+    copy_path("config", target_dir.join("config"));
 
     // Copy locales directory
     println!("cargo:warning=Copying locales directory...");
-    copy_dir_recursive("locales", target_dir.join("locales"));
+    copy_path("locales", target_dir.join("locales"));
+
+    // Copy database build script
+    println!("cargo:warning=Copying database build script...");
+    copy_path(
+        "database/build_travelers_db.surql",
+        target_dir.join("database/build_travelers_db.surql"),
+    );
 
     // Watch all files recursively
     println!("cargo:warning=Setting up file watchers...");
-    watch_directory_recursive("config");
-    watch_directory_recursive("locales");
+    watch_directory("config");
+    watch_directory("locales");
+    watch_directory("database");
 
     println!("cargo:warning=Build script completed!");
 }
 
-fn copy_dir_recursive(src: impl AsRef<Path>, dst: impl AsRef<Path>) {
+/// Copies a file or directory from `src` to `dst`.
+/// If `src` is a directory, it will recursively copy all contents.
+fn copy_path(src: impl AsRef<Path>, dst: impl AsRef<Path>) {
     let src = src.as_ref();
     let dst = dst.as_ref();
 
     if !src.exists() {
-        println!(
-            "cargo:warning=Source directory does not exist: {}",
-            src.display()
-        );
+        println!("cargo:warning=Source does not exist: {}", src.display());
         return;
     }
 
-    if !dst.exists() {
+    if src.is_dir() {
+        if !dst.exists() {
+            println!(
+                "cargo:warning=Creating destination directory: {}",
+                dst.display()
+            );
+            fs::create_dir_all(dst).unwrap();
+        }
+        for entry in fs::read_dir(src).unwrap() {
+            let entry = entry.unwrap();
+            let src_path = entry.path();
+            let dst_path = dst.join(entry.file_name());
+            copy_path(src_path, dst_path);
+        }
+    } else {
+        if let Some(parent) = dst.parent() {
+            if !parent.exists() {
+                fs::create_dir_all(parent).unwrap();
+            }
+        }
         println!(
-            "cargo:warning=Creating destination directory: {}",
+            "cargo:warning=Copying file: {} -> {}",
+            src.display(),
             dst.display()
         );
-        fs::create_dir_all(dst).unwrap();
-    }
-
-    for entry in fs::read_dir(src).unwrap() {
-        let entry = entry.unwrap();
-        let ty = entry.file_type().unwrap();
-        let src_path = entry.path();
-        let dst_path = dst.join(entry.file_name());
-
-        if ty.is_dir() {
-            copy_dir_recursive(src_path, dst_path);
-        } else {
-            println!(
-                "cargo:warning=Copying file: {} -> {}",
-                src_path.display(),
-                dst_path.display()
-            );
-            fs::copy(src_path, dst_path).unwrap();
-        }
+        fs::copy(src, dst).unwrap();
     }
 }
 
-fn watch_directory_recursive(dir: impl AsRef<Path>) {
+/// Watches a directory and all its contents recursively for changes.
+/// It will trigger a rebuild if any file changes.
+fn watch_directory(dir: impl AsRef<Path>) {
     let dir = dir.as_ref();
     if !dir.exists() {
         return;
@@ -80,7 +91,7 @@ fn watch_directory_recursive(dir: impl AsRef<Path>) {
         let path = entry.path();
 
         if path.is_dir() {
-            watch_directory_recursive(&path);
+            watch_directory(&path);
         } else {
             println!("cargo:rerun-if-changed={}", path.display());
         }

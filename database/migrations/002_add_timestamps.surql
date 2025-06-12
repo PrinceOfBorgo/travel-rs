@@ -1,0 +1,5 @@
+DEFINE FIELD timestamp_utc ON expense VALUE time::now() PERMISSIONS FOR select FULL, FOR create, update NONE;
+DEFINE FIELD timestamp_utc ON transferred_to VALUE time::now() PERMISSIONS FOR select FULL, FOR create, update NONE;
+
+DEFINE FUNCTION OVERWRITE fn::get_expense_details($chat: record<chat>, $expense_number: int) { RETURN (SELECT amount AS expense_amount, number AS expense_number, description AS expense_description, chat AS chat, timestamp_utc as timestamp_utc, (<-paid_for<-traveler)[0].name AS creditor_name, array::group((SELECT in.name AS traveler_name, amount FROM split WHERE out = $parent.id ORDER BY amount DESC, traveler_name ASC)) AS shares FROM expense WHERE chat = $chat AND number = $expense_number); } COMMENT 'Retrieve the details of the expense with the given identifying number in the specified chat' PERMISSIONS FULL;
+DEFINE FUNCTION OVERWRITE fn::get_transfers($chat: record<chat>) { RETURN SELECT number, amount, in.name AS sender_name, out.name AS receiver_name, in.chat AS chat, timestamp_utc FROM transferred_to WHERE in.chat.id = $chat; } COMMENT 'Retrieve the transfers recorded in the specified chat' PERMISSIONS FULL;

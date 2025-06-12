@@ -37,7 +37,7 @@ async fn connect_to_db() -> surrealdb::Result<Surreal<Any>> {
 
     // Initialize the database if it is in memory
     if address == "memory" || address == "mem://" {
-        let schema = std::fs::read_to_string("build_travelers_db.surql").unwrap();
+        let schema = std::fs::read_to_string("database/build_travelers_db.surql").unwrap();
         db.query(schema).await?;
     } else {
         // Authenticate only if it's not an in-memory database

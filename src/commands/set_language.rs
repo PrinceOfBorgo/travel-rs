@@ -28,7 +28,15 @@ pub async fn set_language(
         return Ok(translate_with_args(
             ctx,
             i18n::commands::SET_LANGUAGE_NOT_AVAILABLE,
-            &hashmap! {i18n::args::LANGID.into() => langid.to_string().into()},
+            &hashmap! {
+                i18n::args::LANGID.into() => langid.to_string().into(),
+                i18n::args::AVAILABLE_LANGS.into() =>
+                    i18n::available_langs()
+                    .map(|lang| format!("- {lang}"))
+                    .collect::<Vec<_>>()
+                    .join("\n")
+                    .into(),
+            },
         ));
     }
 
@@ -88,7 +96,15 @@ mod tests {
         let response = translate_with_args(
             bot.context(),  // Use the new context to retrieve the updated language
             i18n::commands::SET_LANGUAGE_NOT_AVAILABLE,
-            &hashmap! {i18n::args::LANGID.into() => "ab-CD".into()},
+            &hashmap! {
+                i18n::args::LANGID.into() => "ab-CD".into(),
+                i18n::args::AVAILABLE_LANGS.into() =>
+                    i18n::available_langs()
+                    .map(|lang| format!("- {lang}"))
+                    .collect::<Vec<_>>()
+                    .join("\n")
+                    .into(),
+            },
         );
         // Check that the last message is the expected response
         assert_eq!(last_message, response);

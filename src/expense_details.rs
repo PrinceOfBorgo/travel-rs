@@ -1,5 +1,5 @@
 use crate::{
-    i18n::{self, Translate, format::FORMAT_SHARE_DETAILS, translate_with_args},
+    i18n::{self, ToFluentDateTime, Translate, format::FORMAT_SHARE_DETAILS, translate_with_args},
     money_wrapper::MoneyWrapper,
     traveler::Name,
 };
@@ -7,7 +7,7 @@ use maplit::hashmap;
 use rust_decimal::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::{fmt::Display, sync::Arc};
-use surrealdb::{RecordId, Surreal, engine::any::Any};
+use surrealdb::{Datetime, RecordId, Surreal, engine::any::Any};
 use teloxide::types::ChatId;
 use travel_rs_derive::Table;
 
@@ -47,6 +47,7 @@ pub struct ExpenseDetails {
     pub creditor_name: Name,
     pub shares: Vec<ShareDetails>,
     pub chat: RecordId,
+    pub timestamp_utc: Datetime,
 }
 
 impl ExpenseDetails {
@@ -86,6 +87,7 @@ impl Translate for ExpenseDetails {
                 i18n::args::AMOUNT.into() => amount.to_string().into(),
                 i18n::args::CREDITOR.into() => self.creditor_name.clone().into(),
                 i18n::args::SHARES.into() => shares_str.into(),
+                i18n::args::DATETIME.into() => self.timestamp_utc.to_fluent_datetime().unwrap().into(),
             },
         )
     }

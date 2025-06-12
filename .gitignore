@@ -32,7 +32,7 @@ Cargo.lock
 *.pdb
 
 # Telegram bot token
-token.txt
+*token.txt
 
 # Logs folder
 logs/

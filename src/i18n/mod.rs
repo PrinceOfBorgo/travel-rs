@@ -5,13 +5,16 @@ pub mod errors;
 pub mod format;
 pub mod help;
 pub mod terms;
+mod to_fluent_datetime;
 mod translate;
 
+pub use to_fluent_datetime::ToFluentDateTime;
 pub use translate::Translate;
 
 use crate::{Context, commands::Command, consts::*, settings::SETTINGS};
 use commands::COMMAND_DESCRIPTIONS;
 use fluent::{FluentResource, FluentValue};
+use fluent_datetime::BundleExt;
 use fluent_templates::{ArcLoader, Loader};
 use std::{
     borrow::Cow,
@@ -111,7 +114,12 @@ static LOCALES: LazyLock<ArcLoader> = LazyLock::new(|| {
                 ))
                 .expect("Failed to add resource to bundle");
 
-            bundle.set_use_isolating(false)
+            bundle.set_use_isolating(false);
+
+            // Register the DATETIME function
+            bundle
+                .add_datetime_support()
+                .expect("DATETIME function should be supported");
         })
         .build()
         .expect("Failed to build ArcLoader")

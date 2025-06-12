@@ -15,7 +15,7 @@ token_source = "file"
 # If token_source is "file", this should be a path to a file containing the token.
 # If token_source is "env", this should be the name of the environment variable holding the token.
 # If token_source is "string", this should be the token itself.
-token = "token.txt"
+token = "config/dev-token.txt"
 
 [database]
 address = "ws://127.0.0.1:8000"

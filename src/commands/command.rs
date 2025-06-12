@@ -121,11 +121,11 @@ impl HelpMessage for Command {
                 HELP_SET_LANGUAGE,
                 &hashmap! {
                     i18n::args::AVAILABLE_LANGS.into() =>
-                    i18n::available_langs()
-                    .map(|lang| format!("- {lang}"))
-                    .collect::<Vec<_>>()
-                    .join("\n")
-                    .into()
+                        i18n::available_langs()
+                        .map(|lang| format!("- {lang}"))
+                        .collect::<Vec<_>>()
+                        .join("\n")
+                        .into()
                 },
             ),
             SetCurrency { currency: _ } => translate(ctx, HELP_SET_CURRENCY),
