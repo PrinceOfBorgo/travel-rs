@@ -4,7 +4,7 @@ use crate::{
     errors::CommandError,
     expense::Expense,
     expense_details::ExpenseDetails,
-    i18n::{self, Translate, translate_with_args, translate_with_args_default},
+    i18n::{self, Translate, TranslateWithArgs},
     trace_command_db,
 };
 use macro_rules_attribute::apply;
@@ -21,7 +21,7 @@ pub async fn show_expense(
     number: i64,
     ctx: Arc<Mutex<Context>>,
 ) -> Result<String, CommandError> {
-    tracing::debug!(LOG_DEBUG_START);
+    tracing::debug!("{LOG_DEBUG_START}");
 
     // Check if expense exists on db
     let count_res = Expense::db_count_by_number(db.clone(), msg.chat.id, number).await;
@@ -32,20 +32,18 @@ pub async fn show_expense(
             match select_res {
                 Ok(Some(expense_details)) => {
                     let reply = expense_details.translate(ctx.clone());
-                    tracing::debug!(LOG_DEBUG_SUCCESS);
+                    tracing::debug!("{LOG_DEBUG_SUCCESS}");
                     Ok(reply)
                 }
                 Ok(_) => {
                     tracing::warn!(
                         "{}",
-                        translate_with_args_default(
-                            i18n::commands::SHOW_EXPENSE_NOT_FOUND,
+                        i18n::commands::SHOW_EXPENSE_NOT_FOUND.translate_with_args_default(
                             &hashmap! {i18n::args::NUMBER.into() => number.into()},
                         )
                     );
-                    Ok(translate_with_args(
+                    Ok(i18n::commands::SHOW_EXPENSE_NOT_FOUND.translate_with_args(
                         ctx,
-                        i18n::commands::SHOW_EXPENSE_NOT_FOUND,
                         &hashmap! {i18n::args::NUMBER.into() => number.into()},
                     ))
                 }
@@ -58,16 +56,12 @@ pub async fn show_expense(
         Ok(_) => {
             tracing::warn!(
                 "{}",
-                translate_with_args_default(
-                    i18n::commands::SHOW_EXPENSE_NOT_FOUND,
+                i18n::commands::SHOW_EXPENSE_NOT_FOUND.translate_with_args_default(
                     &hashmap! {i18n::args::NUMBER.into() => number.into()},
                 )
             );
-            Ok(translate_with_args(
-                ctx,
-                i18n::commands::SHOW_EXPENSE_NOT_FOUND,
-                &hashmap! {i18n::args::NUMBER.into() => number.into()},
-            ))
+            Ok(i18n::commands::SHOW_EXPENSE_NOT_FOUND
+                .translate_with_args(ctx, &hashmap! {i18n::args::NUMBER.into() => number.into()}))
         }
         Err(err) => {
             tracing::error!("{err}");
@@ -83,7 +77,7 @@ mod tests {
     use crate::{
         db::db,
         expense_details::ExpenseDetails,
-        i18n::{self, Translate, translate_with_args_default},
+        i18n::{self, Translate, TranslateWithArgs},
         tests::{TestBot, helpers},
     };
     use maplit::hashmap;
@@ -175,9 +169,7 @@ mod tests {
         let db = db().await;
 
         let mut bot = TestBot::new(db, "/showexpense 1");
-        let response = translate_with_args_default(
-            i18n::commands::SHOW_EXPENSE_NOT_FOUND,
-            &hashmap! {i18n::args::NUMBER.into() => 1.into()},
+        let response = i18n::commands::SHOW_EXPENSE_NOT_FOUND.translate_with_args_default(&hashmap! {i18n::args::NUMBER.into() => 1.into()},
         );
         bot.test_last_message(&response).await;
     }

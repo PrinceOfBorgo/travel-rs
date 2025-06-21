@@ -1,4 +1,8 @@
-use crate::{Context, HandlerResult, i18n, i18n::translate, utils::trace_skip_all};
+use crate::{
+    Context, HandlerResult,
+    i18n::{self, Translate},
+    utils::trace_skip_all,
+};
 use macro_rules_attribute::apply;
 use std::sync::{Arc, Mutex};
 use teloxide::{dispatching::dialogue::Storage, prelude::*};
@@ -19,12 +23,12 @@ where
     let chat_id = msg.chat.id;
     if Arc::clone(&storage).get_dialogue(chat_id).await?.is_some() {
         Dialogue::new(storage, chat_id).exit().await?;
-        bot.send_message(chat_id, translate(ctx, i18n::commands::CANCEL_OK))
+        bot.send_message(chat_id, i18n::commands::CANCEL_OK.translate(ctx))
             .await?;
     } else {
         bot.send_message(
             chat_id,
-            translate(ctx, i18n::commands::CANCEL_NO_PROCESS_TO_CANCEL),
+            i18n::commands::CANCEL_NO_PROCESS_TO_CANCEL.translate(ctx),
         )
         .await?;
     }
@@ -35,7 +39,7 @@ where
 mod tests {
     use crate::{
         db::db,
-        i18n::{self, translate_default},
+        i18n::{self, Translate},
         tests::TestBot,
     };
 
@@ -48,7 +52,7 @@ mod tests {
 
         // Cancel process
         bot.update("/cancel");
-        let response = translate_default(i18n::commands::CANCEL_OK);
+        let response = i18n::commands::CANCEL_OK.translate_default();
         bot.test_last_message(&response).await;
     }
 
@@ -56,7 +60,7 @@ mod tests {
         let db = db().await;
 
         let mut bot = TestBot::new(db, "/cancel");
-        let response = translate_default(i18n::commands::CANCEL_NO_PROCESS_TO_CANCEL);
+        let response = i18n::commands::CANCEL_NO_PROCESS_TO_CANCEL.translate_default();
         bot.test_last_message(&response).await;
     }
 
@@ -69,11 +73,11 @@ mod tests {
 
         // Cancel process -> ok
         bot.update("/cancel");
-        let response = translate_default(i18n::commands::CANCEL_OK);
+        let response = i18n::commands::CANCEL_OK.translate_default();
         bot.test_last_message(&response).await;
 
         // Cancel again -> no process to cancel
-        let response = translate_default(i18n::commands::CANCEL_NO_PROCESS_TO_CANCEL);
+        let response = i18n::commands::CANCEL_NO_PROCESS_TO_CANCEL.translate_default();
         bot.test_last_message(&response).await;
     }
 }

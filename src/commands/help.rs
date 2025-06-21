@@ -1,9 +1,10 @@
 use crate::{
+    Context,
     commands::{Command, HelpMessage, ParseCommand},
     consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     errors::CommandError,
-    i18n::{commands::COMMAND_DESCRIPTIONS, translate},
-    trace_command, Context,
+    i18n::{Translate, commands::COMMAND_DESCRIPTIONS},
+    trace_command,
 };
 use macro_rules_attribute::apply;
 use std::sync::{Arc, Mutex};
@@ -16,18 +17,18 @@ pub fn help(
     command: &str,
     ctx: Arc<Mutex<Context>>,
 ) -> Result<String, CommandError> {
-    tracing::debug!(LOG_DEBUG_START);
+    tracing::debug!("{LOG_DEBUG_START}");
     let command = command.trim();
     if command.is_empty() {
-        tracing::debug!(LOG_DEBUG_SUCCESS);
-        return Ok(translate(ctx, COMMAND_DESCRIPTIONS));
+        tracing::debug!("{LOG_DEBUG_SUCCESS}");
+        return Ok(COMMAND_DESCRIPTIONS.translate(ctx));
     }
 
     let cmd_name = command.strip_prefix('/').unwrap_or(command).to_lowercase();
 
     match Command::parse_cmd_name(&cmd_name) {
         ParseCommand::ValidCommandName(command) => {
-            tracing::debug!(LOG_DEBUG_SUCCESS);
+            tracing::debug!("{LOG_DEBUG_SUCCESS}");
             Ok(command.help_message(ctx).to_string())
         }
         ParseCommand::BestMatch(best_match) => {
@@ -54,7 +55,7 @@ mod tests {
     use crate::{
         db::db,
         errors::CommandError,
-        i18n::{self, translate_default, Translate},
+        i18n::{self, Translate},
         tests::TestBot,
     };
 
@@ -62,19 +63,19 @@ mod tests {
         let db = db().await;
 
         let mut bot = TestBot::new(db, "/help");
-        let response = translate_default(i18n::commands::COMMAND_DESCRIPTIONS);
+        let response = i18n::commands::COMMAND_DESCRIPTIONS.translate_default();
         bot.test_last_message(&response).await;
 
         bot.update("/help addtraveler");
-        let response = translate_default(i18n::help::HELP_ADD_TRAVELER);
+        let response = i18n::help::HELP_ADD_TRAVELER.translate_default();
         bot.test_last_message(&response).await;
 
         bot.update("/help /addtraveler");
-        let response = translate_default(i18n::help::HELP_ADD_TRAVELER);
+        let response = i18n::help::HELP_ADD_TRAVELER.translate_default();
         bot.test_last_message(&response).await;
 
         bot.update("/help   addtraveler  ");
-        let response = translate_default(i18n::help::HELP_ADD_TRAVELER);
+        let response = i18n::help::HELP_ADD_TRAVELER.translate_default();
         bot.test_last_message(&response).await;
     }
 

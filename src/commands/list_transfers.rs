@@ -2,7 +2,7 @@ use crate::{
     Context,
     consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     errors::CommandError,
-    i18n::{self, Translate, translate, translate_with_args},
+    i18n::{self, Translate, TranslateWithArgs},
     trace_command_db,
     transfer::Transfer,
     traveler::Name,
@@ -21,7 +21,7 @@ pub async fn list_transfers(
     name: Name,
     ctx: Arc<Mutex<Context>>,
 ) -> Result<String, CommandError> {
-    tracing::debug!(LOG_DEBUG_START);
+    tracing::debug!("{LOG_DEBUG_START}");
 
     let list_res = if name.is_empty() {
         Transfer::transfers(db, msg.chat.id).await
@@ -33,11 +33,10 @@ pub async fn list_transfers(
         Ok(transfers) => {
             let reply = if transfers.is_empty() {
                 if name.is_empty() {
-                    translate(ctx, i18n::commands::LIST_TRANSFERS_NOT_FOUND)
+                    i18n::commands::LIST_TRANSFERS_NOT_FOUND.translate(ctx)
                 } else {
-                    translate_with_args(
+                    i18n::commands::LIST_TRANSFERS_NAME_NOT_FOUND.translate_with_args(
                         ctx,
-                        i18n::commands::LIST_TRANSFERS_NAME_NOT_FOUND,
                         &hashmap! {i18n::args::NAME.into() => name.into()},
                     )
                 }
@@ -48,7 +47,7 @@ pub async fn list_transfers(
                     .collect::<Vec<_>>()
                     .join("\n")
             };
-            tracing::debug!(LOG_DEBUG_SUCCESS);
+            tracing::debug!("{LOG_DEBUG_SUCCESS}");
             Ok(reply)
         }
         Err(err) => {
@@ -62,7 +61,7 @@ pub async fn list_transfers(
 mod tests {
     use crate::{
         db::db,
-        i18n::{self, Translate, translate_default, translate_with_args_default},
+        i18n::{self, Translate, TranslateWithArgs},
         tests::{TestBot, helpers},
         transfer::Transfer,
         traveler::Name,
@@ -140,9 +139,7 @@ mod tests {
         let db = db().await;
 
         let mut bot = TestBot::new(db, "/listtransfers");
-        let response = translate_default(
-            i18n::commands::LIST_TRANSFERS_NOT_FOUND,
-        );
+        let response = i18n::commands::LIST_TRANSFERS_NOT_FOUND.translate_default();
         bot.test_last_message(&response).await;
     }
 
@@ -159,9 +156,7 @@ mod tests {
 
         // List transfers related to Charlie -> not found
         bot.update("/listtransfers Charlie");
-        let response = translate_with_args_default(
-            i18n::commands::LIST_TRANSFERS_NAME_NOT_FOUND,
-            &hashmap! {i18n::args::NAME.into() => "Charlie".into()},
+        let response = i18n::commands::LIST_TRANSFERS_NAME_NOT_FOUND.translate_with_args_default(&hashmap! {i18n::args::NAME.into() => "Charlie".into()},
         );
         bot.test_last_message(&response).await;
     }

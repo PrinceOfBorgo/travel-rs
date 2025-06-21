@@ -3,7 +3,7 @@ use crate::{
     consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     errors::CommandError,
     expense::Expense,
-    i18n::{self, translate_with_args, translate_with_args_default},
+    i18n::{self, TranslateWithArgs},
     trace_command_db,
     utils::update_debts,
 };
@@ -21,7 +21,7 @@ pub async fn delete_expense(
     number: i64,
     ctx: Arc<Mutex<Context>>,
 ) -> Result<String, CommandError> {
-    tracing::debug!(LOG_DEBUG_START);
+    tracing::debug!("{LOG_DEBUG_START}");
 
     // Check if expense exists on db
     let count_res = Expense::db_count_by_number(db.clone(), msg.chat.id, number).await;
@@ -34,10 +34,9 @@ pub async fn delete_expense(
                     if let Err(err_update) = update_debts(db, msg.chat.id).await {
                         tracing::warn!("{err_update}");
                     }
-                    tracing::debug!(LOG_DEBUG_SUCCESS);
-                    Ok(translate_with_args(
+                    tracing::debug!("{LOG_DEBUG_SUCCESS}");
+                    Ok(i18n::commands::DELETE_EXPENSE_OK.translate_with_args(
                         ctx,
-                        i18n::commands::DELETE_EXPENSE_OK,
                         &hashmap! {i18n::args::NUMBER.into() => number.into()},
                     ))
                 }
@@ -50,16 +49,12 @@ pub async fn delete_expense(
         Ok(_) => {
             tracing::warn!(
                 "{}",
-                translate_with_args_default(
-                    i18n::commands::DELETE_EXPENSE_NOT_FOUND,
+                i18n::commands::DELETE_EXPENSE_NOT_FOUND.translate_with_args_default(
                     &hashmap! {i18n::args::NUMBER.into() => number.into()},
                 )
             );
-            Ok(translate_with_args(
-                ctx,
-                i18n::commands::DELETE_EXPENSE_NOT_FOUND,
-                &hashmap! {i18n::args::NUMBER.into() => number.into()},
-            ))
+            Ok(i18n::commands::DELETE_EXPENSE_NOT_FOUND
+                .translate_with_args(ctx, &hashmap! {i18n::args::NUMBER.into() => number.into()}))
         }
         Err(err) => {
             tracing::error!("{err}");
@@ -72,7 +67,7 @@ pub async fn delete_expense(
 mod tests {
     use crate::{
         db::db,
-        i18n::{self, translate_default, translate_with_args_default},
+        i18n::{self, Translate, TranslateWithArgs},
         tests::TestBot,
     };
     use maplit::hashmap;
@@ -102,9 +97,7 @@ mod tests {
 
         // Delete expense #1
         bot.update("/deleteexpense 1");
-        let response = translate_with_args_default(
-            i18n::commands::DELETE_EXPENSE_OK,
-            &hashmap! {i18n::args::NUMBER.into() => 1.into()},
+        let response = i18n::commands::DELETE_EXPENSE_OK.translate_with_args_default(&hashmap! {i18n::args::NUMBER.into() => 1.into()},
         );
         bot.test_last_message(&response).await;
     }
@@ -113,9 +106,7 @@ mod tests {
         let db = db().await;
 
         let mut bot = TestBot::new(db, "/deleteexpense 1");
-        let response = translate_with_args_default(
-            i18n::commands::DELETE_EXPENSE_NOT_FOUND,
-            &hashmap! {i18n::args::NUMBER.into() => 1.into()},
+        let response = i18n::commands::DELETE_EXPENSE_NOT_FOUND.translate_with_args_default(&hashmap! {i18n::args::NUMBER.into() => 1.into()},
         );
         bot.test_last_message(&response).await;
     }
@@ -145,15 +136,13 @@ mod tests {
 
         // Delete expense #1 -> ok
         bot.update("/deleteexpense 1");
-        let response = translate_with_args_default(
-            i18n::commands::DELETE_EXPENSE_OK,
+        let response = i18n::commands::DELETE_EXPENSE_OK.translate_with_args_default(
             &hashmap! {i18n::args::NUMBER.into() => 1.into()},
         );
         bot.test_last_message(&response).await;
 
         // Delete expense #1 again -> not found
-        let response = translate_with_args_default(
-            i18n::commands::DELETE_EXPENSE_NOT_FOUND,
+        let response = i18n::commands::DELETE_EXPENSE_NOT_FOUND.translate_with_args_default(
             &hashmap! {i18n::args::NUMBER.into() => 1.into()},
         );
         bot.test_last_message(&response).await;
@@ -163,9 +152,8 @@ mod tests {
         let db = db().await;
 
         let mut bot = TestBot::new(db, "/deleteexpense");
-        let help_message = translate_default(i18n::help::HELP_DELETE_EXPENSE);
-        let err = translate_with_args_default(
-            i18n::commands::INVALID_COMMAND_USAGE,
+        let help_message = i18n::help::HELP_DELETE_EXPENSE.translate_default();
+        let err = i18n::commands::INVALID_COMMAND_USAGE.translate_with_args_default(
             &hashmap! {
                 i18n::args::COMMAND.into() => "/deleteexpense".into(),
                 i18n::args::HELP_MESSAGE.into() => help_message.into()

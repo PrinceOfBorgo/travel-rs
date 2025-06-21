@@ -10,6 +10,7 @@ pub const SET_CURRENCY_COMMAND: &str = "-set-currency-command";
 pub const SET_LANGUAGE_COMMAND: &str = "-set-language-command";
 pub const SHOW_BALANCES_COMMAND: &str = "-show-balances-command";
 pub const SHOW_EXPENSE_COMMAND: &str = "-show-expense-command";
+pub const SHOW_STATS_COMMAND: &str = "-show-stats-command";
 pub const TRANSFER_COMMAND: &str = "-transfer-command";
 pub const DELETE_TRANSFER_COMMAND: &str = "-delete-transfer-command";
 pub const LIST_TRANSFERS_COMMAND: &str = "-list-transfers-command";

@@ -1,6 +1,6 @@
 use crate::{
     Context, HandlerResult,
-    i18n::{self, translate},
+    i18n::{self, Translate},
     utils::trace_skip_all,
 };
 use macro_rules_attribute::apply;
@@ -35,7 +35,7 @@ where
         if Self::already_running(storage, msg).await? {
             bot.send_message(
                 chat_id,
-                translate(ctx, i18n::commands::PROCESS_ALREADY_RUNNING),
+                i18n::commands::PROCESS_ALREADY_RUNNING.translate(ctx),
             )
             .await?;
         }

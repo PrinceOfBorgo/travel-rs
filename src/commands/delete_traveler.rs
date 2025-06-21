@@ -3,7 +3,7 @@ use crate::{
     consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     errors::CommandError,
     expense::Expense,
-    i18n::{self, Translate, translate_with_args, translate_with_args_default},
+    i18n::{self, Translate, TranslateWithArgs},
     trace_command_db,
     traveler::{Name, Traveler},
     utils::update_debts,
@@ -22,7 +22,7 @@ pub async fn delete_traveler(
     name: Name,
     ctx: Arc<Mutex<Context>>,
 ) -> Result<String, CommandError> {
-    tracing::debug!(LOG_DEBUG_START);
+    tracing::debug!("{LOG_DEBUG_START}");
     if name.is_empty() {
         return Err(CommandError::EmptyInput);
     }
@@ -42,10 +42,9 @@ pub async fn delete_traveler(
                             if let Err(err_update) = update_debts(db, msg.chat.id).await {
                                 tracing::warn!("{err_update}");
                             }
-                            tracing::debug!(LOG_DEBUG_SUCCESS);
-                            Ok(translate_with_args(
+                            tracing::debug!("{LOG_DEBUG_SUCCESS}");
+                            Ok(i18n::commands::DELETE_TRAVELER_OK.translate_with_args(
                                 ctx,
-                                i18n::commands::DELETE_TRAVELER_OK,
                                 &hashmap! {i18n::args::NAME.into() => name.into()},
                             ))
                         }
@@ -65,14 +64,15 @@ pub async fn delete_traveler(
                     tracing::warn!(
                         "Unable to delete traveler '{name}' because they have associated expenses.",
                     );
-                    Ok(translate_with_args(
-                        ctx,
-                        i18n::commands::DELETE_TRAVELER_HAS_EXPENSES,
-                        &hashmap! {
-                            i18n::args::NAME.into() => name.clone().into(),
-                            i18n::args::EXPENSES.into() => expenses_reply.into(),
-                        },
-                    ))
+                    Ok(
+                        i18n::commands::DELETE_TRAVELER_HAS_EXPENSES.translate_with_args(
+                            ctx,
+                            &hashmap! {
+                                i18n::args::NAME.into() => name.clone().into(),
+                                i18n::args::EXPENSES.into() => expenses_reply.into(),
+                            },
+                        ),
+                    )
                 }
                 Err(err) => {
                     tracing::error!("{err}");
@@ -83,16 +83,12 @@ pub async fn delete_traveler(
         Ok(_) => {
             tracing::warn!(
                 "{}",
-                translate_with_args_default(
-                    i18n::commands::DELETE_TRAVELER_NOT_FOUND,
+                i18n::commands::DELETE_TRAVELER_NOT_FOUND.translate_with_args_default(
                     &hashmap! {i18n::args::NAME.into() => name.clone().into()},
                 )
             );
-            Ok(translate_with_args(
-                ctx,
-                i18n::commands::DELETE_TRAVELER_NOT_FOUND,
-                &hashmap! {i18n::args::NAME.into() => name.into()},
-            ))
+            Ok(i18n::commands::DELETE_TRAVELER_NOT_FOUND
+                .translate_with_args(ctx, &hashmap! {i18n::args::NAME.into() => name.into()}))
         }
         Err(err) => {
             tracing::error!("{err}");
@@ -109,7 +105,7 @@ mod tests {
         db::db,
         errors::CommandError,
         expense::Expense,
-        i18n::{self, Translate, translate_with_args_default},
+        i18n::{self, Translate, TranslateWithArgs},
         tests::TestBot,
         traveler::{Name, Traveler},
     };
@@ -125,9 +121,7 @@ mod tests {
 
         // Delete traveler "Alice"
         bot.update("/deletetraveler Alice");
-        let response = translate_with_args_default(
-            i18n::commands::DELETE_TRAVELER_OK,
-            &hashmap! {i18n::args::NAME.into() => "Alice".into()},
+        let response = i18n::commands::DELETE_TRAVELER_OK.translate_with_args_default(&hashmap! {i18n::args::NAME.into() => "Alice".into()},
         );
         bot.test_last_message(&response).await;
     }
@@ -136,9 +130,7 @@ mod tests {
         let db = db().await;
 
         let mut bot = TestBot::new(db, "/deletetraveler Alice");
-        let response = translate_with_args_default(
-            i18n::commands::DELETE_TRAVELER_NOT_FOUND,
-            &hashmap! {i18n::args::NAME.into() => "Alice".into()},
+        let response = i18n::commands::DELETE_TRAVELER_NOT_FOUND.translate_with_args_default(&hashmap! {i18n::args::NAME.into() => "Alice".into()},
         );
         bot.test_last_message(&response).await;
     }
@@ -152,16 +144,12 @@ mod tests {
 
         // Delete traveler "Alice" -> ok
         bot.update("/deletetraveler Alice");
-        let response = translate_with_args_default(
-            i18n::commands::DELETE_TRAVELER_OK,
-            &hashmap! {i18n::args::NAME.into() => "Alice".into()},
+        let response = i18n::commands::DELETE_TRAVELER_OK.translate_with_args_default(&hashmap! {i18n::args::NAME.into() => "Alice".into()},
         );
         bot.test_last_message(&response).await;
 
         // Delete traveler "Alice" again -> not found
-        let response = translate_with_args_default(
-            i18n::commands::DELETE_TRAVELER_NOT_FOUND,
-            &hashmap! {i18n::args::NAME.into() => "Alice".into()},
+        let response = i18n::commands::DELETE_TRAVELER_NOT_FOUND.translate_with_args_default(&hashmap! {i18n::args::NAME.into() => "Alice".into()},
         );
         bot.test_last_message(&response).await;
     }
@@ -202,9 +190,7 @@ mod tests {
 
         // Delete traveler "Alice" -> has expenses
         bot.update("/deletetraveler Alice");
-        let response = translate_with_args_default(
-            i18n::commands::DELETE_TRAVELER_HAS_EXPENSES,
-            &hashmap! {
+        let response = i18n::commands::DELETE_TRAVELER_HAS_EXPENSES.translate_with_args_default(&hashmap! {
                 i18n::args::NAME.into() => "Alice".into(),
                 i18n::args::EXPENSES.into() => expense.translate_default().into(),
             },

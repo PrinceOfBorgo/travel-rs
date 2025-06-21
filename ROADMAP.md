@@ -28,8 +28,4 @@
 - [x] Add dedicated help messages for all commands.
 - [ ] Improve user experience (e.g. add buttons).
 - [x] Add timestamps to expenses and transfers.
-- [ ] Add `ShowStats` command:
-  - [ ] Min, max, total, average (from oldest to newest/now) expenses.
-  - [ ] Min, max, total, average (from oldest to newest/now) tranfers.
-  - [ ] Traveler who paid the most/the least.
-  - [ ] Traveler who pays most/less frequently.
+- [x] Add `ShowStats` command.

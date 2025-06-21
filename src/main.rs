@@ -16,6 +16,7 @@ mod i18n;
 mod money_wrapper;
 mod relationships;
 mod settings;
+mod stats;
 mod tables;
 mod transfer;
 mod utils;

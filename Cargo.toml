@@ -15,20 +15,17 @@ fluent = "0.16.1"
 fluent-datetime = "0.1.0"
 fluent-templates = "0.13.0"
 icu_calendar = "1.5.2"
+indoc = "2.0.6"
 log = "0.4.27"
 macro_rules_attribute = "0.2.2"
 maplit = "1.0.2"
 regex = "1.11.1"
 rust_decimal = "1.37.1"
 rust-fuzzy-search = "0.1.1"
-# For the `rusty_money` crate, we now target the git repository to get the latest changes.
-rusty-money = { git = "https://github.com/varunsrin/rusty_money.git", features = [
-    "iso",
-    "crypto",
-] }
+rusty-money = { version = "0.4.1", features = ["iso", "crypto"] }
 serde = "1.0.219"
 strum = { version = "0.27.1", features = ["derive"] }
-surrealdb = { version = "2.3.3", features = ["kv-mem"] }
+surrealdb = { version = "2.3.5", features = ["kv-mem"] }
 teloxide = { version = "0.15.0", features = ["macros"] }
 tokio = { version = "1.45.1", features = ["rt-multi-thread", "macros"] }
 tracing = "0.1.41"

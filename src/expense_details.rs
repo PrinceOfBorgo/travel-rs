@@ -1,5 +1,5 @@
 use crate::{
-    i18n::{self, ToFluentDateTime, Translate, format::FORMAT_SHARE_DETAILS, translate_with_args},
+    i18n::{self, ToFluentDateTime, Translate, TranslateWithArgs},
     money_wrapper::MoneyWrapper,
     traveler::Name,
 };
@@ -20,15 +20,19 @@ pub struct ShareDetails {
 }
 
 impl Translate for ShareDetails {
-    fn translate(&self, ctx: std::sync::Arc<std::sync::Mutex<crate::Context>>) -> String {
+    fn translate_with_indent(
+        &self,
+        ctx: std::sync::Arc<std::sync::Mutex<crate::Context>>,
+        indent_lvl: usize,
+    ) -> String {
         let amount = MoneyWrapper::new_with_context(self.amount, ctx.clone());
-        translate_with_args(
+        i18n::format::FORMAT_SHARE_DETAILS.translate_with_args_indent(
             ctx,
-            FORMAT_SHARE_DETAILS,
             &hashmap! {
                 i18n::args::TRAVELER_NAME.into() => self.traveler_name.clone().into(),
                 i18n::args::AMOUNT.into() => amount.to_string().into()
             },
+            indent_lvl,
         )
     }
 }
@@ -70,7 +74,11 @@ impl ExpenseDetails {
 }
 
 impl Translate for ExpenseDetails {
-    fn translate(&self, ctx: Arc<std::sync::Mutex<crate::Context>>) -> String {
+    fn translate_with_indent(
+        &self,
+        ctx: Arc<std::sync::Mutex<crate::Context>>,
+        indent_lvl: usize,
+    ) -> String {
         let amount = MoneyWrapper::new_with_context(self.expense_amount, ctx.clone());
         let shares_str = self
             .shares
@@ -78,9 +86,8 @@ impl Translate for ExpenseDetails {
             .map(|share_details| share_details.translate(ctx.clone()))
             .collect::<Vec<_>>()
             .join("\n");
-        translate_with_args(
+        i18n::format::FORMAT_EXPENSE_DETAILS.translate_with_args_indent(
             ctx,
-            i18n::format::FORMAT_EXPENSE_DETAILS,
             &hashmap! {
                 i18n::args::NUMBER.into() => self.expense_number.to_string().into(),
                 i18n::args::DESCRIPTION.into() => self.expense_description.clone().into(),
@@ -89,6 +96,7 @@ impl Translate for ExpenseDetails {
                 i18n::args::SHARES.into() => shares_str.into(),
                 i18n::args::DATETIME.into() => self.timestamp_utc.to_fluent_datetime().unwrap().into(),
             },
+            indent_lvl
         )
     }
 }

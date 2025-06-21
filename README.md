@@ -92,6 +92,9 @@ The following commands are supported by Travel-RS Bot:
 
     * Example: `/showbalances`
     * Example: `/showbalances Alice`
+* **`/showstats`** — Displays statistics for expenses, transfers and travelers.
+
+    * Example: `/showstats`
 * **`/cancel`** — Cancels the currently running interactive dialogue.
 
     * Example: `/cancel`

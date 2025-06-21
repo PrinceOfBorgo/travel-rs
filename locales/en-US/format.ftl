@@ -8,3 +8,45 @@ format-expense-details =
     {$shares}
 format-expense = [{DATETIME($datetime, dateStyle: "short")}] Expense #{$number}: {$description} - {$amount}
 format-transfer = [{DATETIME($datetime, dateStyle: "short")}] Transfer #{$number}: {$sender} sent {$amount} to {$receiver}
+format-traveler-stats-amount = {$traveler-name}: {$amount}
+format-traveler-stats-frequency = 
+    {$traveler-name}: {$count ->
+        [one] {$count} expense
+       *[other] {$count} expenses
+    }
+format-average-per-day = {$amount} per day [from {DATETIME($oldest-timestamp, dateStyle: "short")} to date {DATETIME($now, dateStyle: "short")}]
+format-expense-stats =
+    Expense statistics:
+    - Count: {$count}
+    - Sum: {$sum}
+    - Mean: {$mean}
+    - Maximum expenses: {$max}
+    - Minimum expenses: {$min}
+    - Average per day: {$average-per-day}
+    - Oldest: {$oldest}
+    - Newest: {$newest}
+format-transfer-stats =
+    Transfer statistics:
+    - Count: {$count}
+    - Sum: {$sum}
+    - Mean: {$mean}
+    - Maximum transfers: {$max}
+    - Minimum transfers: {$min}
+    - Average per day: {$average-per-day}
+    - Oldest: {$oldest}
+    - Newest: {$newest}
+format-traveler-stats =
+    Traveler statistics:
+    - Count: {$count}
+    - Who paid the most: {$travelers-paid-most}
+    - Who paid the least: {$travelers-paid-least}
+    - Who pays most frequently: {$travelers-pays-most-frequently}
+    - Who pays least frequently: {$travelers-pays-least-frequently}
+    - Major creditors: {$major-creditors}
+    - Major debtors: {$major-debtors}
+format-stats =
+    {$expense-stats}
+
+    {$transfer-stats}
+
+    {$traveler-stats}

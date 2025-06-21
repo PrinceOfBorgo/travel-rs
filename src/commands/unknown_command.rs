@@ -2,8 +2,7 @@ use super::ParseCommand;
 use crate::{
     Context, HandlerResult,
     commands::{Command, HelpMessage},
-    i18n,
-    i18n::translate_with_args,
+    i18n::{self, TranslateWithArgs},
     utils::trace_skip_all,
 };
 use macro_rules_attribute::apply;
@@ -38,28 +37,24 @@ pub async fn unknown_command(bot: Bot, msg: Message, ctx: Arc<Mutex<Context>>) -
         ParseCommand::ValidCommandName(command) => {
             let help_message = command.help_message(ctx.clone());
 
-            translate_with_args(
+            i18n::commands::INVALID_COMMAND_USAGE.translate_with_args(
                 ctx,
-                i18n::commands::INVALID_COMMAND_USAGE,
                 &hashmap! {
                     i18n::args::COMMAND.into() => format!("/{cmd_name}").into(),
                     i18n::args::HELP_MESSAGE.into() => help_message.into()
                 },
             )
         }
-        ParseCommand::BestMatch(best_match) => translate_with_args(
-            ctx,
-            i18n::commands::UNKNOWN_COMMAND_BEST_MATCH,
-            &hashmap! {
-                i18n::args::COMMAND.into() => text.into(),
-                i18n::args::BEST_MATCH.into() => format!("/{}", best_match.as_ref()).into()
-            },
-        ),
-        ParseCommand::UnknownCommand => translate_with_args(
-            ctx,
-            i18n::commands::UNKNOWN_COMMAND,
-            &hashmap! {i18n::args::COMMAND.into() => text.into()},
-        ),
+        ParseCommand::BestMatch(best_match) => i18n::commands::UNKNOWN_COMMAND_BEST_MATCH
+            .translate_with_args(
+                ctx,
+                &hashmap! {
+                    i18n::args::COMMAND.into() => text.into(),
+                    i18n::args::BEST_MATCH.into() => format!("/{}", best_match.as_ref()).into()
+                },
+            ),
+        ParseCommand::UnknownCommand => i18n::commands::UNKNOWN_COMMAND
+            .translate_with_args(ctx, &hashmap! {i18n::args::COMMAND.into() => text.into()}),
     };
 
     bot.send_message(msg.chat.id, reply).await?;

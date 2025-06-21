@@ -2,17 +2,21 @@
 
 ## [0.2.3-SNAPSHOT] - Unreleased
 ### Added
-- Timestamps for expenses and transfers. This functionality requires [database](database) schema updates through migration scripts:
-  - [`002_add_timestamps.surql`](database/migrations/002_add_timestamps.surql)
+- Timestamps for expenses and transfers. This functionality requires [database](database) schema updates through migration scripts (view **Changed** section).
+- `ShowStats` command to show some statistics about expenses, transfers and travelers. This functionality requires [database](database) schema updates through migration scripts (view **Changed** section).
 - [Logo](assets/logo-dev.png) for DEV bot.
 
 ### Changed
+- Updated [database](database) schema. Run the following scripts to migrate:
+  - [`002_add_timestamps.surql`](database/migrations/002_add_timestamps.surql)
+  - [`003_define_stats_functions.surql`](database/migrations/003_define_stats_functions.surql)
 - Refactored the project structure to gather database scripts under one [directory](database).
 - Minor changes to [locales](locales) files.
-- For the `rusty_money` crate, we now target [the git repository](https://github.com/varunsrin/rusty_money.git) to get the latest changes. This fixes some bugs present in the last version published on [crates.io](https://crates.io/crates/rusty-money) (`rusty-money = "0.4.1"` to date).
+- Enhanced translations handling using `Translate` and `TranslateWithArgs` traits and defining indentation levels for lists of items.
 
 ### Fixed
-- N/A.
+- Minor debug logging formatting.
+- ~~For the `rusty_money` crate, we now target [the git repository](https://github.com/varunsrin/rusty_money.git) to get the latest changes. This fixes some bugs present in the last version published on [crates.io](https://crates.io/crates/rusty-money) (`rusty-money = "0.4.1"` to date).~~
 
 ## [0.2.2] - 2025-06-08
 ### 🔧 Patch Release

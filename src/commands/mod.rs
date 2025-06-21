@@ -13,6 +13,7 @@ mod set_currency;
 mod set_language;
 mod show_balances;
 mod show_expense;
+mod show_stats;
 mod transfer;
 mod unknown_command;
 
@@ -31,5 +32,6 @@ pub use set_currency::set_currency;
 pub use set_language::set_language;
 pub use show_balances::show_balances;
 pub use show_expense::show_expense;
+pub use show_stats::show_stats;
 pub use transfer::transfer;
 pub use unknown_command::unknown_command;

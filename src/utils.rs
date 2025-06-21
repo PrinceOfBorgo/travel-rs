@@ -213,3 +213,23 @@ pub async fn update_debts(db: Arc<Surreal<Any>>, chat_id: ChatId) -> Result<(), 
     query = query.query(CommitStatement::default());
     query.await.map(|_| {})
 }
+
+/// Formats a list of items into a multiline string with indentation.
+/// Each item is translated using the provided context and indentation level.
+/// A newline is added before the first item.
+pub fn indent_multiline(
+    items: &[impl crate::i18n::Translate],
+    ctx: Arc<std::sync::Mutex<crate::Context>>,
+    indent_lvl: usize,
+) -> String {
+    if items.is_empty() {
+        String::new()
+    } else {
+        String::from("\n")
+            + &items
+                .iter()
+                .map(|t| t.translate_with_indent(ctx.clone(), indent_lvl + 1))
+                .collect::<Vec<_>>()
+                .join("\n")
+    }
+}
