@@ -2,8 +2,7 @@ use crate::{
     Context,
     consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     errors::CommandError,
-    i18n,
-    i18n::translate,
+    i18n::{self, Translate},
     trace_command_db,
     traveler::Traveler,
 };
@@ -19,12 +18,12 @@ pub async fn list_travelers(
     msg: &Message,
     ctx: Arc<Mutex<Context>>,
 ) -> Result<String, CommandError> {
-    tracing::debug!(LOG_DEBUG_START);
+    tracing::debug!("{LOG_DEBUG_START}");
     let list_res = Traveler::db_select(db, msg.chat.id).await;
     match list_res {
         Ok(travelers) => {
             let reply = if travelers.is_empty() {
-                translate(ctx, i18n::commands::LIST_TRAVELERS_NOT_FOUND)
+                i18n::commands::LIST_TRAVELERS_NOT_FOUND.translate(ctx)
             } else {
                 travelers
                     .into_iter()
@@ -32,7 +31,7 @@ pub async fn list_travelers(
                     .collect::<Vec<_>>()
                     .join("\n")
             };
-            tracing::debug!(LOG_DEBUG_SUCCESS);
+            tracing::debug!("{LOG_DEBUG_SUCCESS}");
             Ok(reply)
         }
         Err(err) => {
@@ -46,7 +45,7 @@ pub async fn list_travelers(
 mod tests {
     use crate::{
         db::db,
-        i18n::{self, translate_default},
+        i18n::{self, Translate},
         tests::TestBot,
     };
 
@@ -70,9 +69,7 @@ mod tests {
         let db = db().await;
 
         let mut bot = TestBot::new(db, "/listtravelers");
-        let response = translate_default(
-            i18n::commands::LIST_TRAVELERS_NOT_FOUND,
-        );
+        let response = i18n::commands::LIST_TRAVELERS_NOT_FOUND.translate_default();
         bot.test_last_message(&response).await;
     }
 }

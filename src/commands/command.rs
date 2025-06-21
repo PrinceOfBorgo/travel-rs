@@ -3,10 +3,10 @@ use crate::{
     commands::{
         HelpMessage, add_traveler, delete_expense, delete_transfer, delete_traveler, help,
         list_expenses, list_transfers, list_travelers, set_currency, set_language, show_balances,
-        show_expense, transfer,
+        show_expense, show_stats, transfer,
     },
     consts::MIN_SIMILARITY_SCORE,
-    i18n::{self, Translate, help::*, translate, translate_with_args},
+    i18n::{self, Translate, TranslateWithArgs, help::*},
     traveler::Name,
 };
 use maplit::hashmap;
@@ -61,6 +61,8 @@ pub enum Command {
     ListTransfers { name: Name },
     #[command(description = "{descr-show-balances}")]
     ShowBalances { name: Name },
+    #[command(description = "{descr-show-stats}")]
+    ShowStats,
     #[command(description = "{descr-cancel}")]
     Cancel,
 }
@@ -115,10 +117,9 @@ impl HelpMessage for Command {
     fn help_message(&self, ctx: Arc<Mutex<Context>>) -> String {
         use Command::*;
         match self {
-            Help { command: _ } => translate(ctx, HELP_HELP),
-            SetLanguage { langid: _ } => translate_with_args(
+            Help { command: _ } => HELP_HELP.translate(ctx),
+            SetLanguage { langid: _ } => HELP_SET_LANGUAGE.translate_with_args(
                 ctx,
-                HELP_SET_LANGUAGE,
                 &hashmap! {
                     i18n::args::AVAILABLE_LANGS.into() =>
                         i18n::available_langs()
@@ -128,23 +129,24 @@ impl HelpMessage for Command {
                         .into()
                 },
             ),
-            SetCurrency { currency: _ } => translate(ctx, HELP_SET_CURRENCY),
-            AddTraveler { name: _ } => translate(ctx, HELP_ADD_TRAVELER),
-            DeleteTraveler { name: _ } => translate(ctx, HELP_DELETE_TRAVELER),
-            ListTravelers => translate(ctx, HELP_LIST_TRAVELERS),
-            AddExpense => translate(ctx, HELP_ADD_EXPENSE),
-            DeleteExpense { number: _ } => translate(ctx, HELP_DELETE_EXPENSE),
-            ListExpenses { description: _ } => translate(ctx, HELP_LIST_EXPENSES),
-            ShowExpense { number: _ } => translate(ctx, HELP_SHOW_EXPENSE),
+            SetCurrency { currency: _ } => HELP_SET_CURRENCY.translate(ctx),
+            AddTraveler { name: _ } => HELP_ADD_TRAVELER.translate(ctx),
+            DeleteTraveler { name: _ } => HELP_DELETE_TRAVELER.translate(ctx),
+            ListTravelers => HELP_LIST_TRAVELERS.translate(ctx),
+            AddExpense => HELP_ADD_EXPENSE.translate(ctx),
+            DeleteExpense { number: _ } => HELP_DELETE_EXPENSE.translate(ctx),
+            ListExpenses { description: _ } => HELP_LIST_EXPENSES.translate(ctx),
+            ShowExpense { number: _ } => HELP_SHOW_EXPENSE.translate(ctx),
             Transfer {
                 from: _,
                 to: _,
                 amount: _,
-            } => translate(ctx, HELP_TRANSFER),
-            DeleteTransfer { number: _ } => translate(ctx, HELP_DELETE_TRANSFER),
-            ListTransfers { name: _ } => translate(ctx, HELP_LIST_TRANSFERS),
-            ShowBalances { name: _ } => translate(ctx, HELP_SHOW_BALANCES),
-            Cancel => translate(ctx, HELP_CANCEL),
+            } => HELP_TRANSFER.translate(ctx),
+            DeleteTransfer { number: _ } => HELP_DELETE_TRANSFER.translate(ctx),
+            ListTransfers { name: _ } => HELP_LIST_TRANSFERS.translate(ctx),
+            ShowBalances { name: _ } => HELP_SHOW_BALANCES.translate(ctx),
+            ShowStats => HELP_SHOW_STATS.translate(ctx),
+            Cancel => HELP_CANCEL.translate(ctx),
         }
     }
 }
@@ -183,6 +185,7 @@ pub async fn command_reply(
         DeleteTransfer { number } => delete_transfer(db, msg, number, ctx.clone()).await,
         ListTransfers { name } => list_transfers(db, msg, name, ctx.clone()).await,
         ShowBalances { name } => show_balances(db, msg, name, ctx.clone()).await,
+        ShowStats => show_stats(db, msg, ctx.clone()).await,
         Cancel | AddExpense => {
             unreachable!("This command is handled before calling this function.")
         }

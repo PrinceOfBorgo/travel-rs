@@ -3,7 +3,7 @@ use crate::{
     chat::Chat,
     consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     errors::CommandError,
-    i18n::{self, translate_with_args},
+    i18n::{self, TranslateWithArgs},
     trace_command_db,
 };
 use macro_rules_attribute::apply;
@@ -20,20 +20,20 @@ pub async fn set_currency(
     currency: &str,
     ctx: Arc<Mutex<Context>>,
 ) -> Result<String, CommandError> {
-    tracing::debug!(LOG_DEBUG_START);
+    tracing::debug!("{LOG_DEBUG_START}");
+    let currency = currency.to_uppercase();
     // Update chat currency on db
-    let update_res = Chat::db_update_currency(db, msg.chat.id, currency).await;
+    let update_res = Chat::db_update_currency(db, msg.chat.id, &currency).await;
     match update_res {
         Ok(_) => {
-            tracing::debug!(LOG_DEBUG_SUCCESS);
+            tracing::debug!("{LOG_DEBUG_SUCCESS}");
             {
                 let mut ctx_guard = ctx.lock().expect("Failed to lock context");
                 ctx_guard.currency = currency.to_owned();
             }
 
-            Ok(translate_with_args(
+            Ok(i18n::commands::SET_CURRENCY_OK.translate_with_args(
                 ctx.clone(),
-                i18n::commands::SET_CURRENCY_OK,
                 &hashmap! {i18n::args::CURRENCY.into() => currency.into()},
             ))
         }
@@ -51,7 +51,7 @@ mod tests {
     use crate::{
         db::db,
         expense::Expense,
-        i18n::{self, Translate, translate_with_args_default},
+        i18n::{self, Translate, TranslateWithArgs},
         tests::TestBot,
         traveler::{Name, Traveler},
     };
@@ -62,9 +62,7 @@ mod tests {
         let db = db().await;
 
         let mut bot = TestBot::new(db, "/setcurrency TEST");
-        let response = translate_with_args_default(
-            i18n::commands::SET_CURRENCY_OK,
-            &hashmap! {i18n::args::CURRENCY.into() => "TEST".into()},
+        let response = i18n::commands::SET_CURRENCY_OK.translate_with_args_default(&hashmap! {i18n::args::CURRENCY.into() => "TEST".into()},
         );
         bot.test_last_message(&response).await;
     }

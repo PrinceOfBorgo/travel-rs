@@ -3,7 +3,7 @@ use crate::{
     consts::*,
     errors::{AddExpenseError, EndError},
     expense::Expense,
-    i18n::{self, Translate, dialogues::*, translate, translate_with_args},
+    i18n::{self, Translate, TranslateWithArgs, dialogues::*},
     trace_state, trace_state_db,
     traveler::{Name, Traveler},
     update_debts,
@@ -99,15 +99,15 @@ pub async fn start(
     msg: Message,
     ctx: Arc<Mutex<Context>>,
 ) -> HandlerResult {
-    tracing::debug!(LOG_DEBUG_START);
+    tracing::debug!("{LOG_DEBUG_START}");
     let reply = format!(
         "{start}\n\n{ask_description}",
-        start = translate(ctx.clone(), ADD_EXPENSE_START),
-        ask_description = translate(ctx, ADD_EXPENSE_ASK_DESCRIPTION)
+        start = ADD_EXPENSE_START.translate(ctx.clone()),
+        ask_description = ADD_EXPENSE_ASK_DESCRIPTION.translate(ctx)
     );
     bot.send_message(msg.chat.id, reply).await?;
     dialogue.update(AddExpenseState::ReceiveDescription).await?;
-    tracing::debug!(LOG_DEBUG_SUCCESS);
+    tracing::debug!("{LOG_DEBUG_SUCCESS}");
     Ok(())
 }
 
@@ -118,21 +118,21 @@ pub async fn receive_description(
     msg: Message,
     ctx: Arc<Mutex<Context>>,
 ) -> HandlerResult {
-    tracing::debug!(LOG_DEBUG_START);
+    tracing::debug!("{LOG_DEBUG_START}");
     match msg.text() {
         Some(text) => {
-            bot.send_message(msg.chat.id, translate(ctx, ADD_EXPENSE_ASK_AMOUNT))
+            bot.send_message(msg.chat.id, ADD_EXPENSE_ASK_AMOUNT.translate(ctx))
                 .await?;
             dialogue
                 .update(AddExpenseState::ReceiveAmount {
                     description: text.to_owned(),
                 })
                 .await?;
-            tracing::debug!(LOG_DEBUG_SUCCESS);
+            tracing::debug!("{LOG_DEBUG_SUCCESS}");
         }
         None => {
             tracing::warn!("Invalid description: received `None`.");
-            bot.send_message(msg.chat.id, translate(ctx, ADD_EXPENSE_INVALID_DESCRIPTION))
+            bot.send_message(msg.chat.id, ADD_EXPENSE_INVALID_DESCRIPTION.translate(ctx))
                 .await?;
         }
     }
@@ -148,11 +148,11 @@ pub async fn receive_amount(
     msg: Message,
     ctx: Arc<Mutex<Context>>,
 ) -> HandlerResult {
-    tracing::debug!(LOG_DEBUG_START);
+    tracing::debug!("{LOG_DEBUG_START}");
     let parsed_text = msg.text().map(|text| text.parse::<Decimal>());
     match parsed_text {
         Some(Ok(amount)) => {
-            bot.send_message(msg.chat.id, translate(ctx, ADD_EXPENSE_ASK_PAID_BY))
+            bot.send_message(msg.chat.id, ADD_EXPENSE_ASK_PAID_BY.translate(ctx))
                 .await?;
             dialogue
                 .update(AddExpenseState::ReceivePaidBy {
@@ -160,11 +160,11 @@ pub async fn receive_amount(
                     amount,
                 })
                 .await?;
-            tracing::debug!(LOG_DEBUG_SUCCESS);
+            tracing::debug!("{LOG_DEBUG_SUCCESS}");
         }
         _ => {
             tracing::warn!("Invalid amount: received `{parsed_text:?}`.");
-            bot.send_message(msg.chat.id, translate(ctx, ADD_EXPENSE_INVALID_AMOUNT))
+            bot.send_message(msg.chat.id, ADD_EXPENSE_INVALID_AMOUNT.translate(ctx))
                 .await?;
         }
     }
@@ -181,7 +181,7 @@ pub async fn receive_paid_by(
     msg: Message,
     ctx: Arc<Mutex<Context>>,
 ) -> HandlerResult {
-    tracing::debug!(LOG_DEBUG_START);
+    tracing::debug!("{LOG_DEBUG_START}");
     let text = msg.text();
     let name = match text {
         Some(text) => match Name::from_str(text) {
@@ -190,7 +190,7 @@ pub async fn receive_paid_by(
                 tracing::warn!("{err}");
                 let reply = format!(
                     "{invalid_paid_by}\n\n{reason}",
-                    invalid_paid_by = translate(ctx.clone(), ADD_EXPENSE_INVALID_PAID_BY),
+                    invalid_paid_by = ADD_EXPENSE_INVALID_PAID_BY.translate(ctx.clone()),
                     reason = err.translate(ctx)
                 );
                 bot.send_message(msg.chat.id, reply).await?;
@@ -199,7 +199,7 @@ pub async fn receive_paid_by(
         },
         None => {
             tracing::warn!("Invalid name: received `{text:?}`.");
-            bot.send_message(msg.chat.id, translate(ctx, ADD_EXPENSE_INVALID_PAID_BY))
+            bot.send_message(msg.chat.id, ADD_EXPENSE_INVALID_PAID_BY.translate(ctx))
                 .await?;
             return Ok(());
         }
@@ -209,7 +209,7 @@ pub async fn receive_paid_by(
     let select_res = Traveler::db_select_by_name(db, msg.chat.id, &name).await;
     match select_res {
         Ok(Some(traveler)) => {
-            bot.send_message(msg.chat.id, translate(ctx, ADD_EXPENSE_ASK_SHARES))
+            bot.send_message(msg.chat.id, ADD_EXPENSE_ASK_SHARES.translate(ctx))
                 .await?;
             dialogue
                 .update(AddExpenseState::StartSplitAmong {
@@ -218,17 +218,14 @@ pub async fn receive_paid_by(
                     paid_by: traveler,
                 })
                 .await?;
-            tracing::debug!(LOG_DEBUG_SUCCESS);
+            tracing::debug!("{LOG_DEBUG_SUCCESS}");
         }
         Ok(None) => {
             tracing::warn!("Invalid traveler: received {name}.");
             bot.send_message(
                 msg.chat.id,
-                translate_with_args(
-                    ctx,
-                    ADD_EXPENSE_TRAVELER_NOT_FOUND,
-                    &hashmap! {i18n::args::NAME.into() => name.into()},
-                ),
+                ADD_EXPENSE_TRAVELER_NOT_FOUND
+                    .translate_with_args(ctx, &hashmap! {i18n::args::NAME.into() => name.into()}),
             )
             .await?;
         }
@@ -236,11 +233,8 @@ pub async fn receive_paid_by(
             tracing::error!("{err}");
             bot.send_message(
                 msg.chat.id,
-                translate_with_args(
-                    ctx,
-                    ADD_EXPENSE_TRAVELER_GENERIC_ERROR,
-                    &hashmap! {i18n::args::NAME.into() => name.into()},
-                ),
+                ADD_EXPENSE_TRAVELER_GENERIC_ERROR
+                    .translate_with_args(ctx, &hashmap! {i18n::args::NAME.into() => name.into()}),
             )
             .await?;
         }
@@ -312,13 +306,13 @@ async fn handle_split_among_input(input: SplitAmongInput) -> HandlerResult {
         msg,
         ctx,
     } = input;
-    tracing::debug!(LOG_DEBUG_START);
+    tracing::debug!("{LOG_DEBUG_START}");
     match msg.text() {
         Some(text) => {
             tracing::debug!("Received text: `{text}`.");
             match parse_split_among(db.clone(), text, msg.chat.id, &mut split_among).await {
                 Ok(SplitAmongEnum::List) => {
-                    bot.send_message(msg.chat.id, translate(ctx, ADD_EXPENSE_CONTINUE_SPLIT))
+                    bot.send_message(msg.chat.id, ADD_EXPENSE_CONTINUE_SPLIT.translate(ctx))
                         .await?;
                     dialogue
                         .update(AddExpenseState::ReceiveSplitAmong {
@@ -328,10 +322,10 @@ async fn handle_split_among_input(input: SplitAmongInput) -> HandlerResult {
                             split_among,
                         })
                         .await?;
-                    tracing::debug!(LOG_DEBUG_SUCCESS);
+                    tracing::debug!("{LOG_DEBUG_SUCCESS}");
                 }
                 Ok(SplitAmongEnum::End) => {
-                    tracing::debug!(LOG_DEBUG_SUCCESS);
+                    tracing::debug!("{LOG_DEBUG_SUCCESS}");
                     match end(
                         db,
                         &dialogue,
@@ -343,7 +337,7 @@ async fn handle_split_among_input(input: SplitAmongInput) -> HandlerResult {
                         Ok(expense) => {
                             let reply = format!(
                                 "{expense_added}\n\n{format_expense}",
-                                expense_added = translate(ctx.clone(), ADD_EXPENSE_OK),
+                                expense_added = ADD_EXPENSE_OK.translate(ctx.clone()),
                                 format_expense = expense.translate(ctx)
                             );
                             bot.send_message(msg.chat.id, reply).await?;
@@ -354,7 +348,7 @@ async fn handle_split_among_input(input: SplitAmongInput) -> HandlerResult {
                             }
                             EndError::AddExpense(err) => {
                                 let mut reply =
-                                    translate(ctx.clone(), ADD_EXPENSE_ERROR_ON_COMPUTING_SHARES);
+                                    ADD_EXPENSE_ERROR_ON_COMPUTING_SHARES.translate(ctx.clone());
                                 let expense_is_too_high =
                                     matches!(err, AddExpenseError::ExpenseTooHigh { .. });
                                 if !matches!(err, AddExpenseError::Generic(_)) {
@@ -362,7 +356,7 @@ async fn handle_split_among_input(input: SplitAmongInput) -> HandlerResult {
                                     reply += &err.translate(ctx.clone());
                                     if expense_is_too_high {
                                         reply += "\n";
-                                        reply += &translate(ctx, ADD_EXPENSE_SHARES_CLEARED);
+                                        reply += &ADD_EXPENSE_SHARES_CLEARED.translate(ctx);
                                     }
                                 }
                                 bot.send_message(msg.chat.id, reply).await?;
@@ -380,7 +374,7 @@ async fn handle_split_among_input(input: SplitAmongInput) -> HandlerResult {
                             EndError::Generic(_) => {
                                 bot.send_message(
                                     msg.chat.id,
-                                    translate(ctx, ADD_EXPENSE_CREATING_EXPENSE_GENERIC_ERROR),
+                                    ADD_EXPENSE_CREATING_EXPENSE_GENERIC_ERROR.translate(ctx),
                                 )
                                 .await?;
                             }
@@ -389,14 +383,14 @@ async fn handle_split_among_input(input: SplitAmongInput) -> HandlerResult {
                 }
                 Err(err) => {
                     tracing::error!("{err}");
-                    let mut reply = translate(ctx.clone(), ADD_EXPENSE_SHARES_PARSING_ERROR);
+                    let mut reply = ADD_EXPENSE_SHARES_PARSING_ERROR.translate(ctx.clone());
                     let expense_is_too_high = matches!(err, AddExpenseError::ExpenseTooHigh { .. });
                     if !matches!(err, AddExpenseError::Generic(_)) {
                         reply += "\n";
                         reply += &err.translate(ctx.clone());
                         if expense_is_too_high {
                             reply += "\n";
-                            reply += &translate(ctx, ADD_EXPENSE_SHARES_CLEARED);
+                            reply += &ADD_EXPENSE_SHARES_CLEARED.translate(ctx);
                         }
                     }
                     bot.send_message(msg.chat.id, reply).await?;
@@ -415,7 +409,7 @@ async fn handle_split_among_input(input: SplitAmongInput) -> HandlerResult {
         }
         None => {
             tracing::warn!("Invalid text: received `None`.");
-            bot.send_message(msg.chat.id, translate(ctx, ADD_EXPENSE_INVALID_SHARES))
+            bot.send_message(msg.chat.id, ADD_EXPENSE_INVALID_SHARES.translate(ctx))
                 .await?;
         }
     }
@@ -438,7 +432,7 @@ pub async fn end(
     ),
     chat_id: ChatId,
 ) -> Result<Expense, EndError> {
-    tracing::debug!(LOG_DEBUG_START);
+    tracing::debug!("{LOG_DEBUG_START}");
     match compute_shares(amount, split_among) {
         Ok(shares) => {
             let create_res =
@@ -718,7 +712,7 @@ mod tests {
         db::db,
         errors::{AddExpenseError, NameValidationError},
         expense::Expense,
-        i18n::{self, Translate, translate_default, translate_with_args_default},
+        i18n::{self, Translate, TranslateWithArgs},
         tests::{TestBot, helpers},
         traveler::Name,
     };
@@ -749,7 +743,7 @@ mod tests {
 
         let response = format!(
             "{expense_added}\n\n{format_expense}",
-            expense_added = translate_default(i18n::dialogues::ADD_EXPENSE_OK),
+            expense_added = i18n::dialogues::ADD_EXPENSE_OK.translate_default(),
             format_expense = expense.translate_default()
         );
         // Check that the last message is the expected response
@@ -780,7 +774,7 @@ mod tests {
 
         let response = format!(
             "{expense_added}\n\n{format_expense}",
-            expense_added = translate_default(i18n::dialogues::ADD_EXPENSE_OK),
+            expense_added = i18n::dialogues::ADD_EXPENSE_OK.translate_default(),
             format_expense = expense.translate_default()
         );
         // Check that the last message is the expected response
@@ -804,7 +798,7 @@ mod tests {
         bot.dispatch().await;
         // 2. Set amount
         bot.update("invalid amount");
-        let response = translate_default(i18n::dialogues::ADD_EXPENSE_INVALID_AMOUNT);
+        let response = i18n::dialogues::ADD_EXPENSE_INVALID_AMOUNT.translate_default();
         bot.test_last_message(&response).await;
     }
 
@@ -830,7 +824,7 @@ mod tests {
         bot.update("/Alice");
         let response = format!(
             "{invalid_paid_by}\n\n{reason}",
-            invalid_paid_by = translate_default(i18n::dialogues::ADD_EXPENSE_INVALID_PAID_BY),
+            invalid_paid_by = i18n::dialogues::ADD_EXPENSE_INVALID_PAID_BY.translate_default(),
             reason = NameValidationError::StartsWithSlash(String::from("/Alice")).translate_default()
         );
         bot.test_last_message(&response).await;
@@ -839,7 +833,7 @@ mod tests {
         bot.update("Alice,");
         let response = format!(
             "{invalid_paid_by}\n\n{reason}",
-            invalid_paid_by = translate_default(i18n::dialogues::ADD_EXPENSE_INVALID_PAID_BY),
+            invalid_paid_by = i18n::dialogues::ADD_EXPENSE_INVALID_PAID_BY.translate_default(),
             reason = NameValidationError::InvalidCharacter(String::from("Alice,"), ',').translate_default()
         );
         bot.test_last_message(&response).await;
@@ -848,7 +842,7 @@ mod tests {
         bot.update(consts::ALL_KWORD);
         let response = format!(
             "{invalid_paid_by}\n\n{reason}",
-            invalid_paid_by = translate_default(i18n::dialogues::ADD_EXPENSE_INVALID_PAID_BY),
+            invalid_paid_by = i18n::dialogues::ADD_EXPENSE_INVALID_PAID_BY.translate_default(),
             reason = NameValidationError::ReservedKeyword(String::from(consts::ALL_KWORD)).translate_default()
         );
         bot.test_last_message(&response).await;
@@ -873,9 +867,7 @@ mod tests {
         bot.dispatch().await;
         // 3. Set payer
         bot.update("Charlie");
-        let response = translate_with_args_default(
-            i18n::dialogues::ADD_EXPENSE_TRAVELER_NOT_FOUND,
-            &hashmap! {i18n::args::NAME.into() => "Charlie".into()},
+        let response = i18n::dialogues::ADD_EXPENSE_TRAVELER_NOT_FOUND.translate_with_args_default(&hashmap! {i18n::args::NAME.into() => "Charlie".into()},
         );
         bot.test_last_message(&response).await;
     }
@@ -901,9 +893,9 @@ mod tests {
 
         let response = format!(
             "{}\n{}\n{}",
-            translate_default(i18n::dialogues::ADD_EXPENSE_ERROR_ON_COMPUTING_SHARES),
+            i18n::dialogues::ADD_EXPENSE_ERROR_ON_COMPUTING_SHARES.translate_default(),
             AddExpenseError::ExpenseTooHigh { tot_amount: 100.into() }.translate_default(),
-            translate_default(i18n::dialogues::ADD_EXPENSE_SHARES_CLEARED)
+            i18n::dialogues::ADD_EXPENSE_SHARES_CLEARED.translate_default()
         );
         // Check that the last message is the expected response
         assert_eq!(last_message, response);
@@ -920,7 +912,7 @@ mod tests {
 
         let response = format!(
             "{expense_added}\n\n{format_expense}",
-            expense_added = translate_default(i18n::dialogues::ADD_EXPENSE_OK),
+            expense_added = i18n::dialogues::ADD_EXPENSE_OK.translate_default(),
             format_expense = expense.translate_default()
         );
         // Check that the last message is the expected response
@@ -948,7 +940,7 @@ mod tests {
 
         let response = format!(
             "{}\n{}",
-            translate_default(i18n::dialogues::ADD_EXPENSE_ERROR_ON_COMPUTING_SHARES),
+            i18n::dialogues::ADD_EXPENSE_ERROR_ON_COMPUTING_SHARES.translate_default(),
             AddExpenseError::ExpenseTooLow { expense: 50.into(), tot_amount: 100.into() }.translate_default(),
         );
         // Check that the last message is the expected response
@@ -978,7 +970,7 @@ mod tests {
 
             let response = format!(
                 "{}\n{}",
-                translate_default(i18n::dialogues::ADD_EXPENSE_SHARES_PARSING_ERROR),
+                i18n::dialogues::ADD_EXPENSE_SHARES_PARSING_ERROR.translate_default(),
                 AddExpenseError::RepeatedTravelerName { name: Name::from_str("Alice").unwrap() }.translate_default(),
             );
             // Check that the last message is the expected response
@@ -1005,7 +997,7 @@ mod tests {
 
             let response = format!(
                 "{}\n{}",
-                translate_default(i18n::dialogues::ADD_EXPENSE_SHARES_PARSING_ERROR),
+                i18n::dialogues::ADD_EXPENSE_SHARES_PARSING_ERROR.translate_default(),
                 AddExpenseError::InvalidFormat { input: "Alice:".to_string() }.translate_default(),
             );
             // Check that the last message is the expected response
@@ -1032,7 +1024,7 @@ mod tests {
 
             let response = format!(
                 "{}\n{}",
-                translate_default(i18n::dialogues::ADD_EXPENSE_SHARES_PARSING_ERROR),
+                i18n::dialogues::ADD_EXPENSE_SHARES_PARSING_ERROR.translate_default(),
                 AddExpenseError::NameValidation(NameValidationError::ReservedKeyword(String::from(consts::ALL_KWORD))).translate_default(),
             );
             // Check that the last message is the expected response
@@ -1059,7 +1051,7 @@ mod tests {
 
             let response = format!(
                 "{}\n{}",
-                translate_default(i18n::dialogues::ADD_EXPENSE_SHARES_PARSING_ERROR),
+                i18n::dialogues::ADD_EXPENSE_SHARES_PARSING_ERROR.translate_default(),
                 AddExpenseError::NoTravelersSpecified.translate_default(),
             );
             // Check that the last message is the expected response

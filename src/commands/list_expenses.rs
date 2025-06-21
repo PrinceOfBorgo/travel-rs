@@ -3,7 +3,7 @@ use crate::{
     consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     errors::CommandError,
     expense::Expense,
-    i18n::{self, Translate, translate, translate_with_args},
+    i18n::{self, Translate, TranslateWithArgs},
     trace_command_db,
 };
 use macro_rules_attribute::apply;
@@ -20,7 +20,7 @@ pub async fn list_expenses(
     description: &str,
     ctx: Arc<Mutex<Context>>,
 ) -> Result<String, CommandError> {
-    tracing::debug!(LOG_DEBUG_START);
+    tracing::debug!("{LOG_DEBUG_START}");
 
     let list_res = if description.is_empty() {
         Expense::db_select(db, msg.chat.id).await
@@ -32,11 +32,10 @@ pub async fn list_expenses(
         Ok(expenses) => {
             let reply = if expenses.is_empty() {
                 if description.is_empty() {
-                    translate(ctx, i18n::commands::LIST_EXPENSES_NOT_FOUND)
+                    i18n::commands::LIST_EXPENSES_NOT_FOUND.translate(ctx)
                 } else {
-                    translate_with_args(
+                    i18n::commands::LIST_EXPENSES_DESCR_NOT_FOUND.translate_with_args(
                         ctx,
-                        i18n::commands::LIST_EXPENSES_DESCR_NOT_FOUND,
                         &hashmap! {i18n::args::DESCRIPTION.into() => description.into()},
                     )
                 }
@@ -47,7 +46,7 @@ pub async fn list_expenses(
                     .collect::<Vec<_>>()
                     .join("\n")
             };
-            tracing::debug!(LOG_DEBUG_SUCCESS);
+            tracing::debug!("{LOG_DEBUG_SUCCESS}");
             Ok(reply)
         }
         Err(err) => {
@@ -64,7 +63,7 @@ mod tests {
     use crate::{
         db::db,
         expense::Expense,
-        i18n::{self, Translate, translate_default, translate_with_args_default},
+        i18n::{self, Translate, TranslateWithArgs},
         tests::{TestBot, helpers},
     };
     use maplit::hashmap;
@@ -149,9 +148,7 @@ mod tests {
         let db = db().await;
 
         let mut bot = TestBot::new(db, "/listexpenses");
-        let response = translate_default(
-            i18n::commands::LIST_EXPENSES_NOT_FOUND,
-        );
+        let response = i18n::commands::LIST_EXPENSES_NOT_FOUND.translate_default();
         bot.test_last_message(&response).await;
     }
 
@@ -174,9 +171,7 @@ mod tests {
 
         // List expenses with description matching "2" -> not found
         bot.update("/listexpenses 2");
-        let response = translate_with_args_default(
-            i18n::commands::LIST_EXPENSES_DESCR_NOT_FOUND,
-            &hashmap! {i18n::args::DESCRIPTION.into() => "2".into()},
+        let response = i18n::commands::LIST_EXPENSES_DESCR_NOT_FOUND.translate_with_args_default(&hashmap! {i18n::args::DESCRIPTION.into() => "2".into()},
         );
         bot.test_last_message(&response).await;
     }

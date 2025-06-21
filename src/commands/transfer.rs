@@ -2,7 +2,7 @@ use crate::{
     Context,
     consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     errors::CommandError,
-    i18n::{self, translate, translate_with_args, translate_with_args_default},
+    i18n::{self, Translate, TranslateWithArgs},
     trace_command_db,
     transferred_to::TransferredTo,
     traveler::{Name, Traveler},
@@ -25,7 +25,7 @@ pub async fn transfer(
     amount: Decimal,
     ctx: Arc<Mutex<Context>>,
 ) -> Result<String, CommandError> {
-    tracing::debug!(LOG_DEBUG_START);
+    tracing::debug!("{LOG_DEBUG_START}");
     if from.is_empty() || to.is_empty() {
         return Err(CommandError::EmptyInput);
     }
@@ -48,7 +48,7 @@ pub async fn transfer(
                                 tracing::warn!("{err_update}");
                             }
                             tracing::debug!("{LOG_DEBUG_SUCCESS} - id: {}", transfer.id);
-                            Ok(translate(ctx, i18n::commands::TRANSFER_OK))
+                            Ok(i18n::commands::TRANSFER_OK.translate(ctx))
                         }
                         Ok(None) => {
                             let err = CommandError::Transfer {
@@ -72,16 +72,12 @@ pub async fn transfer(
                 Ok(_) => {
                     tracing::warn!(
                         "{}",
-                        translate_with_args_default(
-                            i18n::commands::TRANSFER_RECEIVER_NOT_FOUND,
+                        i18n::commands::TRANSFER_RECEIVER_NOT_FOUND.translate_with_args_default(
                             &hashmap! {i18n::args::NAME.into() => to.clone().into()},
                         )
                     );
-                    Ok(translate_with_args(
-                        ctx,
-                        i18n::commands::TRANSFER_RECEIVER_NOT_FOUND,
-                        &hashmap! {i18n::args::NAME.into() => to.into()},
-                    ))
+                    Ok(i18n::commands::TRANSFER_RECEIVER_NOT_FOUND
+                        .translate_with_args(ctx, &hashmap! {i18n::args::NAME.into() => to.into()}))
                 }
                 Err(err) => {
                     tracing::error!("{err}");
@@ -96,16 +92,12 @@ pub async fn transfer(
         Ok(_) => {
             tracing::warn!(
                 "{}",
-                translate_with_args_default(
-                    i18n::commands::TRANSFER_SENDER_NOT_FOUND,
+                i18n::commands::TRANSFER_SENDER_NOT_FOUND.translate_with_args_default(
                     &hashmap! {i18n::args::NAME.into() => from.clone().into()},
                 )
             );
-            Ok(translate_with_args(
-                ctx,
-                i18n::commands::TRANSFER_SENDER_NOT_FOUND,
-                &hashmap! {i18n::args::NAME.into() => from.into()},
-            ))
+            Ok(i18n::commands::TRANSFER_SENDER_NOT_FOUND
+                .translate_with_args(ctx, &hashmap! {i18n::args::NAME.into() => from.into()}))
         }
         Err(err) => {
             tracing::error!("{err}");
@@ -123,7 +115,7 @@ mod tests {
     use crate::{
         db::db,
         errors::CommandError,
-        i18n::{self, Translate, translate_default, translate_with_args_default},
+        i18n::{self, Translate, TranslateWithArgs},
         tests::{TestBot, helpers},
     };
     use maplit::hashmap;
@@ -138,7 +130,7 @@ mod tests {
 
         // Transfer 100 from Alice to Bob
         bot.update("/transfer Alice Bob 100");
-        let response = translate_default(i18n::commands::TRANSFER_OK);
+        let response = i18n::commands::TRANSFER_OK.translate_default();
         bot.test_last_message(&response).await;
     }
 
@@ -151,9 +143,7 @@ mod tests {
 
         // Try to transfer 100 from Alice to Bob -> Bob not found
         bot.update("/transfer Alice Bob 100");
-        let response = translate_with_args_default(
-            i18n::commands::TRANSFER_RECEIVER_NOT_FOUND,
-            &hashmap! {i18n::args::NAME.into() => "Bob".into()},
+        let response = i18n::commands::TRANSFER_RECEIVER_NOT_FOUND.translate_with_args_default(&hashmap! {i18n::args::NAME.into() => "Bob".into()},
         );
         bot.test_last_message(&response).await;
     }
@@ -167,9 +157,7 @@ mod tests {
 
         // Try to transfer 100 from Alice to Bob -> Alice not found
         bot.update("/transfer Alice Bob 100");
-        let response = translate_with_args_default(
-            i18n::commands::TRANSFER_SENDER_NOT_FOUND,
-            &hashmap! {i18n::args::NAME.into() => "Alice".into()},
+        let response = i18n::commands::TRANSFER_SENDER_NOT_FOUND.translate_with_args_default(&hashmap! {i18n::args::NAME.into() => "Alice".into()},
         );
         bot.test_last_message(&response).await;
     }

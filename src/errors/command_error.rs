@@ -1,6 +1,6 @@
 use crate::{
     Context,
-    i18n::{self, Translate, translate, translate_with_args},
+    i18n::{self, Translate, TranslateWithArgs},
     traveler::Name,
 };
 use maplit::hashmap;
@@ -54,106 +54,124 @@ pub enum CommandError {
     ShowBalances {
         name: Name,
     },
+    ShowStats,
 }
 
 impl Translate for CommandError {
-    fn translate(&self, ctx: Arc<Mutex<Context>>) -> String {
+    fn translate_with_indent(&self, ctx: Arc<Mutex<Context>>, indent_lvl: usize) -> String {
         use CommandError::*;
         match self {
-            EmptyInput => translate(ctx, i18n::errors::COMMAND_ERROR_EMPTY_INPUT),
+            EmptyInput => {
+                i18n::errors::COMMAND_ERROR_EMPTY_INPUT.translate_with_indent(ctx, indent_lvl)
+            }
             Help {
                 command,
                 best_match,
             } => {
-                let err_msg1 = translate_with_args(
+                let err_msg1 = i18n::errors::COMMAND_ERROR_HELP.translate_with_args_indent(
                     ctx.clone(),
-                    i18n::errors::COMMAND_ERROR_HELP,
                     &hashmap! {i18n::args::COMMAND.into() => command.into()},
+                    indent_lvl,
                 );
                 let err_msg2 = if let Some(best_match) = best_match {
-                    translate_with_args(
+                    i18n::commands::UNKNOWN_COMMAND_BEST_MATCH.translate_with_args_indent(
                         ctx,
-                        i18n::commands::UNKNOWN_COMMAND_BEST_MATCH,
                         &hashmap! {
                             i18n::args::COMMAND.into() => command.into(),
                             i18n::args::BEST_MATCH.into() => best_match.into()
                         },
+                        indent_lvl,
                     )
                 } else {
-                    translate_with_args(
+                    i18n::commands::UNKNOWN_COMMAND.translate_with_args_indent(
                         ctx,
-                        i18n::commands::UNKNOWN_COMMAND,
                         &hashmap! {
                             i18n::args::COMMAND.into() => command.into(),
                         },
+                        indent_lvl,
                     )
                 };
                 format!("{err_msg1}\n\n{err_msg2}")
             }
-            SetLanguage { langid } => translate_with_args(
-                ctx,
-                i18n::errors::COMMAND_ERROR_SET_LANGUAGE,
-                &hashmap! {i18n::args::LANGID.into() => langid.to_string().into()},
-            ),
-            SetCurrency { currency } => translate_with_args(
-                ctx,
-                i18n::errors::COMMAND_ERROR_SET_CURRENCY,
-                &hashmap! {i18n::args::CURRENCY.into() => currency.into()},
-            ),
-            AddTraveler { name } => translate_with_args(
-                ctx,
-                i18n::errors::COMMAND_ERROR_ADD_TRAVELER,
-                &hashmap! {i18n::args::NAME.into() => name.clone().into()},
-            ),
-            DeleteTraveler { name } => translate_with_args(
-                ctx,
-                i18n::errors::COMMAND_ERROR_DELETE_TRAVELER,
-                &hashmap! {i18n::args::NAME.into() => name.clone().into()},
-            ),
-            ListTravelers => translate(ctx, i18n::errors::COMMAND_ERROR_LIST_TRAVELERS),
-            DeleteExpense { number } => translate_with_args(
-                ctx,
-                i18n::errors::COMMAND_ERROR_DELETE_EXPENSE,
-                &hashmap! {i18n::args::NUMBER.into() => number.into()},
-            ),
-            ListExpenses { description } => translate_with_args(
-                ctx,
-                i18n::errors::COMMAND_ERROR_LIST_EXPENSES,
-                &hashmap! {i18n::args::DESCRIPTION.into() => description.into()},
-            ),
-            ShowExpense { number } => translate_with_args(
-                ctx,
-                i18n::errors::COMMAND_ERROR_SHOW_EXPENSE,
-                &hashmap! {i18n::args::NUMBER.into() => number.into()},
-            ),
+            SetLanguage { langid } => i18n::errors::COMMAND_ERROR_SET_LANGUAGE
+                .translate_with_args_indent(
+                    ctx,
+                    &hashmap! {i18n::args::LANGID.into() => langid.to_string().into()},
+                    indent_lvl,
+                ),
+            SetCurrency { currency } => i18n::errors::COMMAND_ERROR_SET_CURRENCY
+                .translate_with_args_indent(
+                    ctx,
+                    &hashmap! {i18n::args::CURRENCY.into() => currency.into()},
+                    indent_lvl,
+                ),
+            AddTraveler { name } => i18n::errors::COMMAND_ERROR_ADD_TRAVELER
+                .translate_with_args_indent(
+                    ctx,
+                    &hashmap! {i18n::args::NAME.into() => name.clone().into()},
+                    indent_lvl,
+                ),
+            DeleteTraveler { name } => i18n::errors::COMMAND_ERROR_DELETE_TRAVELER
+                .translate_with_args_indent(
+                    ctx,
+                    &hashmap! {i18n::args::NAME.into() => name.clone().into()},
+                    indent_lvl,
+                ),
+            ListTravelers => {
+                i18n::errors::COMMAND_ERROR_LIST_TRAVELERS.translate_with_indent(ctx, indent_lvl)
+            }
+            DeleteExpense { number } => i18n::errors::COMMAND_ERROR_DELETE_EXPENSE
+                .translate_with_args_indent(
+                    ctx,
+                    &hashmap! {i18n::args::NUMBER.into() => number.into()},
+                    indent_lvl,
+                ),
+            ListExpenses { description } => i18n::errors::COMMAND_ERROR_LIST_EXPENSES
+                .translate_with_args_indent(
+                    ctx,
+                    &hashmap! {i18n::args::DESCRIPTION.into() => description.into()},
+                    indent_lvl,
+                ),
+            ShowExpense { number } => i18n::errors::COMMAND_ERROR_SHOW_EXPENSE
+                .translate_with_args_indent(
+                    ctx,
+                    &hashmap! {i18n::args::NUMBER.into() => number.into()},
+                    indent_lvl,
+                ),
             Transfer {
                 sender,
                 receiver,
                 amount,
-            } => translate_with_args(
+            } => i18n::errors::COMMAND_ERROR_TRANSFER.translate_with_args_indent(
                 ctx,
-                i18n::errors::COMMAND_ERROR_TRANSFER,
                 &hashmap! {
                     i18n::args::SENDER.into() => sender.clone().into(),
                     i18n::args::RECEIVER.into() => receiver.clone().into(),
                     i18n::args::AMOUNT.into() => amount.to_string().into()
                 },
+                indent_lvl,
             ),
-            DeleteTransfer { number } => translate_with_args(
-                ctx,
-                i18n::errors::COMMAND_ERROR_DELETE_TRANSFER,
-                &hashmap! {i18n::args::NUMBER.into() => number.into()},
-            ),
-            ListTransfers { name } => translate_with_args(
-                ctx,
-                i18n::errors::COMMAND_ERROR_LIST_TRANSFERS,
-                &hashmap! {i18n::args::NAME.into() => name.clone().into()},
-            ),
-            ShowBalances { name } => translate_with_args(
-                ctx,
-                i18n::errors::COMMAND_ERROR_SHOW_BALANCES,
-                &hashmap! {i18n::args::NAME.into() => name.clone().into()},
-            ),
+            DeleteTransfer { number } => i18n::errors::COMMAND_ERROR_DELETE_TRANSFER
+                .translate_with_args_indent(
+                    ctx,
+                    &hashmap! {i18n::args::NUMBER.into() => number.into()},
+                    indent_lvl,
+                ),
+            ListTransfers { name } => i18n::errors::COMMAND_ERROR_LIST_TRANSFERS
+                .translate_with_args_indent(
+                    ctx,
+                    &hashmap! {i18n::args::NAME.into() => name.clone().into()},
+                    indent_lvl,
+                ),
+            ShowBalances { name } => i18n::errors::COMMAND_ERROR_SHOW_BALANCES
+                .translate_with_args_indent(
+                    ctx,
+                    &hashmap! {i18n::args::NAME.into() => name.clone().into()},
+                    indent_lvl,
+                ),
+            ShowStats => {
+                i18n::errors::COMMAND_ERROR_SHOW_STATS.translate_with_indent(ctx, indent_lvl)
+            }
         }
     }
 }

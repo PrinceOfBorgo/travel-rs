@@ -4,9 +4,8 @@ use crate::{
     consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     errors::CommandError,
     i18n::{
-        self,
+        self, Translate, TranslateWithArgs,
         args::{TRAVELER_IS_CASE_CREDITOR, TRAVELER_IS_CASE_DEBTOR},
-        translate, translate_with_args, translate_with_args_default,
     },
     money_wrapper::MoneyWrapper,
     trace_command_db,
@@ -26,7 +25,7 @@ pub async fn show_balances(
     name: Name,
     ctx: Arc<Mutex<Context>>,
 ) -> Result<String, CommandError> {
-    tracing::debug!(LOG_DEBUG_START);
+    tracing::debug!("{LOG_DEBUG_START}");
     let res = if name.is_empty() {
         show_balances_no_name(db, msg, ctx).await
     } else {
@@ -39,16 +38,12 @@ pub async fn show_balances(
             Ok(_) => {
                 tracing::warn!(
                     "{}",
-                    translate_with_args_default(
-                        i18n::commands::SHOW_BALANCES_TRAVELER_NOT_FOUND,
+                    i18n::commands::SHOW_BALANCES_TRAVELER_NOT_FOUND.translate_with_args_default(
                         &hashmap! {i18n::args::NAME.into() => name.clone().into()},
                     )
                 );
-                return Ok(translate_with_args(
-                    ctx,
-                    i18n::commands::SHOW_BALANCES_TRAVELER_NOT_FOUND,
-                    &hashmap! {i18n::args::NAME.into() => name.into()},
-                ));
+                return Ok(i18n::commands::SHOW_BALANCES_TRAVELER_NOT_FOUND
+                    .translate_with_args(ctx, &hashmap! {i18n::args::NAME.into() => name.into()}));
             }
             Err(err) => {
                 tracing::error!("{err}");
@@ -59,7 +54,7 @@ pub async fn show_balances(
 
     match res {
         Ok(reply) => {
-            tracing::debug!(LOG_DEBUG_SUCCESS);
+            tracing::debug!("{LOG_DEBUG_SUCCESS}");
             Ok(reply)
         }
         Err(err) => {
@@ -93,9 +88,8 @@ async fn show_balances_no_name(
                             None
                         } else {
                             any_nonzero = true;
-                            Some(translate_with_args(
+                            Some(i18n::commands::SHOW_BALANCES_OK.translate_with_args(
                                 ctx.clone(),
-                                i18n::commands::SHOW_BALANCES_OK,
                                 &hashmap! {
                                     i18n::args::DEBTOR.into() => debtor_name.into(),
                                     i18n::args::DEBT.into() => debt.to_string().into(),
@@ -111,7 +105,7 @@ async fn show_balances_no_name(
                 formatted_balances.join("\n")
             } else {
                 // If there are no balances or all are zero after rounding, show a special message
-                translate(ctx, i18n::commands::SHOW_BALANCES_SETTLED_UP)
+                i18n::commands::SHOW_BALANCES_SETTLED_UP.translate(ctx)
             };
             Ok(reply)
         }
@@ -145,9 +139,8 @@ pub async fn show_balances_with_name(
                             None
                         } else {
                             any_nonzero = true;
-                            Some(translate_with_args(
+                            Some(i18n::commands::SHOW_BALANCES_TRAVELER_OK.translate_with_args(
                                 ctx.clone(),
-                                i18n::commands::SHOW_BALANCES_TRAVELER_OK,
                                 &hashmap! {
                                     i18n::args::TRAVELER_NAME.into() => name.clone().into(),
                                     i18n::args::TRAVELER_IS.into() => if debtor_name == name { TRAVELER_IS_CASE_DEBTOR } else { TRAVELER_IS_CASE_CREDITOR }.into(),
@@ -164,11 +157,8 @@ pub async fn show_balances_with_name(
                 formatted_balances.join("\n")
             } else {
                 // If there are no balances or all are zero after rounding, show a special message
-                translate_with_args(
-                    ctx,
-                    i18n::commands::SHOW_BALANCES_TRAVELER_SETTLED_UP,
-                    &hashmap! {i18n::args::NAME.into() => name.into()},
-                )
+                i18n::commands::SHOW_BALANCES_TRAVELER_SETTLED_UP
+                    .translate_with_args(ctx, &hashmap! {i18n::args::NAME.into() => name.into()})
             };
             Ok(reply)
         }
@@ -184,9 +174,8 @@ mod tests {
         balance::Balance,
         db::db,
         i18n::{
-            self,
+            self, Translate, TranslateWithArgs,
             args::{TRAVELER_IS_CASE_CREDITOR, TRAVELER_IS_CASE_DEBTOR},
-            translate_default, translate_with_args, translate_with_args_default,
         },
         money_wrapper::MoneyWrapper,
         tests::{TestBot, helpers},
@@ -293,9 +282,8 @@ mod tests {
                     if debt.round_value().is_zero() {
                         None
                     } else {
-                        Some(translate_with_args(
+                        Some(i18n::commands::SHOW_BALANCES_OK.translate_with_args(
                             ctx.clone(),
-                            i18n::commands::SHOW_BALANCES_OK,
                             &hashmap! {
                                 i18n::args::DEBTOR.into() => debtor_name.into(),
                                 i18n::args::DEBT.into() => debt.to_string().into(),
@@ -390,7 +378,7 @@ mod tests {
 
         // Show balances
         bot.update("/showbalances");
-        let response = translate_default(i18n::commands::SHOW_BALANCES_SETTLED_UP);
+        let response = i18n::commands::SHOW_BALANCES_SETTLED_UP.translate_default();
         bot.test_last_message(&response).await;
     }
 
@@ -459,9 +447,8 @@ mod tests {
                     if debt.round_value().is_zero() {
                         None
                     } else {
-                        Some(translate_with_args(
+                        Some(i18n::commands::SHOW_BALANCES_TRAVELER_OK.translate_with_args(
                             ctx.clone(),
-                            i18n::commands::SHOW_BALANCES_TRAVELER_OK,
                             &hashmap! {
                                 i18n::args::TRAVELER_NAME.into() => name.into(),
                                 i18n::args::TRAVELER_IS.into() => if &*debtor_name == name { TRAVELER_IS_CASE_DEBTOR } else { TRAVELER_IS_CASE_CREDITOR }.into(),
@@ -496,9 +483,8 @@ mod tests {
                     if debt.round_value().is_zero() {
                         None
                     } else {
-                        Some(translate_with_args(
+                        Some(i18n::commands::SHOW_BALANCES_TRAVELER_OK.translate_with_args(
                             ctx.clone(),
-                            i18n::commands::SHOW_BALANCES_TRAVELER_OK,
                             &hashmap! {
                                 i18n::args::TRAVELER_NAME.into() => name.into(),
                                 i18n::args::TRAVELER_IS.into() => if &*debtor_name == name { TRAVELER_IS_CASE_DEBTOR } else { TRAVELER_IS_CASE_CREDITOR }.into(),
@@ -561,9 +547,7 @@ mod tests {
 
         // Show balances
         bot.update("/showbalances Alice");
-        let response = translate_with_args_default(
-            i18n::commands::SHOW_BALANCES_TRAVELER_SETTLED_UP,
-            &hashmap! {i18n::args::NAME.into() => "Alice".into()},
+        let response = i18n::commands::SHOW_BALANCES_TRAVELER_SETTLED_UP.translate_with_args_default(&hashmap! {i18n::args::NAME.into() => "Alice".into()},
         );
         bot.test_last_message(&response).await;
     }
@@ -572,9 +556,7 @@ mod tests {
         let db = db().await;
 
         let mut bot = TestBot::new(db.clone(), "/showbalances UnknownTraveler");
-        let response = translate_with_args_default(
-            i18n::commands::SHOW_BALANCES_TRAVELER_NOT_FOUND,
-            &hashmap! {i18n::args::NAME.into() => "UnknownTraveler".into()},
+        let response = i18n::commands::SHOW_BALANCES_TRAVELER_NOT_FOUND.translate_with_args_default(&hashmap! {i18n::args::NAME.into() => "UnknownTraveler".into()},
         );
         bot.test_last_message(&response).await;
     }

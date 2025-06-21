@@ -2,7 +2,7 @@ use crate::{
     balance::Balance,
     db::db,
     expense::Expense,
-    i18n::{self, Translate, translate_with_args},
+    i18n::{self, Translate, TranslateWithArgs},
     tests::{TestBot, helpers},
     transfer::Transfer,
     traveler::{Name, Traveler},
@@ -121,9 +121,8 @@ async fn test_traveler_lifecycle() {
 
     // Try to add same traveler again - should fail
     bot.update("/addtraveler Alice");
-    let response = translate_with_args(
+    let response = i18n::commands::ADD_TRAVELER_ALREADY_ADDED.translate_with_args(
         bot.context(),
-        i18n::commands::ADD_TRAVELER_ALREADY_ADDED,
         &hashmap! {i18n::args::NAME.into() => "Alice".into()},
     );
     bot.test_last_message(&response).await;
@@ -148,9 +147,8 @@ async fn test_traveler_lifecycle() {
 
     // 3. Delete traveler "Alice" -> has expenses
     bot.update("/deletetraveler Alice");
-    let response = translate_with_args(
+    let response = i18n::commands::DELETE_TRAVELER_HAS_EXPENSES.translate_with_args(
         bot.context(),
-        i18n::commands::DELETE_TRAVELER_HAS_EXPENSES,
         &hashmap! {
             i18n::args::NAME.into() => "Alice".into(),
             i18n::args::EXPENSES.into() => expense.translate_default().into(),
@@ -160,9 +158,8 @@ async fn test_traveler_lifecycle() {
 
     // Try to delete non-existent traveler
     bot.update("/deletetraveler Charlie");
-    let response = translate_with_args(
+    let response = i18n::commands::DELETE_TRAVELER_NOT_FOUND.translate_with_args(
         bot.context(),
-        i18n::commands::DELETE_TRAVELER_NOT_FOUND,
         &hashmap! {i18n::args::NAME.into() => "Charlie".into()},
     );
     bot.test_last_message(&response).await;
@@ -176,9 +173,8 @@ async fn test_i18n_and_currency() {
     // Set language to Italian
     bot.update("/setlanguage it-IT");
     let last_message = bot.dispatch_and_last_message().await.unwrap();
-    let response = translate_with_args(
+    let response = i18n::commands::SET_LANGUAGE_OK.translate_with_args(
         bot.context(), // Use the new context to retrieve the updated language
-        i18n::commands::SET_LANGUAGE_OK,
         &hashmap! {i18n::args::LANGID.into() => "it-IT".into()},
     );
     // Check that the last message is the expected response
@@ -186,9 +182,8 @@ async fn test_i18n_and_currency() {
 
     // Set currency to EUR
     bot.update("/setcurrency EUR");
-    let response = translate_with_args(
+    let response = i18n::commands::SET_CURRENCY_OK.translate_with_args(
         bot.context(),
-        i18n::commands::SET_CURRENCY_OK,
         &hashmap! {i18n::args::CURRENCY.into() => "EUR".into()},
     );
     bot.test_last_message(&response).await;

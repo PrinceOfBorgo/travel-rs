@@ -136,6 +136,13 @@ help-show-balances =
 
     Uso: /{-show-balances-command} [nome]
 
+## /showstats
+descr-show-stats = Mostra le statistiche per spese, trasferimenti e viaggiatori nel piano di viaggio.
+help-show-stats = 
+    /{-show-stats-command} — {descr-show-stats}
+
+    Uso: /{-show-stats-command}
+
 ## /cancel
 
 descr-cancel = Annulla il comando interattivo attualmente in esecuzione.

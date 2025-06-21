@@ -15,6 +15,7 @@ command-error-delete-transfer = Couldn't delete transfer #{$number}.
 command-error-list-transfers = Couldn't list transfers.
 command-error-show-balance = Couldn't show balance for traveler "{$name}".
 command-error-show-balances = Couldn't show balances.
+command-error-show-stats = Couldn't show statistics.
 
 ## NameValidationError
 

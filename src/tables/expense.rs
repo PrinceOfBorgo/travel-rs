@@ -1,6 +1,6 @@
 use crate::{
     db::Count,
-    i18n::{self, ToFluentDateTime, Translate, format::FORMAT_EXPENSE, translate_with_args},
+    i18n::{self, ToFluentDateTime, Translate, TranslateWithArgs},
     money_wrapper::MoneyWrapper,
 };
 use maplit::hashmap;
@@ -177,17 +177,21 @@ impl Expense {
 }
 
 impl Translate for Expense {
-    fn translate(&self, ctx: std::sync::Arc<std::sync::Mutex<crate::Context>>) -> String {
+    fn translate_with_indent(
+        &self,
+        ctx: std::sync::Arc<std::sync::Mutex<crate::Context>>,
+        indent_lvl: usize,
+    ) -> String {
         let amount = MoneyWrapper::new_with_context(self.amount, ctx.clone());
-        translate_with_args(
+        i18n::format::FORMAT_EXPENSE.translate_with_args_indent(
             ctx,
-            FORMAT_EXPENSE,
             &hashmap! {
                 i18n::args::NUMBER.into() => self.number.into(),
                 i18n::args::DESCRIPTION.into() => self.description.clone().into(),
                 i18n::args::AMOUNT.into() => amount.to_string().into(),
                 i18n::args::DATETIME.into() => self.timestamp_utc.to_fluent_datetime().unwrap().into(),
             },
+            indent_lvl,
         )
     }
 }

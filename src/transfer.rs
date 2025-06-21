@@ -4,7 +4,7 @@ use std::{
 };
 
 use crate::{
-    i18n::{self, ToFluentDateTime, Translate, format::FORMAT_TRANSFER, translate_with_args},
+    i18n::{self, ToFluentDateTime, Translate, TranslateWithArgs},
     money_wrapper::MoneyWrapper,
     traveler::Name,
 };
@@ -68,11 +68,14 @@ impl Transfer {
 }
 
 impl Translate for Transfer {
-    fn translate(&self, ctx: std::sync::Arc<std::sync::Mutex<crate::Context>>) -> String {
+    fn translate_with_indent(
+        &self,
+        ctx: Arc<std::sync::Mutex<crate::Context>>,
+        indent_lvl: usize,
+    ) -> String {
         let amount = MoneyWrapper::new_with_context(self.amount, ctx.clone());
-        translate_with_args(
+        i18n::format::FORMAT_TRANSFER.translate_with_args_indent(
             ctx,
-            FORMAT_TRANSFER,
             &hashmap! {
                 i18n::args::NUMBER.into() => self.number.into(),
                 i18n::args::SENDER.into() => self.sender_name.clone().into(),
@@ -80,6 +83,7 @@ impl Translate for Transfer {
                 i18n::args::AMOUNT.into() => amount.to_string().into(),
                 i18n::args::DATETIME.into() => self.timestamp_utc.to_fluent_datetime().unwrap().into(),
             },
+            indent_lvl,
         )
     }
 }

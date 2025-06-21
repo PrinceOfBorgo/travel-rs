@@ -2,7 +2,7 @@ use crate::{
     Context,
     consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     errors::CommandError,
-    i18n::{self, translate_with_args, translate_with_args_default},
+    i18n::{self, TranslateWithArgs},
     trace_command_db,
     traveler::{Name, Traveler},
 };
@@ -20,7 +20,7 @@ pub async fn add_traveler(
     name: Name,
     ctx: Arc<Mutex<Context>>,
 ) -> Result<String, CommandError> {
-    tracing::debug!(LOG_DEBUG_START);
+    tracing::debug!("{LOG_DEBUG_START}");
     if name.is_empty() {
         return Err(CommandError::EmptyInput);
     }
@@ -31,26 +31,21 @@ pub async fn add_traveler(
         Ok(Some(count)) if *count > 0 => {
             tracing::warn!(
                 "{}",
-                translate_with_args_default(
-                    i18n::commands::ADD_TRAVELER_ALREADY_ADDED,
+                i18n::commands::ADD_TRAVELER_ALREADY_ADDED.translate_with_args_default(
                     &hashmap! {i18n::args::NAME.into() => name.clone().into()},
                 )
             );
-            Ok(translate_with_args(
-                ctx,
-                i18n::commands::ADD_TRAVELER_ALREADY_ADDED,
-                &hashmap! {i18n::args::NAME.into() => name.into()},
-            ))
+            Ok(i18n::commands::ADD_TRAVELER_ALREADY_ADDED
+                .translate_with_args(ctx, &hashmap! {i18n::args::NAME.into() => name.into()}))
         }
         Ok(_) => {
             // Create traveler on db
             let create_res = Traveler::db_create(db, msg.chat.id, &name).await;
             match create_res {
                 Ok(_) => {
-                    tracing::debug!(LOG_DEBUG_SUCCESS);
-                    Ok(translate_with_args(
+                    tracing::debug!("{LOG_DEBUG_SUCCESS}");
+                    Ok(i18n::commands::ADD_TRAVELER_OK.translate_with_args(
                         ctx,
-                        i18n::commands::ADD_TRAVELER_OK,
                         &hashmap! {i18n::args::NAME.into() => name.into()},
                     ))
                 }
@@ -74,7 +69,7 @@ mod tests {
     use crate::{
         db::db,
         errors::CommandError,
-        i18n::{self, Translate, translate_with_args_default},
+        i18n::{self, Translate, TranslateWithArgs},
         tests::TestBot,
     };
     use maplit::hashmap;
@@ -83,8 +78,7 @@ mod tests {
         let db = db().await;
 
         let mut bot = TestBot::new(db, "/addtraveler Alice");
-        let response = translate_with_args_default(
-            i18n::commands::ADD_TRAVELER_OK,
+        let response = i18n::commands::ADD_TRAVELER_OK.translate_with_args_default(
             &hashmap! {i18n::args::NAME.into() => "Alice".into()},
         );
         bot.test_last_message(&response).await;
@@ -98,8 +92,7 @@ mod tests {
         bot.dispatch().await;
 
         // Try to add traveler "Alice" again
-        let response = translate_with_args_default(
-            i18n::commands::ADD_TRAVELER_ALREADY_ADDED,
+        let response = i18n::commands::ADD_TRAVELER_ALREADY_ADDED.translate_with_args_default(
             &hashmap! {i18n::args::NAME.into() => "Alice".into()},
         );
         bot.test_last_message(&response).await;
