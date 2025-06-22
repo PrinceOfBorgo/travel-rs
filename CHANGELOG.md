@@ -1,6 +1,7 @@
 # Changelog
 
-## [0.2.3-SNAPSHOT] - Unreleased
+## [0.2.3] - 2025-06-21
+### 🔧 Patch Release
 ### Added
 - Timestamps for expenses and transfers. This functionality requires [database](database) schema updates through migration scripts (view **Changed** section).
 - `ShowStats` command to show some statistics about expenses, transfers and travelers. This functionality requires [database](database) schema updates through migration scripts (view **Changed** section).
