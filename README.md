@@ -355,19 +355,81 @@ This structure ensures that localization is both flexible and scalable, allowing
 
 ## Database Setup
 
-
+See the [database README](database/README.md) file.
 
 ## Docker Setup
 
-Travel-RS Bot can be run as a Docker container. The container is published to GitHub Container Registry with each release.
+Travel-RS Bot can be run as a Docker container, with the container published to GitHub Container Registry with each release.
 
-### Running from GitHub Container Registry
+### Running with Docker Compose (Recommended)
 
-Pull and run the latest version:
+Using Docker Compose simplifies managing the Travel-RS Bot container and its volumes. A [`docker-compose.yml`](docker-compose.yml) file is provided in the same directory as this `README`.
+
+1.  **Ensure prerequisites:**
+    * **Docker Desktop** (Windows/macOS) or **Docker Engine** (Linux) is installed and running.
+    * You'll need to prepare the local directories for configuration, locales, and logs. By default, the `docker-compose.yml` expects these to be named `config`, `locales`, and `logs` in the **same directory as your `docker-compose.yml` file**. These directories will be mounted as volumes into the container. **You can, however, modify the volume paths in the `docker-compose.yml` if you prefer to store them elsewhere.**
+    
+        ```yaml
+        # docker-compose.yml volumes configuration:
+        volumes:
+        - /path/to/config:/app/config
+        - /path/to/locales:/app/locales
+        - /path/to/logs:/app/logs
+        ```
+
+2.  **Prepare your configuration:**
+    * Place your `config.toml` file inside your chosen config volume location (`./config` by default).
+    * Create a `profiles/` directory inside your chosen config volume location (`./config` by default). and add your profile-specific configurations there.
+    * Ensure your locale files are placed in your chosen locales volume location (`./locales` by default), organized by locale (e.g., `./locales/en-US`, `./locales/it-IT`).
+
+3.  **Start the container:**
+    Navigate to the directory containing `docker-compose.yml` in your terminal or PowerShell, then run:
+
+    ```bash
+    docker-compose up -d
+    ```
+    This command will:
+    * Pull the `ghcr.io/princeofborgo/travel-rs:latest` image if it's not already present.
+    * Create and start a container named `travel-rs`.
+    * Mount the local directories (as defined in your `docker-compose.yml`) to `/app/config`, `/app/locales`, and `/app/logs` inside the container, respectively.
+    * Configure the container to restart automatically unless explicitly stopped (`restart: unless-stopped`).
+
+4.  **Update to the Latest Image:**
+    If you are already running the bot and want to ensure you have the absolute latest version of the `ghcr.io/princeofborgo/travel-rs:latest` image, use the following commands:
+
+    ```bash
+    docker-compose pull travel-rs # Pulls the latest image for the 'travel-rs' service
+    docker-compose up -d          # Recreates the container using the newly pulled image
+    ```
+    The `docker-compose pull` command explicitly downloads the freshest image from the registry. Then, `docker-compose up -d` will detect that the image has changed and recreate the `travel-rs` container with the new image, while preserving your data volumes.
+
+5.  **Stop the container:**
+    To stop and remove the container, run:
+
+    ```bash
+    docker-compose down
+    ```
+
+6.  **View logs:**
+    To view the logs of the running container:
+
+    ```bash
+    docker-compose logs -f travel-rs
+    ```
+
+### Running from GitHub Container Registry (Manual Docker Commands)
+
+While Docker Compose is recommended for its simplicity, you can also run the container directly using `docker run` commands.
+
+First, pull the latest image:
+
 ```powershell
-# Pull the latest image
 docker pull ghcr.io/princeofborgo/travel-rs:latest
+```
 
+Then, run the container, ensuring you map your local configuration, locales, and logs directories to the container's expected paths.
+
+```powershell
 # Run the container (PowerShell)
 docker run -d `
     -v "C:/path/to/config:/app/config" `

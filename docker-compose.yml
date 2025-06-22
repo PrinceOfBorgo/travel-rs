@@ -1,0 +1,9 @@
+services:
+  travel-rs:
+    image: ghcr.io/princeofborgo/travel-rs:latest
+    container_name: travel-rs
+    volumes:
+      - ./config:/app/config
+      - ./locales:/app/locales
+      - ./logs:/app/logs
+    restart: unless-stopped # Automatically restart if it stops unexpectedly

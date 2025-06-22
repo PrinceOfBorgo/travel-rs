@@ -2,13 +2,14 @@
 
 ## [0.2.4-SNAPSHOT] - Unreleased
 ### Added
-- N/A
+- `docker-compose.yml` template to easily run and update the deployment.
+- Docker compose guide to `Docker Setup` section in [README.md](README.md).
 
 ### Changed
 - N/A
 
 ### Fixed
-- N/A
+- `Database Setup` section in [README.md](README.md) was deleted by mistake.
 
 ## [0.2.3] - 2025-06-21
 ### 🔧 Patch Release
