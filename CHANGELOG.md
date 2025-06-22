@@ -6,7 +6,7 @@
 - Docker compose guide to `Docker Setup` section in [README.md](README.md).
 
 ### Changed
-- N/A
+- `Dockerfile` to enable caching.
 
 ### Fixed
 - `Database Setup` section in [README.md](README.md) was deleted by mistake.
