@@ -1,0 +1,30 @@
+[logging]
+path = "logs"
+file_name_prefix = "travelrs.log"
+level = "debug"
+
+[bot]
+# token_source: Specifies the source in which the bot token is provided.
+# Allowed values:
+# - "file": The token is read from a file.
+# - "env": The token is read from an environment variable.
+# - "string": The token is provided directly as a string.
+token_source = "file"
+
+# token: The bot token.
+# If token_source is "file", this should be a path to a file containing the token.
+# If token_source is "env", this should be the name of the environment variable holding the token.
+# If token_source is "string", this should be the token itself.
+token = "config/dev-token.txt"
+
+[database]
+address = "ws://host.docker.internal:8000"
+username = "root"
+password = "root"
+namespace = "travel_rs"
+database = "travel_rs_db"
+
+[i18n]
+default_locale = "en-US"
+locales_path = "locales"
+default_currency = "USD"

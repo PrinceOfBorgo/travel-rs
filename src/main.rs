@@ -100,6 +100,8 @@ async fn main() -> anyhow::Result<()> {
         .with(log_layer)
         .init();
 
+    tracing::info!("Using profile {}", SETTINGS.profile);
+
     // Start the bot
     start_bot().await;
 

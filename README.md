@@ -386,7 +386,7 @@ Using Docker Compose simplifies managing the Travel-RS Bot container and its vol
     Navigate to the directory containing `docker-compose.yml` in your terminal or PowerShell, then run:
 
     ```bash
-    docker-compose up -d
+    docker compose up -d
     ```
     This command will:
     * Pull the `ghcr.io/princeofborgo/travel-rs:latest` image if it's not already present.
@@ -398,23 +398,23 @@ Using Docker Compose simplifies managing the Travel-RS Bot container and its vol
     If you are already running the bot and want to ensure you have the absolute latest version of the `ghcr.io/princeofborgo/travel-rs:latest` image, use the following commands:
 
     ```bash
-    docker-compose pull travel-rs # Pulls the latest image for the 'travel-rs' service
-    docker-compose up -d          # Recreates the container using the newly pulled image
+    docker compose pull travel-rs # Pulls the latest image for the 'travel-rs' service
+    docker compose up -d          # Recreates the container using the newly pulled image
     ```
-    The `docker-compose pull` command explicitly downloads the freshest image from the registry. Then, `docker-compose up -d` will detect that the image has changed and recreate the `travel-rs` container with the new image, while preserving your data volumes.
+    The `docker compose pull` command explicitly downloads the freshest image from the registry. Then, `docker compose up -d` will detect that the image has changed and recreate the `travel-rs` container with the new image, while preserving your data volumes.
 
 5.  **Stop the container:**
     To stop and remove the container, run:
 
     ```bash
-    docker-compose down
+    docker compose down
     ```
 
 6.  **View logs:**
     To view the logs of the running container:
 
     ```bash
-    docker-compose logs -f travel-rs
+    docker compose logs -f travel-rs
     ```
 
 ### Running from GitHub Container Registry (Manual Docker Commands)

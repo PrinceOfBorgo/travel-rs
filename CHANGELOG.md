@@ -4,6 +4,8 @@
 ### Added
 - `docker-compose.yml` template to easily run and update the deployment.
 - Docker compose guide to `Docker Setup` section in [README.md](README.md).
+- `dev-local-docker.toml` profile configurations to access localhost from within the Docker container.
+- Log line on startup to show the loaded profile.
 
 ### Changed
 - `Dockerfile` to enable caching.
