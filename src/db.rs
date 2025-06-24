@@ -51,7 +51,12 @@ async fn connect_to_db() -> surrealdb::Result<Surreal<Any>> {
 
 /// Panics if couldn't connect to database.
 pub async fn db() -> Arc<Surreal<Any>> {
-    let db_instance = connect_to_db().await.unwrap();
+    let db_instance = connect_to_db()
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to connect to the database: {:?}", e);
+        })
+        .unwrap();
     Arc::new(db_instance)
 }
 

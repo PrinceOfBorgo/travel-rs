@@ -6,6 +6,7 @@
 - Docker compose guide to `Docker Setup` section in [README.md](README.md).
 - `dev-local-docker.toml` profile configurations to access localhost from within the Docker container.
 - Log line on startup to show the loaded profile.
+- Log line when an error occurs during database connection.
 
 ### Changed
 - `Dockerfile` to enable caching.
