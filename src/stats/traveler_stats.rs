@@ -16,6 +16,8 @@ const FN_TRAVELER_STATS: &str = "fn::traveler_stats";
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct TravelerStats {
     pub travelers_count: i64,
+    pub expenses_count: i64,
+    pub balances_count: i64,
     pub travelers_paid_most: Vec<TravelerStatsAmount>,
     pub travelers_paid_least: Vec<TravelerStatsAmount>,
     pub travelers_pays_most_frequently: Vec<TravelerStatsFrequency>,
@@ -47,7 +49,6 @@ impl Translate for TravelerStats {
         ctx: Arc<std::sync::Mutex<crate::Context>>,
         indent_lvl: usize,
     ) -> String {
-        let travelers_count = self.travelers_count.to_string();
         let travelers_paid_most =
             indent_multiline(&self.travelers_paid_most, ctx.clone(), indent_lvl);
         let travelers_paid_least =
@@ -68,7 +69,9 @@ impl Translate for TravelerStats {
         i18n::format::FORMAT_TRAVELER_STATS.translate_with_args_indent(
             ctx,
             &hashmap! {
-                i18n::args::COUNT.into() => travelers_count.into(),
+                i18n::args::COUNT.into() => self.travelers_count.into(),
+                i18n::args::EXPENSES_COUNT.into() => self.expenses_count.into(),
+                i18n::args::BALANCES_COUNT.into() => self.balances_count.into(),
                 i18n::args::TRAVELERS_PAID_MOST.into() => travelers_paid_most.into(),
                 i18n::args::TRAVELERS_PAID_LEAST.into() => travelers_paid_least.into(),
                 i18n::args::TRAVELERS_PAYS_MOST_FREQUENTLY.into() => travelers_pays_most_frequently.into(),

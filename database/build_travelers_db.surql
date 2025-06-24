@@ -216,20 +216,11 @@ DEFINE FUNCTION OVERWRITE fn::transfer_stats($chat: record<chat>) {
 
 DEFINE FUNCTION OVERWRITE fn::traveler_stats($chat: record<chat>) {
     LET $expenses = SELECT amount, (<-paid_for<-traveler)[0] AS creditor FROM expense WHERE chat = $chat;
-    LET $travelers_count = array::len(SELECT * FROM traveler WHERE chat = $chat);
+    LET $balances = SELECT * FROM fn::get_balances($chat);
 
-    -- Handle case where there are no expenses for the chat
-    IF array::len($expenses) = 0 {
-        RETURN {
-            travelers_count: $travelers_count,
-            travelers_paid_most: [],
-            travelers_paid_least: [],
-            travelers_pays_most_frequently: [],
-            travelers_pays_least_frequently: [],
-            major_debtors: [],
-            major_creditors: [],
-        };
-    };
+    LET $travelers_count = array::len(SELECT * FROM traveler WHERE chat = $chat);
+    LET $expenses_count = array::len($expenses);
+    LET $balances_count = array::len($balances);
 
     -- Group expenses by traveler to calculate individual statistics
     LET $traveler_payments = SELECT 
@@ -257,9 +248,7 @@ DEFINE FUNCTION OVERWRITE fn::traveler_stats($chat: record<chat>) {
     LET $min_payment_count = math::min(SELECT VALUE payment_count FROM $traveler_payments);
     LET $travelers_pays_least_frequently = SELECT traveler_name, payment_count AS count FROM $traveler_payments WHERE payment_count = $min_payment_count;
 
-    -- Major debtors/creditors
-    LET $balances = SELECT * FROM fn::get_balances($chat);
-    
+    -- Major debtors/creditors   
     LET $debtors = SELECT debtor_name AS traveler_name, math::sum(debt) AS amount FROM $balances GROUP BY traveler_name;
     LET $max_debt = math::max(SELECT VALUE amount FROM $debtors);
     LET $major_debtors = SELECT * FROM $debtors WHERE amount = $max_debt;
@@ -270,6 +259,8 @@ DEFINE FUNCTION OVERWRITE fn::traveler_stats($chat: record<chat>) {
 
     RETURN {
         travelers_count: $travelers_count,
+        expenses_count: $expenses_count,
+        balances_count: $balances_count,
         travelers_paid_most: $travelers_paid_most,
         travelers_paid_least: $travelers_paid_least,
         travelers_pays_most_frequently: $travelers_pays_most_frequently,

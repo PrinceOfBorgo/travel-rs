@@ -49,7 +49,6 @@ impl Translate for TransferStats {
         ctx: Arc<std::sync::Mutex<crate::Context>>,
         indent_lvl: usize,
     ) -> String {
-        let transfers_count = self.transfers_count.to_string();
         let sum = MoneyWrapper::new_with_context(self.sum, ctx.clone());
         let mean = MoneyWrapper::new_with_context(self.mean, ctx.clone());
         let min_transfers = indent_multiline(&self.min_transfers, ctx.clone(), indent_lvl);
@@ -67,7 +66,7 @@ impl Translate for TransferStats {
         i18n::format::FORMAT_TRANSFER_STATS.translate_with_args_indent(
             ctx,
             &hashmap! {
-                i18n::args::COUNT.into() => transfers_count.into(),
+                i18n::args::COUNT.into() => self.transfers_count.into(),
                 i18n::args::SUM.into() => sum.to_string().into(),
                 i18n::args::MEAN.into() => mean.to_string().into(),
                 i18n::args::MIN.into() => min_transfers.into(),

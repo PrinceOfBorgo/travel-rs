@@ -49,7 +49,6 @@ impl Translate for ExpenseStats {
         ctx: Arc<std::sync::Mutex<crate::Context>>,
         indent_lvl: usize,
     ) -> String {
-        let expenses_count = self.expenses_count.to_string();
         let sum = MoneyWrapper::new_with_context(self.sum, ctx.clone());
         let mean = MoneyWrapper::new_with_context(self.mean, ctx.clone());
         let min_expenses = indent_multiline(&self.min_expenses, ctx.clone(), indent_lvl);
@@ -67,7 +66,7 @@ impl Translate for ExpenseStats {
         i18n::format::FORMAT_EXPENSE_STATS.translate_with_args_indent(
             ctx,
             &hashmap! {
-                i18n::args::COUNT.into() => expenses_count.into(),
+                i18n::args::COUNT.into() => self.expenses_count.into(),
                 i18n::args::SUM.into() => sum.to_string().into(),
                 i18n::args::MEAN.into() => mean.to_string().into(),
                 i18n::args::MIN.into() => min_expenses.into(),

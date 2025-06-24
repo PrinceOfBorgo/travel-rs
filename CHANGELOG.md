@@ -10,9 +10,16 @@
 
 ### Changed
 - `Dockerfile` to enable caching.
+- Translations for statistics now hide missing stats when count is `0`. This functionality requires [database](database) schema updates. Run the following script to migrate:
+  - [`004_overwrite_traveler_stats_function.surql`](database/migrations/004_overwrite_traveler_stats_function.surql)
 
 ### Fixed
 - `Database Setup` section in [README.md](README.md) was deleted by mistake.
+- Migration script [`002_add_timestamps.surql`](database/migrations/002_add_timestamps.surql) left timestamps `NULL` for already existing records. Run the `UPDATE` statements to populate the missing data:
+  ```sql
+  UPDATE expense SET timestamp_utc = time::now() WHERE timestamp_utc IS NULL;
+  UPDATE transferred_to SET timestamp_utc = time::now() WHERE timestamp_utc IS NULL;
+  ```
 
 ## [0.2.3] - 2025-06-21
 ### 🔧 Patch Release

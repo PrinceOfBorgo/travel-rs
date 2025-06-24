@@ -17,33 +17,53 @@ format-traveler-stats-frequency =
 format-average-per-day = {$amount} per day [from {DATETIME($oldest-timestamp, dateStyle: "short")} to date {DATETIME($now, dateStyle: "short")}]
 format-expense-stats =
     Expense statistics:
-    - Count: {$count}
-    - Sum: {$sum}
-    - Mean: {$mean}
-    - Maximum expenses: {$max}
-    - Minimum expenses: {$min}
-    - Average per day: {$average-per-day}
-    - Oldest: {$oldest}
-    - Newest: {$newest}
+    { $count ->
+        [0] - Count: {$count}
+        *[other]
+            - Count: {$count}
+            - Sum: {$sum}
+            - Mean: {$mean}
+            - Maximum expenses: {$max}
+            - Minimum expenses: {$min}
+            - Average per day: {$average-per-day}
+            - Oldest: {$oldest}
+            - Newest: {$newest}
+    }
 format-transfer-stats =
     Transfer statistics:
-    - Count: {$count}
-    - Sum: {$sum}
-    - Mean: {$mean}
-    - Maximum transfers: {$max}
-    - Minimum transfers: {$min}
-    - Average per day: {$average-per-day}
-    - Oldest: {$oldest}
-    - Newest: {$newest}
+    { $count ->
+        [0] - Count: {$count}
+        *[other]
+            - Count: {$count}
+            - Sum: {$sum}
+            - Mean: {$mean}
+            - Maximum transfers: {$max}
+            - Minimum transfers: {$min}
+            - Average per day: {$average-per-day}
+            - Oldest: {$oldest}
+            - Newest: {$newest}
+    }
 format-traveler-stats =
     Traveler statistics:
-    - Count: {$count}
-    - Who paid the most: {$travelers-paid-most}
-    - Who paid the least: {$travelers-paid-least}
-    - Who pays most frequently: {$travelers-pays-most-frequently}
-    - Who pays least frequently: {$travelers-pays-least-frequently}
-    - Major creditors: {$major-creditors}
-    - Major debtors: {$major-debtors}
+    { $count ->
+        [0] - Count: {$count}
+        *[other] 
+            - Count: {$count}{ $expenses-count ->
+                [0] {""}
+                *[other]
+                    {" "}
+                    - Who paid the most: {$travelers-paid-most}
+                    - Who paid the least: {$travelers-paid-least}
+                    - Who pays most frequently: {$travelers-pays-most-frequently}
+                    - Who pays least frequently: {$travelers-pays-least-frequently}
+            }{ $balances-count ->
+                [0] {""}
+                *[other]
+                    {" "}
+                    - Major creditors: {$major-creditors}
+                    - Major debtors: {$major-debtors}
+            }
+    }
 format-stats =
     {$expense-stats}
 
