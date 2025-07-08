@@ -28,21 +28,18 @@ impl Stats {
         db: Arc<surrealdb::Surreal<surrealdb::engine::any::Any>>,
         chat_id: teloxide::types::ChatId,
     ) -> Result<Option<Self>, surrealdb::Error> {
-        let Some(expense_stats) = ExpenseStats::expense_stats(db.clone(), chat_id).await? else {
-            return Ok(None);
-        };
-        let Some(transfer_stats) = TransferStats::transfer_stats(db.clone(), chat_id).await? else {
-            return Ok(None);
-        };
-        let Some(traveler_stats) = TravelerStats::traveler_stats(db.clone(), chat_id).await? else {
-            return Ok(None);
-        };
-
-        Ok(Some(Self {
-            expense_stats,
-            transfer_stats,
-            traveler_stats,
-        }))
+        if let Some(expense_stats) = ExpenseStats::expense_stats(db.clone(), chat_id).await?
+            && let Some(transfer_stats) = TransferStats::transfer_stats(db.clone(), chat_id).await?
+            && let Some(traveler_stats) = TravelerStats::traveler_stats(db.clone(), chat_id).await?
+        {
+            Ok(Some(Self {
+                expense_stats,
+                transfer_stats,
+                traveler_stats,
+            }))
+        } else {
+            Ok(None)
+        }
     }
 }
 
