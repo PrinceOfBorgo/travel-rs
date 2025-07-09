@@ -1,6 +1,7 @@
 # Changelog
 
-## [0.2.4-SNAPSHOT] - Unreleased
+## [0.2.4] - 2025-07-09
+### 🔧 Patch Release
 ### Added
 - `docker-compose.yml` template to easily run and update the deployment.
 - Docker compose guide to `Docker Setup` section in [README.md](README.md).
