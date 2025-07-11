@@ -29,3 +29,5 @@
 - [ ] Improve user experience (e.g. add buttons).
 - [x] Add timestamps to expenses and transfers.
 - [x] Add `ShowStats` command.
+- [ ] Add `EditExpense` command.
+- [ ] Change `ListExpenses` command so that the filter matches the string representation of the expense.

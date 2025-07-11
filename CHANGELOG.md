@@ -8,7 +8,8 @@
 - N/A
 
 ### Fixed
-- N/A
+- Average per day values in expense and transfer statistics was wrongly computed. This fix requires [database](database) schema updates. Run the following script to migrate:
+  - [`005_fix_overwrite_stats_function.surql`](database/migrations/005_fix_overwrite_stats_function.surql)
 
 ## [0.2.4] - 2025-07-09
 ### 🔧 Patch Release

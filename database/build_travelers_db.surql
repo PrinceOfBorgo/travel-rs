@@ -138,7 +138,7 @@ DEFINE FUNCTION OVERWRITE fn::expense_stats($chat: record<chat>) {
 
     -- Calculate the average expense over time, from the oldest expense to now
     LET $current_timestamp = time::now();
-    LET $diff_days = time::day($current_timestamp) - time::day($oldest_timestamp) + 1;
+    LET $diff_days = (time::unix($current_timestamp) - time::unix($oldest_timestamp)) / 60 / 60 / 24 + 1;
     LET $average_per_day = $sum / $diff_days;
     
     RETURN {
@@ -156,7 +156,6 @@ DEFINE FUNCTION OVERWRITE fn::expense_stats($chat: record<chat>) {
         newest_expense: $newest_expense,
     };
 } COMMENT "Calculates various expense statistics (sum, mean, min, max, and time-based average) for a given chat." PERMISSIONS FULL;
-
 DEFINE FUNCTION OVERWRITE fn::transfer_stats($chat: record<chat>) {
     LET $transfers = fn::get_transfers($chat);
     LET $transfers_count = array::len($transfers);
@@ -195,7 +194,7 @@ DEFINE FUNCTION OVERWRITE fn::transfer_stats($chat: record<chat>) {
 
     -- Calculate the average transfer over time, from the oldest transfer to now
     LET $current_timestamp = time::now();
-    LET $diff_days = time::day($current_timestamp) - time::day($oldest_timestamp) + 1;
+    LET $diff_days = (time::unix($current_timestamp) - time::unix($oldest_timestamp)) / 60 / 60 / 24 + 1;
     LET $average_per_day = $sum / $diff_days;
     
     RETURN {
@@ -213,7 +212,6 @@ DEFINE FUNCTION OVERWRITE fn::transfer_stats($chat: record<chat>) {
         newest_transfer: $newest_transfer,
     };
 } COMMENT "Calculates various transfer statistics (sum, mean, min, max, and time-based average) for a given chat." PERMISSIONS FULL;
-
 DEFINE FUNCTION OVERWRITE fn::traveler_stats($chat: record<chat>) {
     LET $expenses = SELECT amount, (<-paid_for<-traveler)[0] AS creditor FROM expense WHERE chat = $chat;
     LET $balances = SELECT * FROM fn::get_balances($chat);
