@@ -8,6 +8,7 @@
 [![Cargo Build & Test][build & test badge]][build & test link]
 [![Release][release badge]][release link]
 [![Codecov][codecov badge]][codecov link]
+[![Buy Me A Coffee][bmc badge]][bmc link]
 
 Travel-RS Bot is a Rust-based Telegram bot designed to assist with managing travel-related expenses, debts, and balances. It provides a seamless experience for tracking financial transactions among travelers, offering localization support, and enabling flexible configurations.
 
@@ -496,6 +497,18 @@ The container requires three volume mounts to function properly:
    - Enables log access from the host machine
    - Files are organized by profile and date
 
+## Support Travel-RS Bot
+
+Travel-RS Bot is a passion project built in Rust to help simplify group travel expenses. While the bot is free to use, running it smoothly relies on cloud infrastructure, specifically for the database, which incurs ongoing costs.
+
+As the bot grows and helps more travelers, these costs will increase. Your support is crucial to keep Travel-RS Bot running efficiently, to allow for scaling to meet demand, and to enable continuous development of new features and improvements.
+
+If you find Travel-RS Bot useful and would like to help cover these expenses and contribute to its future, please consider buying me a coffee:
+
+☕ [**Buy Me A Coffee: PrinceOfBorgo**](https://coff.ee/princeofborgo)
+
+Every contribution, no matter the size, directly fuels the bot's operation and helps ensure it remains a valuable and accessible tool for everyone. Thank you for being a part of the Travel-RS Bot journey!
+
 ## Roadmap
 
 Planned features and improvements are documented in the [ROADMAP.md](ROADMAP.md) file.
@@ -521,3 +534,6 @@ For questions or support, please contact the project maintainers or open an issu
 
 [codecov badge]: https://img.shields.io/codecov/c/github/PrinceOfBorgo/travel-rs?logo=codecov&logoColor=white
 [codecov link]: https://codecov.io/gh/PrinceOfBorgo/travel-rs
+
+[bmc badge]: https://img.shields.io/badge/Buy%20Me%20A%20Coffee-Donate-FFDD00?logo=buymeacoffee&logoColor=white
+[bmc link]: https://coff.ee/princeofborgo
