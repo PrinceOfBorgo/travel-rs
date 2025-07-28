@@ -24,6 +24,7 @@ jobs:
     outputs:
       new_version: ${{ steps.bump_version.outputs.new_version }}
       repo_lower: ${{ steps.repo_lower_case.outputs.repo_lower }}
+      changelog_section_heading: ${{ steps.update_changelog.outputs.section_heading }}
 
     steps:
       - name: Checkout repository
@@ -43,7 +44,7 @@ jobs:
         run: cargo install cargo-edit
 
       - name: Bump version
-        id: bump_version # Use an ID to capture output
+        id: bump_version
         run: |
           if [[ "${{ github.event.head_commit.message }}" == *"[release:major]"* ]]; then
             cargo set-version --bump major
@@ -57,6 +58,7 @@ jobs:
           echo "new_version=$new_version" >> "$GITHUB_OUTPUT"
 
       - name: Update CHANGELOG.md
+        id: update_changelog
         run: |
           DATE=$(date +%Y-%m-%d)
           RELEASE_TYPE=""
@@ -67,8 +69,13 @@ jobs:
           else
             RELEASE_TYPE="### 🔧 Patch Release"
           fi
-          NEW_CONTENT="## [${{ steps.bump_version.outputs.new_version }}] - $DATE\n$RELEASE_TYPE"
+          # Capture the full section heading that will be used in CHANGELOG.md
+          SECTION_HEADING="[${{ steps.bump_version.outputs.new_version }}] - $DATE"
+          NEW_CONTENT="## ${SECTION_HEADING}\n$RELEASE_TYPE"
           sed -i "0,/^## \[.*-SNAPSHOT\].*/s|^## \[.*-SNAPSHOT\].*|$NEW_CONTENT|" CHANGELOG.md
+          
+          # Export the section heading as an output for other jobs
+          echo "section_heading=$SECTION_HEADING" >> "$GITHUB_OUTPUT"
 
       - name: Set lowercase repository name
         id: repo_lower_case
@@ -173,6 +180,10 @@ jobs:
 
       - name: Install cargo-edit
         run: cargo install cargo-edit
+
+      # Install jq for JSON parsing from gh api
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
         
       - name: Commit and Tag Release
         run: |
@@ -184,14 +195,64 @@ jobs:
           git push origin main
           git push origin "v${NEW_VERSION}" # Push the tag separately
 
+      # Use gh api to generate notes, then modify them
+      - name: Generate and Modify Release Notes
+        id: generate_release_notes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          NEW_VERSION="${{ needs.prepare_release_data.outputs.new_version }}"
+          SECTION_HEADING="${{ needs.prepare_release_data.outputs.changelog_section_heading }}"
+          FULL_REPO_NAME="${{ github.repository }}"
+
+          # 1. Generate release notes using GitHub API endpoint
+          # This API call returns JSON with the 'body' field containing the generated notes.
+          GENERATED_NOTES_JSON=$(gh api \
+            --raw-field tag_name="v${NEW_VERSION}" \
+            --raw-field target_commitish="main" \
+            /repos/${FULL_REPO_NAME}/releases/generate-notes)
+          
+          # Extract the 'body' field from the JSON response using jq
+          AUTO_GENERATED_NOTES=$(echo "$GENERATED_NOTES_JSON" | jq -r '.body')
+
+          # --- Start of Logic to generate the CHANGELOG link's section ID ---
+          # Apply GitHub's heading ID rules (based on official docs):
+          # https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#section-links
+          
+          # 1. Lowercase conversion
+          SECTION_ID=$(echo "$SECTION_HEADING" | tr '[:upper:]' '[:lower:]')
+          # 2. Remove leading/trailing whitespaces
+          SECTION_ID=$(echo "$SECTION_ID" | sed 's/^ *//;s/ *$//g')
+          # 3. Replace whitespaces with hyphens
+          SECTION_ID=$(echo "$SECTION_ID" | sed 's/ /-/g')
+          # 4. Remove other punctuation/special characters (dots, brackets, etc.)
+          SECTION_ID=$(echo "$SECTION_ID" | sed 's/[^a-z0-9-]\+//g')
+
+          # Construct the full link to the CHANGELOG.md section
+          CHANGELOG_LINK="https://github.com/${FULL_REPO_NAME}/blob/main/CHANGELOG.md#${SECTION_ID}"
+          
+          echo "Generated CHANGELOG link: ${CHANGELOG_LINK}"
+          # --- End of Logic to generate the CHANGELOG link's section ID ---
+
+          # Combine custom link and auto-generated notes
+          # Use echo -e to interpret newline characters correctly
+          FINAL_NOTES_CONTENT="See the full [CHANGELOG](${CHANGELOG_LINK}) for details.\n\n${AUTO_GENERATED_NOTES}"
+          
+          # Write the final notes content to a file
+          echo -e "$FINAL_NOTES_CONTENT" > FINAL_RELEASE_NOTES.md
+
+          # Pass the final notes file path as an output for the next step
+          echo "release_notes_file=FINAL_RELEASE_NOTES.md" >> "$GITHUB_OUTPUT"
+
       - name: Create GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           NEW_VERSION="${{ needs.prepare_release_data.outputs.new_version }}"
+          # Create the actual release using the modified notes file
           gh release create "v${NEW_VERSION}" \
             --title "Release v${NEW_VERSION}" \
-            --generate-notes
+            --notes-file ${{ steps.generate_release_notes.outputs.release_notes_file }}
 
       - name: Bump to next snapshot version
         run: |
@@ -222,7 +283,9 @@ jobs:
           # Delete the tag if it exists
           git push --delete origin "v${NEW_VERSION}" || true
 
-          # Delete the GitHub release if it exists
+          # Delete the GitHub release if it exists (including any draft created by gh api if it failed before final create)
+          # Note: gh api /releases/generate-notes doesn't create a release, so no need to delete a draft from it.
+          # However, if the gh release create --notes-file failed after creating a draft, this would handle it.
           gh release delete "v${NEW_VERSION}" --yes || true
 
           # Delete the container image if it exists
