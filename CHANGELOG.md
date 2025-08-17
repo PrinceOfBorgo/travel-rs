@@ -2,10 +2,11 @@
 
 ## [0.2.5-SNAPSHOT] - Unreleased
 ### Added
-- N/A
+- Optional chat IDs whitelist under `[bot]` section in (profile) settings files. If specified, only the whitelisted chats will be allowed to interact with the bot.
+- Debug log on startup to show the loaded settings.
 
 ### Changed
-- Release workflow now adds a link to the latest version changes in `CHANGELOG.md` to the release notes. 
+- Release workflow now adds a link to the latest version changes in `CHANGELOG.md` to the release notes.
 
 ### Fixed
 - Average per day values in expense and transfer statistics was wrongly computed. This fix requires [database](database) schema updates. Run the following script to migrate:

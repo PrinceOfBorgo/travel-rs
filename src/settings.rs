@@ -1,6 +1,7 @@
 use config::Config;
 use serde::Deserialize;
 use std::{path::PathBuf, sync::LazyLock};
+use teloxide::types::ChatId;
 use unic_langid::LanguageIdentifier;
 
 use crate::ARGS;
@@ -41,22 +42,38 @@ pub static SETTINGS: LazyLock<Settings> = LazyLock::new(|| {
     conf.try_deserialize().unwrap() // Panics if configurations cannot be loaded
 });
 
-enum TokenSource {
+enum PropertySource {
     File,
     Env,
     String,
 }
 
-impl TokenSource {
+impl PropertySource {
     fn from_str(s: &str) -> Self {
         match s {
             "file" => Self::File,
             "env" => Self::Env,
             "string" => Self::String,
-            _ => panic!("Invalid token source: {s}. Expected 'file', 'env', or 'string'"),
+            _ => panic!("Invalid property source: {s}. Expected 'file', 'env', or 'string'"),
         }
     }
 }
+
+#[derive(Deserialize)]
+pub struct HiddenString(pub String);
+
+impl std::fmt::Display for HiddenString {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "*** HIDDEN ***")
+    }
+}
+
+impl std::fmt::Debug for HiddenString {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{self}")
+    }
+}
+
 #[derive(Debug, Deserialize)]
 pub struct Logging {
     pub path: String,
@@ -67,14 +84,16 @@ pub struct Logging {
 #[derive(Debug, Deserialize)]
 pub struct Bot {
     pub token_source: String,
-    pub token: String,
+    pub token: HiddenString,
+    pub chat_whitelist_source: Option<String>,
+    pub chat_whitelist: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct Database {
     pub address: String,
     pub username: String,
-    pub password: String,
+    pub password: HiddenString,
     pub namespace: String,
     pub database: String,
 }
@@ -98,14 +117,44 @@ pub struct Settings {
 impl Settings {
     pub fn token_value(&self) -> String {
         let token_source = &self.bot.token_source;
-        let token = &self.bot.token;
+        let token = &self.bot.token.0;
 
-        match TokenSource::from_str(token_source) {
-            TokenSource::File => std::fs::read_to_string(token)
+        match PropertySource::from_str(token_source) {
+            PropertySource::File => std::fs::read_to_string(token)
                 .unwrap_or_else(|_| panic!("Token file '{token}' should be readable")),
-            TokenSource::Env => std::env::var(token)
+            PropertySource::Env => std::env::var(token)
                 .unwrap_or_else(|_| panic!("Environment variable '{token}' should be set")),
-            TokenSource::String => token.clone(),
+            PropertySource::String => token.clone(),
         }
+    }
+
+    pub fn chat_whitelist_value(&self) -> Vec<ChatId> {
+        let Some(chat_whitelist_source) = &self.bot.chat_whitelist_source else {
+            return Vec::new(); // No whitelist source specified, return empty vector
+        };
+        let Some(chat_whitelist) = &self.bot.chat_whitelist else {
+            return Vec::new(); // No whitelist specified, return empty vector
+        };
+
+        let content: String = match PropertySource::from_str(chat_whitelist_source) {
+            PropertySource::File => std::fs::read_to_string(chat_whitelist)
+                .unwrap_or_else(|_| panic!("Whitelist file '{chat_whitelist}' should be readable")),
+            PropertySource::Env => std::env::var(chat_whitelist).unwrap_or_else(|_| {
+                panic!("Environment variable '{chat_whitelist}' should be set")
+            }),
+            PropertySource::String => chat_whitelist.clone(),
+        };
+
+        // Parse comma or whitespace separated chat ids into Vec<ChatId>
+        content
+            .split(&[',', ';', ' ', '\n'])
+            .map(|s| s.trim())
+            .filter(|s| !s.is_empty())
+            .map(|s| {
+                s.parse::<i64>()
+                    .map(ChatId)
+                    .unwrap_or_else(|_| panic!("Invalid chat id in whitelist: {s}"))
+            })
+            .collect()
     }
 }

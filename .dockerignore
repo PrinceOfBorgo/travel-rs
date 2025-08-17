@@ -34,7 +34,10 @@ Dockerfile
 vendor/
 
 # Telegram bot token
-token.txt
+*token.txt
+
+# Chat whitelist file
+dev-chat-whitelist.txt
 
 # Logs folder
 logs/

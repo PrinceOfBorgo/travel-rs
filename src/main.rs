@@ -101,6 +101,7 @@ async fn main() -> anyhow::Result<()> {
         .init();
 
     tracing::info!("Using profile {}", SETTINGS.profile);
+    tracing::debug!("Settings: {:#?}", SETTINGS);
 
     // Start the bot
     start_bot().await;
@@ -196,14 +197,30 @@ pub(crate) fn handler_tree() -> UpdateHandler<Box<dyn std::error::Error + Send +
     };
 
     Update::filter_message()
+        .filter(|msg: Message| filter_auth(msg))
         .map_async(update_chat_db) // Create chat record on db if it does not exist yet or update it
         .branch(command_branch)
         .branch(dialogue_branch)
         .endpoint(unknown_command)
 }
 
+fn filter_auth(msg: Message) -> bool {
+    is_chat_whitelisted(msg.chat.id)
+}
+
+fn is_chat_whitelisted(chat_id: ChatId) -> bool {
+   let whitelist = &SETTINGS.chat_whitelist_value();
+
+	if !whitelist.is_empty() && !whitelist.contains(&chat_id) {
+        tracing::warn!("A non-empty whitelist is set, but the chat with id {} is not whitelisted. Skipping...", chat_id);
+		false
+	} else {
+        true
+    }
+}
+
 #[apply(trace_skip_all)]
-pub async fn update_chat_db(
+async fn update_chat_db(
     db: Arc<Surreal<Any>>,
     msg: Message,
     ctx: Arc<Mutex<Context>>,

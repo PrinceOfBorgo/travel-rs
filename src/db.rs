@@ -41,7 +41,11 @@ async fn connect_to_db() -> surrealdb::Result<Surreal<Any>> {
         db.query(schema).await?;
     } else {
         // Authenticate only if it's not an in-memory database
-        db.signin(Root { username, password }).await?;
+        db.signin(Root {
+            username,
+            password: &password.0,
+        })
+        .await?;
     }
 
     tracing::info!("Connected to database {address}::{namespace}::{database}");
