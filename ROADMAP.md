@@ -26,7 +26,9 @@
 - [ ] Add assertion/events to check if `in.chat = out.chat` for relationships.
 - [x] Handle `unknown_command` when command name is right but arguments are incomplete.
 - [x] Add dedicated help messages for all commands.
-- [ ] Improve user experience (e.g. add buttons).
+- [ ] Improve user experience:
+  - [ ] Add inline keyboard support
+  - [ ] Implement a Telegram Mini App
 - [x] Add timestamps to expenses and transfers.
 - [x] Add `ShowStats` command.
 - [ ] Add `EditExpense` command.
