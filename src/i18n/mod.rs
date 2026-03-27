@@ -8,7 +8,6 @@ pub mod terms;
 mod to_fluent_datetime;
 mod translate;
 
-use indoc::formatdoc;
 pub use to_fluent_datetime::ToFluentDateTime;
 pub use translate::{Translate, TranslateWithArgs};
 
@@ -17,6 +16,7 @@ use commands::COMMAND_DESCRIPTIONS;
 use fluent::FluentResource;
 use fluent_datetime::BundleExt;
 use fluent_templates::{ArcLoader, Loader};
+use indoc::formatdoc;
 use std::sync::{Arc, LazyLock};
 use teloxide::utils::command::BotCommands;
 use terms::*;

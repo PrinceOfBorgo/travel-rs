@@ -3,10 +3,7 @@ mod integration_tests;
 use crate::{Context, deps, handler_tree};
 use std::sync::{Arc, Mutex};
 use surrealdb::{Surreal, engine::any::Any};
-use teloxide::{
-    dptree::di::DependencySupplier,
-    types::{Chat, ChatId},
-};
+use teloxide::types::{Chat, ChatId};
 use teloxide_tests::{MockBot, MockMessageText, mock_bot::DistributionKey};
 
 pub(crate) struct TestBot {

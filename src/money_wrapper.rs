@@ -58,7 +58,7 @@ impl MoneyWrapper<'_> {
         let mut format_params = rusty_money::Params {
             digit_separator: format.digit_separator,
             exponent_separator: format.exponent_separator,
-            separator_pattern: vec![],
+            separator_pattern: &[],
             rounding: Some(currency.exponent()),
             symbol: Some(currency.symbol()),
             code: Some(currency.code()),
@@ -66,14 +66,14 @@ impl MoneyWrapper<'_> {
         };
 
         if currency.symbol_first() {
-            format_params.positions = vec![
+            format_params.positions = &[
                 rusty_money::Position::Sign,
                 rusty_money::Position::Symbol,
                 rusty_money::Position::Amount,
             ];
             write!(f, "{}", rusty_money::Formatter::money(money, format_params))
         } else {
-            format_params.positions = vec![
+            format_params.positions = &[
                 rusty_money::Position::Sign,
                 rusty_money::Position::Amount,
                 rusty_money::Position::Symbol,

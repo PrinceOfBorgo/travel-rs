@@ -4,8 +4,6 @@ use std::{path::PathBuf, sync::LazyLock};
 use teloxide::types::ChatId;
 use unic_langid::LanguageIdentifier;
 
-use crate::ARGS;
-
 pub static CONFIG: LazyLock<Config> = LazyLock::new(|| {
     Config::builder()
         .add_source(config::File::with_name("config/config"))
@@ -16,7 +14,7 @@ pub static CONFIG: LazyLock<Config> = LazyLock::new(|| {
 #[cfg(not(test))]
 pub static SETTINGS: LazyLock<Settings> = LazyLock::new(|| {
     // Retrieve the profile from command line arguments or fallback to the configuration file
-    let profile = ARGS
+    let profile = crate::ARGS
         .profile
         .clone()
         .unwrap_or_else(|| CONFIG.get_string("profile").unwrap());

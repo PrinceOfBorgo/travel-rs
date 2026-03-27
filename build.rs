@@ -60,10 +60,10 @@ fn copy_path(src: impl AsRef<Path>, dst: impl AsRef<Path>) {
             copy_path(src_path, dst_path);
         }
     } else {
-        if let Some(parent) = dst.parent() {
-            if !parent.exists() {
-                fs::create_dir_all(parent).unwrap();
-            }
+        if let Some(parent) = dst.parent()
+            && !parent.exists()
+        {
+            fs::create_dir_all(parent).unwrap();
         }
         println!(
             "cargo:warning=Copying file: {} -> {}",

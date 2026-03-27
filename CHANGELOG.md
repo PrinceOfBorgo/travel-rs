@@ -6,6 +6,7 @@
 - Debug log on startup to show the loaded settings.
 
 ### Changed
+- Updated dependencies.
 - Release workflow now adds a link to the latest version changes in `CHANGELOG.md` to the release notes.
 
 ### Fixed
