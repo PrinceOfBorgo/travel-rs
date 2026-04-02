@@ -6,7 +6,6 @@ on:
 
 jobs:
   # Job 1: Prepare the release (bump version, update changelog).
-  # This job does NOT commit or push any changes yet.
   prepare_release_data:
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}
@@ -19,9 +18,9 @@ jobs:
       contains(github.event.head_commit.message, '[release:major]')
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Needed for modifying files locally
-      packages: write # Keep for now if needed by internal actions
-      id-token: write # Keep for provenance, etc.
+      contents: write
+      packages: write
+      id-token: write
 
     outputs:
       new_version: ${{ steps.bump_version.outputs.new_version }}
@@ -43,7 +42,9 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install cargo-edit
-        run: cargo install cargo-edit
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-edit
 
       - name: Bump version
         id: bump_version
@@ -63,7 +64,6 @@ jobs:
         id: update_changelog
         run: |
           DATE=$(date +%Y-%m-%d)
-          RELEASE_TYPE=""
           if [[ "${{ github.event.head_commit.message }}" == *"[release:major]"* ]]; then
             RELEASE_TYPE="### 💥 Major Release"
           elif [[ "${{ github.event.head_commit.message }}" == *"[release:minor]"* ]]; then
@@ -76,7 +76,6 @@ jobs:
           NEW_CONTENT="## ${SECTION_HEADING}\n$RELEASE_TYPE"
           sed -i "0,/^## \[.*-SNAPSHOT\].*/s|^## \[.*-SNAPSHOT\].*|$NEW_CONTENT|" CHANGELOG.md
           
-          # Export the section heading as an output for other jobs
           echo "section_heading=$SECTION_HEADING" >> "$GITHUB_OUTPUT"
 
       - name: Set lowercase repository name
@@ -94,33 +93,27 @@ jobs:
             CHANGELOG.md
           retention-days: 1 # Keep artifact for a short period
 
-
-  # Job 2: Build and Push Docker Image (only runs if prepare_release_data succeeds)
+  # Job 2: Build and Push Docker Image
   build_and_push_docker:
-    needs: prepare_release_data # This job depends on the successful output of the previous job
+    needs: prepare_release_data
     runs-on: ubuntu-latest
     permissions:
-      contents: read # Only read access needed for source code
-      packages: write # Needed for pushing to ghcr.io
-      id-token: write # Needed for provenance (SLSA) and potentially OIDC login
+      contents: read
+      packages: write
+      id-token: write
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Download release files artifact
         uses: actions/download-artifact@v4
         with:
           name: release-files
-          path: . # Download files to the current directory
+          path: .
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        with:
-          install: true
-          driver: docker-container # Using 'docker-container' driver for multi-arch builds
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
@@ -149,19 +142,14 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-
-  # Job 3: Finalize Release (commit, tag, GitHub release, set visibility).
-  # This job only runs if the Docker build succeeded.
+  # Job 3: Finalize Release
   finalize_release:
     needs: [build_and_push_docker, prepare_release_data]
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Needed for commit/push/tag
-      packages: write # Needed for gh api to set package visibility
-      id-token: write # Needed for gh api
-
-    outputs:
-      success: ${{ steps.mark_success.outputs.success }}
+      contents: write
+      packages: write
+      id-token: write
 
     steps:
       - name: Checkout repository
@@ -173,7 +161,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: release-files
-          path: . # Download files to the current directory
+          path: .
 
       - name: Set up Git user
         run: |
@@ -181,23 +169,17 @@ jobs:
           git config --global user.name "github-actions[bot]"
 
       - name: Install cargo-edit
-        run: cargo install cargo-edit
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-edit
 
-      # Install jq for JSON parsing from gh api
-      - name: Install jq
-        run: sudo apt-get update && sudo apt-get install -y jq
-        
       - name: Commit and Tag Release
         run: |
           NEW_VERSION="${{ needs.prepare_release_data.outputs.new_version }}"
-          echo "Tagging with version: $NEW_VERSION"
-          git add Cargo.toml Cargo.lock CHANGELOG.md # Add the modified files
+          git add Cargo.toml Cargo.lock CHANGELOG.md
           git commit -m "chore: release version ${NEW_VERSION} [skip ci]"
           git tag -a "v${NEW_VERSION}" -m "Release version ${NEW_VERSION}"
-          git push origin main
-          git push origin "v${NEW_VERSION}" # Push the tag separately
 
-      # Use gh api to generate notes, then modify them
       - name: Generate and Modify Release Notes
         id: generate_release_notes
         env:
@@ -265,35 +247,29 @@ jobs:
           next_version="${major}.${minor}.$((patch + 1))-SNAPSHOT"
 
           cargo set-version "${next_version}"
-
           NEW_SNAPSHOT="## [${next_version}] - Unreleased\n### Added\n- N/A\n\n### Changed\n- N/A\n\n### Fixed\n- N/A"
-
           sed -i "1s|^# Changelog|# Changelog\n\n${NEW_SNAPSHOT}|" CHANGELOG.md
 
           git add Cargo.toml Cargo.lock CHANGELOG.md
           git commit -m "chore: prepare for next development iteration [skip ci]"
-          git push origin main
 
+      - name: FINAL PUSH
+        if: success()
+        run: git push origin main --tags
+      
       - name: Rollback on failure
         if: failure()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Rolling back release changes..."
+          # Only clean up if Job 1 & 2 actually finished
           NEW_VERSION="${{ needs.prepare_release_data.outputs.new_version }}"
 
-          # Delete the tag if it exists
-          git push --delete origin "v${NEW_VERSION}" || true
-
-          # Delete the GitHub release if it exists (including any draft created by gh api if it failed before final create)
-          # Note: gh api /releases/generate-notes doesn't create a release, so no need to delete a draft from it.
-          # However, if the gh release create --notes-file failed after creating a draft, this would handle it.
           gh release delete "v${NEW_VERSION}" --yes || true
 
           # Delete the container image if it exists
           PACKAGE_NAME=$(echo "${{ github.repository }}" | cut -d '/' -f 2)
-          gh api --method DELETE \
-            "/orgs/${{ github.repository_owner }}/packages/container/${PACKAGE_NAME}/versions/v${NEW_VERSION}" || true
+          gh api --method DELETE "/orgs/${{ github.repository_owner }}/packages/container/${PACKAGE_NAME}/versions/v${NEW_VERSION}" || true
 
           echo "Rollback completed"
           exit 1
