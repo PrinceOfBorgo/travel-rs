@@ -315,6 +315,27 @@ This modular structure allows users to easily configure the bot's behavior for d
 
 Logs are written to files within a **profile-specific subfolder** located under the **path** specified in the `[logging]` section of your profile's `.toml` file. For instance, if the specified profile is `dev` and the `path` in `dev.toml` is set to `logs`, you'll find your logs in `./logs/dev/`. Each log file is timestamped for easy reference. You can customize logging behavior, including the log directory and log level, directly within your profile-specific configuration.
 
+## GitHub Actions Workflows
+
+This repository has two main workflows under `.github/workflows/`:
+
+- `ci.yml`: runs on `push` and `pull_request` to the `main` branch. It performs:
+  - `cargo build` and `cargo test` on `stable`, `beta`, and `nightly`
+  - coverage generation via `cargo llvm-cov` and upload to Codecov
+
+- `release.yml`: runs on `push` to the `main` branch and has a gated release path. The `prepare_release_data` job only executes when the commit message includes one of:
+  - `[release]`, `[release:patch]`, or `[release:fix]` (patch bump)
+  - `[release:minor]` (minor bump)
+  - `[release:major]` (major bump)
+
+When the release trigger matches, the workflow:
+- bumps `Cargo.toml` version (`cargo set-version`) according to release type
+- updates `CHANGELOG.md` by converting `x.y.z-SNAPSHOT` to the real release heading and section
+- builds and pushes the Docker image (multi-arch, GHCR tags)
+- commits and tags release as `v<version>`
+- generates GitHub release notes and publishes the release
+- bumps the next snapshot version in `Cargo.toml` and pre-populates `CHANGELOG.md` for ongoing development
+
 ## Localization
 
 ### Customizing Fluent Localization Files

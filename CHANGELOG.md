@@ -11,6 +11,8 @@
 - Release workflow now adds a link to the latest version changes in `CHANGELOG.md` to the release notes.
 - Refactored property resolution from profile settings.
 - Updated `.gitignore` rules to ignore `config/*` except `config/config.toml` and allowed profile files (`config/profiles/dev*.toml`, `config/profiles/unit-tests.toml`).
+- Release trigger filters now include `[release:patch]` and `[release:fix]` in `release.yml` as additional patch-level release tokens with the same behaviour as `[release]`.
+- Enhanced `README.md` with GitHub workflows section.
 
 ### Fixed
 - Average per day values in expense and transfer statistics was wrongly computed. This fix requires [database](database) schema updates. Run the following script to migrate:
