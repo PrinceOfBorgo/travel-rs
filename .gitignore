@@ -34,15 +34,15 @@ Cargo.lock
 # Telegram bot token
 *token.txt
 
-# Chat whitelist file
-dev-chat-whitelist.txt
-
 # Logs folder
 logs/
 
-# Ignore all configuration profiles except dev-local, dev-local-docker, dev-memory, unit-tests.
+# Ignore all configuration files in the config directory except config.toml and profiles directory.
+config/*
+!config/profiles/
+!config/config.toml
+
+# Ignore all configuration profiles except development and unit test profiles.
 config/profiles/*.toml
-!config/profiles/dev-local.toml
-!config/profiles/dev-local-docker.toml
-!config/profiles/dev-memory.toml
+!config/profiles/dev*.toml
 !config/profiles/unit-tests.toml

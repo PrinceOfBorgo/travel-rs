@@ -4,11 +4,13 @@
 ### Added
 - Optional chat IDs whitelist under `[bot]` section in (profile) settings files. If specified, only the whitelisted chats will be allowed to interact with the bot.
 - Debug log on startup to show the loaded settings.
+- Added `config/profiles/dev-cloud.toml` template and extended local profiles documentation.
 
 ### Changed
 - Updated dependencies.
 - Release workflow now adds a link to the latest version changes in `CHANGELOG.md` to the release notes.
 - Refactored property resolution from profile settings.
+- Updated `.gitignore` rules to ignore `config/*` except `config/config.toml` and allowed profile files (`config/profiles/dev*.toml`, `config/profiles/unit-tests.toml`).
 
 ### Fixed
 - Average per day values in expense and transfer statistics was wrongly computed. This fix requires [database](database) schema updates. Run the following script to migrate:

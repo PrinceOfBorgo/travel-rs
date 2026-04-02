@@ -1,4 +1,9 @@
+# Profile: dev-local-docker
+# Description: Development configuration for SurrealDB running in Docker
+# Use this when SurrealDB is running as a Docker container on the same machine
+
 [logging]
+# path: Base folder for logs. The active profile name is appended automatically to create a per-profile subfolder.
 path = "logs"
 file_name_prefix = "travelrs.log"
 level = "debug"

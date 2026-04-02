@@ -1,3 +1,7 @@
+# Profile: unit-tests
+# Description: Configuration for unit tests
+# Use this for running automated tests with in-memory database and mock values
+
 [logging]
 path = ""
 file_name_prefix = ""

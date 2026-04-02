@@ -1,4 +1,9 @@
+# Profile: dev-memory
+# Description: Development configuration with in-memory database
+# Use this for quick testing without persistent storage or Docker setup
+
 [logging]
+# path: Base folder for logs. The active profile name is appended automatically to create a per-profile subfolder.
 path = "logs"
 file_name_prefix = "travelrs.log"
 level = "debug"
