@@ -8,6 +8,7 @@
 ### Changed
 - Updated dependencies.
 - Release workflow now adds a link to the latest version changes in `CHANGELOG.md` to the release notes.
+- Refactored property resolution from profile settings.
 
 ### Fixed
 - Average per day values in expense and transfer statistics was wrongly computed. This fix requires [database](database) schema updates. Run the following script to migrate:

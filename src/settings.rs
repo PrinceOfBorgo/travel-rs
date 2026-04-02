@@ -55,6 +55,23 @@ impl PropertySource {
             _ => panic!("Invalid property source: {s}. Expected 'file', 'env', or 'string'"),
         }
     }
+
+    /// Resolves a property value from the specified source.
+    ///
+    /// # Arguments
+    /// * `source` - The source type (File, Env, or String)
+    /// * `value` - The path (for File), environment variable name (for Env), or the value itself (for String)
+    /// * `property_name` - The name of the property for error messages (e.g., "Token", "Whitelist")
+    fn resolve(source: PropertySource, value: &str, property_name: &str) -> String {
+        match source {
+            PropertySource::File => std::fs::read_to_string(value)
+                .unwrap_or_else(|_| panic!("{property_name} file '{value}' should be readable")),
+            PropertySource::Env => std::env::var(value).unwrap_or_else(|_| {
+                panic!("Environment variable '{value}' for {property_name} should be set")
+            }),
+            PropertySource::String => value.to_string(),
+        }
+    }
 }
 
 #[derive(Deserialize)]
@@ -114,16 +131,8 @@ pub struct Settings {
 
 impl Settings {
     pub fn token_value(&self) -> String {
-        let token_source = &self.bot.token_source;
-        let token = &self.bot.token.0;
-
-        match PropertySource::from_str(token_source) {
-            PropertySource::File => std::fs::read_to_string(token)
-                .unwrap_or_else(|_| panic!("Token file '{token}' should be readable")),
-            PropertySource::Env => std::env::var(token)
-                .unwrap_or_else(|_| panic!("Environment variable '{token}' should be set")),
-            PropertySource::String => token.clone(),
-        }
+        let source = PropertySource::from_str(&self.bot.token_source);
+        PropertySource::resolve(source, &self.bot.token.0, "Token")
     }
 
     pub fn chat_whitelist_value(&self) -> Vec<ChatId> {
@@ -134,14 +143,8 @@ impl Settings {
             return Vec::new(); // No whitelist specified, return empty vector
         };
 
-        let content: String = match PropertySource::from_str(chat_whitelist_source) {
-            PropertySource::File => std::fs::read_to_string(chat_whitelist)
-                .unwrap_or_else(|_| panic!("Whitelist file '{chat_whitelist}' should be readable")),
-            PropertySource::Env => std::env::var(chat_whitelist).unwrap_or_else(|_| {
-                panic!("Environment variable '{chat_whitelist}' should be set")
-            }),
-            PropertySource::String => chat_whitelist.clone(),
-        };
+        let source = PropertySource::from_str(chat_whitelist_source);
+        let content = PropertySource::resolve(source, chat_whitelist, "Whitelist");
 
         // Parse comma or whitespace separated chat ids into Vec<ChatId>
         content
