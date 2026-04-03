@@ -1,6 +1,7 @@
 # Changelog
 
-## [0.2.5-SNAPSHOT] - Unreleased
+## [0.2.5] - 2026-04-03
+### 🔧 Patch Release
 ### Added
 - Optional chat IDs whitelist under `[bot]` section in (profile) settings files. If specified, only the whitelisted chats will be allowed to interact with the bot.
 - Debug log on startup to show the loaded settings.

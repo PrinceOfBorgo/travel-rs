@@ -6475,7 +6475,7 @@ dependencies = [
 
 [[package]]
 name = "travel-rs"
-version = "0.2.5-SNAPSHOT"
+version = "0.2.5"
 dependencies = [
  "anyhow",
  "chrono",
