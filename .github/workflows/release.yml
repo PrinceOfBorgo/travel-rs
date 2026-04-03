@@ -29,7 +29,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0 # Need full history to avoid issues with git operations
 
@@ -97,20 +97,33 @@ jobs:
   build_and_push_docker:
     needs: prepare_release_data
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-      id-token: write
-
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
-      - name: Download release files artifact
-        uses: actions/download-artifact@v4
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
         with:
-          name: release-files
-          path: .
+          targets: |
+            x86_64-unknown-linux-musl
+            aarch64-unknown-linux-musl
+            armv7-unknown-linux-musleabihf
+
+      - name: Setup Zig
+        uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: 0.13.0
+
+      - name: Install cargo-zigbuild
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-zigbuild
+
+      - name: Build Binaries
+        run: |
+          cargo zigbuild --release --target x86_64-unknown-linux-musl
+          cargo zigbuild --release --target aarch64-unknown-linux-musl
+          cargo zigbuild --release --target armv7-unknown-linux-musleabihf
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -134,13 +147,10 @@ jobs:
           tags: |
             ghcr.io/${{ needs.prepare_release_data.outputs.repo_lower }}:latest
             ghcr.io/${{ needs.prepare_release_data.outputs.repo_lower }}:v${{ needs.prepare_release_data.outputs.new_version }}
-          labels: |
-            org.opencontainers.image.version=${{ needs.prepare_release_data.outputs.new_version }}
-            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
-            org.opencontainers.image.description="Travel-RS - A Telegram bot for travel planning"
-          provenance: true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          build-args: |
+            BIN_PATH_AMD64=target/x86_64-unknown-linux-musl/release/travel-rs
+            BIN_PATH_ARM64=target/aarch64-unknown-linux-musl/release/travel-rs
+            BIN_PATH_ARMV7=target/armv7-unknown-linux-musleabihf/release/travel-rs
 
   # Job 3: Finalize Release
   finalize_release:
@@ -153,7 +163,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0 # Ensure full history for tagging and pushing
 
@@ -176,7 +186,8 @@ jobs:
       - name: Commit and Tag Release
         run: |
           NEW_VERSION="${{ needs.prepare_release_data.outputs.new_version }}"
-          git add Cargo.toml Cargo.lock CHANGELOG.md
+          git add Cargo.toml CHANGELOG.md
+          git add -f Cargo.lock
           git commit -m "chore: release version ${NEW_VERSION} [skip ci]"
           git tag -a "v${NEW_VERSION}" -m "Release version ${NEW_VERSION}"
 
@@ -228,16 +239,6 @@ jobs:
           # Pass the final notes file path as an output for the next step
           echo "release_notes_file=FINAL_RELEASE_NOTES.md" >> "$GITHUB_OUTPUT"
 
-      - name: Create GitHub Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          NEW_VERSION="${{ needs.prepare_release_data.outputs.new_version }}"
-          # Create the actual release using the modified notes file
-          gh release create "v${NEW_VERSION}" \
-            --title "Release v${NEW_VERSION}" \
-            --notes-file ${{ steps.generate_release_notes.outputs.release_notes_file }}
-
       - name: Bump to next snapshot version
         run: |
           # Get the current version components from the *just-released* version
@@ -250,13 +251,25 @@ jobs:
           NEW_SNAPSHOT="## [${next_version}] - Unreleased\n### Added\n- N/A\n\n### Changed\n- N/A\n\n### Fixed\n- N/A"
           sed -i "1s|^# Changelog|# Changelog\n\n${NEW_SNAPSHOT}|" CHANGELOG.md
 
-          git add Cargo.toml Cargo.lock CHANGELOG.md
+          git add Cargo.toml CHANGELOG.md
+          git add -f Cargo.lock
           git commit -m "chore: prepare for next development iteration [skip ci]"
 
       - name: FINAL PUSH
         if: success()
         run: git push origin main --tags
       
+      - name: Create GitHub Release
+        if: success()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          NEW_VERSION="${{ needs.prepare_release_data.outputs.new_version }}"
+          # Create the actual release using the modified notes file
+          gh release create "v${NEW_VERSION}" \
+            --title "Release v${NEW_VERSION}" \
+            --notes-file ${{ steps.generate_release_notes.outputs.release_notes_file }}
+
       - name: Rollback on failure
         if: failure()
         env:
@@ -264,12 +277,33 @@ jobs:
         run: |
           # Only clean up if Job 1 & 2 actually finished
           NEW_VERSION="${{ needs.prepare_release_data.outputs.new_version }}"
+          REPO_OWNER="${{ github.repository_owner }}"
+          PACKAGE_NAME=$(echo "${{ github.repository }}" | cut -d '/' -f 2)
 
-          gh release delete "v${NEW_VERSION}" --yes || true
+          if gh release view "v${NEW_VERSION}" >/dev/null 2>&1; then
+            gh release delete "v${NEW_VERSION}" --yes || true
+          else
+            echo "Release v${NEW_VERSION} not found, skipping release delete"
+          fi
 
           # Delete the container image if it exists
-          PACKAGE_NAME=$(echo "${{ github.repository }}" | cut -d '/' -f 2)
-          gh api --method DELETE "/orgs/${{ github.repository_owner }}/packages/container/${PACKAGE_NAME}/versions/v${NEW_VERSION}" || true
+          if gh api --method GET "/orgs/${REPO_OWNER}/packages/container/${PACKAGE_NAME}" >/dev/null 2>&1; then
+            VERSION_ID=$(gh api "/orgs/${REPO_OWNER}/packages/container/${PACKAGE_NAME}/versions" | jq -r ".[] | select(.name == \"v${NEW_VERSION}\") | .id" | head -1)
+            if [ -n "$VERSION_ID" ]; then
+              gh api --method DELETE "/orgs/${REPO_OWNER}/packages/container/${PACKAGE_NAME}/versions/$VERSION_ID" || true
+            else
+              echo "Package version v${NEW_VERSION} not found in org packages; skipping container delete"
+            fi
+          elif gh api --method GET "/users/${REPO_OWNER}/packages/container/${PACKAGE_NAME}" >/dev/null 2>&1; then
+            VERSION_ID=$(gh api "/users/${REPO_OWNER}/packages/container/${PACKAGE_NAME}/versions" | jq -r ".[] | select(.name == \"v${NEW_VERSION}\") | .id" | head -1)
+            if [ -n "$VERSION_ID" ]; then
+              gh api --method DELETE "/users/${REPO_OWNER}/packages/container/${PACKAGE_NAME}/versions/$VERSION_ID" || true
+            else
+              echo "Package version v${NEW_VERSION} not found in user packages; skipping container delete"
+            fi
+          else
+            echo "Package ${PACKAGE_NAME} not found in org/user packages; skipping container delete"
+          fi
 
           echo "Rollback completed"
           exit 1

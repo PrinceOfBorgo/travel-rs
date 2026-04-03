@@ -13,6 +13,7 @@
 - Updated `.gitignore` rules to ignore `config/*` except `config/config.toml` and allowed profile files (`config/profiles/dev*.toml`, `config/profiles/unit-tests.toml`).
 - Release trigger filters now include `[release:patch]` and `[release:fix]` in `release.yml` as additional patch-level release tokens with the same behaviour as `[release]`.
 - Enhanced `README.md` with GitHub workflows section.
+- Heavily reworked `release.yml` and `Dockerfile` to speed up the release workflow.
 
 ### Fixed
 - Average per day values in expense and transfer statistics was wrongly computed. This fix requires [database](database) schema updates. Run the following script to migrate:

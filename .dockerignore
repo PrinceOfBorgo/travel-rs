@@ -1,7 +1,12 @@
-# Build artifacts
+# Build artifacts (ignore the entire target directory by default)
 target/
 debug/
 release/
+
+# Allow specific release binaries for the Docker build
+!target/x86_64-unknown-linux-musl/release/travel-rs
+!target/aarch64-unknown-linux-musl/release/travel-rs
+!target/armv7-unknown-linux-musleabihf/release/travel-rs
 
 # Version control
 .git/
