@@ -21,6 +21,18 @@ jobs:
           - nightly
 
     steps:
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          # This action removes pre-installed packages and cleans up disk space
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
       - uses: actions/checkout@v4
 
       - name: Install Rust toolchain
@@ -50,6 +62,18 @@ jobs:
     name: Code Coverage
     runs-on: ubuntu-latest
     steps:
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          # This action removes pre-installed packages and cleans up disk space
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
       - uses: actions/checkout@v4
 
       - name: Install stable toolchain

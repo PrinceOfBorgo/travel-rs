@@ -5,7 +5,7 @@
 - N/A
 
 ### Changed
-- N/A
+- Added disk space cleanup step to `ci.yml` workflow.
 
 ### Fixed
 - N/A
