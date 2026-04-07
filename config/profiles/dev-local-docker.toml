@@ -1,6 +1,7 @@
 # Profile: dev-local-docker
-# Description: Development configuration for SurrealDB running in Docker
-# Use this when SurrealDB is running as a Docker container on the same machine
+# Description: Development configuration for SurrealDB running locally and the bot running in a Docker container on the same machine
+# Use this when SurrealDB is running on the host machine (localhost) and the bot is running in a Docker container on the same machine
+# The database address uses "host.docker.internal" to allow the Docker container to access the host's localhost
 
 [logging]
 # path: Base folder for logs. The active profile name is appended automatically to create a per-profile subfolder.

@@ -6,6 +6,8 @@
 
 ### Changed
 - Added disk space cleanup step to `ci.yml` workflow.
+- Fixed descriptions for `dev-local` and `dev-local-docker` profiles settings files.
+- Replaced the batch script `start_docker_db.bat` with an enhanced PowerShell script. The new `start_docker_db.ps1` contains configurable variables for Docker parameters and retrieves the SurrealDB version from `Cargo.toml` to ensure a compatible Docker image is used.
 
 ### Fixed
 - N/A

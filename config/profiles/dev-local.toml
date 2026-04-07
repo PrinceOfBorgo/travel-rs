@@ -1,6 +1,7 @@
 # Profile: dev-local
-# Description: Development configuration for local SurrealDB instance
-# Use this when running SurrealDB on the host machine (localhost)
+# Description: Development configuration for local SurrealDB and bot instances
+# Use this when both SurrealDB and the bot are running locally
+# The bot is not running in a Docker container, and SurrealDB is accessible at localhost.
 
 [logging]
 # path: Base folder for logs. The active profile name is appended automatically to create a per-profile subfolder.

@@ -1,1 +1,0 @@
-docker run --rm --pull always -p 8000:8000 -v C:/SurrealDB/data:/data surrealdb/surrealdb:latest start --log trace --user root --pass root surrealkv:/data/TravelRS.db

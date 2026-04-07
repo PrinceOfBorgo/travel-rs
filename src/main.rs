@@ -209,12 +209,15 @@ fn filter_auth(msg: Message) -> bool {
 }
 
 fn is_chat_whitelisted(chat_id: ChatId) -> bool {
-   let whitelist = &SETTINGS.chat_whitelist_value();
+    let whitelist = &SETTINGS.chat_whitelist_value();
 
-	if !whitelist.is_empty() && !whitelist.contains(&chat_id) {
-        tracing::warn!("A non-empty whitelist is set, but the chat with id {} is not whitelisted. Skipping...", chat_id);
-		false
-	} else {
+    if !whitelist.is_empty() && !whitelist.contains(&chat_id) {
+        tracing::warn!(
+            "A non-empty whitelist is set, but the chat with id {} is not whitelisted. Skipping...",
+            chat_id
+        );
+        false
+    } else {
         true
     }
 }
