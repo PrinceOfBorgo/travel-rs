@@ -14,3 +14,4 @@ pub const HELP_LIST_TRANSFERS: &str = "help-list-transfers";
 pub const HELP_SHOW_BALANCES: &str = "help-show-balances";
 pub const HELP_SHOW_STATS: &str = "help-show-stats";
 pub const HELP_CANCEL: &str = "help-cancel";
+pub const HELP_APP: &str = "help-app";

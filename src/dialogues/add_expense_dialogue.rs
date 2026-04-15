@@ -4,9 +4,9 @@ use crate::{
     errors::{AddExpenseError, EndError},
     expense::Expense,
     i18n::{self, Translate, TranslateWithArgs, dialogues::*},
+    services,
     trace_state, trace_state_db,
     traveler::{Name, Traveler},
-    update_debts,
 };
 use macro_rules_attribute::apply;
 use maplit::hashmap;
@@ -21,7 +21,6 @@ use std::{
 use surrealdb::{
     RecordId, Surreal,
     engine::any::Any,
-    sql::statements::{BeginStatement, CommitStatement},
 };
 use teloxide::{
     Bot,
@@ -31,6 +30,8 @@ use teloxide::{
     types::{ChatId, Message},
 };
 use tracing::Level;
+
+pub use crate::services::expense::AmountEnum;
 
 type AddExpenseDialogue = Dialogue<AddExpenseState, InMemStorage<AddExpenseState>>;
 static SPLIT_AMONG_REGEX: LazyLock<Regex> = LazyLock::new(|| {
@@ -70,13 +71,6 @@ pub enum AddExpenseState {
 pub enum SplitAmongEnum {
     List,
     End,
-}
-
-#[derive(Debug, Clone)]
-pub enum AmountEnum {
-    Fixed(Decimal),
-    Percentage(Decimal),
-    Dynamic,
 }
 
 // Helper struct to handle split among input and update dialogue or end
@@ -433,41 +427,35 @@ pub async fn end(
     chat_id: ChatId,
 ) -> Result<Expense, EndError> {
     tracing::debug!("{LOG_DEBUG_START}");
-    match compute_shares(amount, split_among) {
+    match services::expense::compute_shares(amount, split_among) {
         Ok(shares) => {
-            let create_res =
-                Expense::db_create(db.clone(), chat_id, String::from(description), amount).await;
-            match create_res {
-                Ok(Some(expense)) => {
-                    if let Err(err_relate) =
-                        relate_shares(db.clone(), paid_by, &expense, shares).await
-                    {
-                        if let Err(err_delete) =
-                            Expense::db_delete_by_number(db, chat_id, expense.number).await
-                        {
-                            tracing::warn!("{err_delete}");
-                        }
-                        tracing::error!("{err_relate}");
-                        Err(EndError::ClosingDialogue)
-                    } else {
-                        if let Err(err_update) = update_debts(db, chat_id).await {
-                            tracing::warn!("{err_update}");
-                        }
-                        match dialogue.exit().await {
-                            Ok(_) => {
-                                tracing::debug!("{LOG_DEBUG_SUCCESS} - id: {}", expense.id);
-                                Ok(expense)
-                            }
-                            Err(err_closing) => {
-                                tracing::error!("{err_closing}");
-                                Err(EndError::ClosingDialogue)
-                            }
-                        }
+            match services::expense::create_expense(
+                db,
+                chat_id,
+                String::from(description),
+                amount,
+                paid_by,
+                shares,
+            )
+            .await
+            {
+                Ok(expense) => match dialogue.exit().await {
+                    Ok(_) => {
+                        tracing::debug!("{LOG_DEBUG_SUCCESS} - id: {}", expense.id);
+                        Ok(expense)
                     }
-                }
-                Ok(None) => {
+                    Err(err_closing) => {
+                        tracing::error!("{err_closing}");
+                        Err(EndError::ClosingDialogue)
+                    }
+                },
+                Err(services::ServiceError::NoExpenseCreated) => {
                     tracing::error!("No expense has been created.");
                     Err(EndError::NoExpenseCreated)
+                }
+                Err(services::ServiceError::Database(err)) => {
+                    tracing::error!("{err}");
+                    Err(EndError::ClosingDialogue)
                 }
                 Err(err) => {
                     tracing::error!("{err}");
@@ -590,117 +578,6 @@ async fn parse_split_among(
             }
         }
     }
-}
-
-fn compute_shares(
-    tot_amount: Decimal,
-    mut split_among: BTreeMap<Name, AmountEnum>,
-) -> Result<BTreeMap<Name, Decimal>, AddExpenseError> {
-    // Start with the total amount to be split
-    let mut residual = tot_amount;
-    let mut count_dynamics = 0;
-
-    // First pass: subtract fixed shares and count dynamic shares
-    for share in split_among.values() {
-        match share {
-            AmountEnum::Fixed(amount) => {
-                residual -= amount;
-                // If the sum of fixed shares exceeds the total, return error
-                if residual < Decimal::ZERO {
-                    return Err(AddExpenseError::ExpenseTooHigh { tot_amount });
-                }
-            }
-            AmountEnum::Dynamic => count_dynamics += 1,
-            AmountEnum::Percentage(_) => {} // Percentages handled in next pass
-        }
-    }
-
-    // Save the current residual for percentage calculation
-    let residual_backup = residual;
-    // Second pass: convert percentage shares to fixed amounts
-    split_among.values_mut().for_each(|share| {
-        if let AmountEnum::Percentage(amount) = share {
-            // Calculate fixed amount for this percentage
-            let fixed = residual_backup * *amount / Decimal::from(100);
-            *share = AmountEnum::Fixed(fixed);
-            residual -= fixed;
-        }
-    });
-
-    // If there are no dynamic shares and residual remains, it's too low
-    if count_dynamics == 0 && residual > Decimal::ZERO {
-        return Err(AddExpenseError::ExpenseTooLow {
-            expense: tot_amount - residual,
-            tot_amount,
-        });
-    }
-
-    // Divide the remaining residual equally among dynamic shares
-    let split_residual = if count_dynamics > 0 {
-        residual
-            .checked_div(Decimal::from(count_dynamics))
-            .expect("count_blanks should be positive")
-    } else {
-        // No dynamic shares, so the remaining residual is not assigned to anyone
-        Decimal::ZERO
-    };
-
-    // Build the final shares map
-    Ok(split_among
-        .into_iter()
-        .map(|(name, share)| {
-            let amount = match share {
-                AmountEnum::Fixed(amount) => amount,
-                AmountEnum::Dynamic => split_residual,
-                AmountEnum::Percentage(_) => {
-                    unreachable!("Already converted to fixed amounts")
-                }
-            };
-            (name, amount)
-        })
-        .collect())
-}
-
-async fn relate_shares(
-    db: Arc<Surreal<Any>>,
-    paid_by: &Traveler,
-    expense: &Expense,
-    shares: BTreeMap<Name, Decimal>,
-) -> Result<(), surrealdb::Error> {
-    use crate::{
-        chat::TABLE as CHAT,
-        expense::TABLE as EXPENSE,
-        paid_for::TABLE as PAID_FOR_TB,
-        split::{AMOUNT, TABLE as SPLIT_TB},
-        traveler::{NAME, TABLE as TRAVELER_TB},
-    };
-    const PAID_BY: &str = "paid_by";
-
-    let mut query = db
-        .query(BeginStatement::default())
-        .query(format!("RELATE ${PAID_BY}->{PAID_FOR_TB}->${EXPENSE}"))
-        .bind((PAID_BY, paid_by.id.clone()))
-        .bind((EXPENSE, expense.id.clone()))
-        .bind((CHAT, expense.chat.clone()));
-
-    for (i, (name, amount)) in shares.into_iter().enumerate() {
-        // Relate travelers with expense specifying their share of the expense
-        query = query
-            .query(format!(
-                "RELATE (
-                    SELECT * FROM {TRAVELER_TB} 
-                    WHERE
-                        {CHAT} = ${CHAT}
-                        && {NAME} = ${NAME}_{i}
-                )->{SPLIT_TB}->${EXPENSE}
-                SET {AMOUNT} = <decimal> ${AMOUNT}_{i}"
-            ))
-            .bind((format!("{NAME}_{i}"), name))
-            .bind((format!("{AMOUNT}_{i}"), amount));
-    }
-
-    query = query.query(CommitStatement::default());
-    query.await.map(|_| {})
 }
 
 #[cfg(test)]

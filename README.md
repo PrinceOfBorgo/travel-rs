@@ -50,55 +50,58 @@ The following commands are supported by Travel-RS Bot:
 
 * **`/help`** — Displays a help message for the specified command. If no command is specified, it shows descriptions for all commands.
 
-    * Example: `/help addexpense`
+  * Example: `/help addexpense`
 * **`/setlanguage`** — Sets the default language for the bot in the chat.
 
-    * Example: `/setlanguage it-IT`
+  * Example: `/setlanguage it-IT`
 * **`/setcurrency`** — Sets the default currency for the travel plan.
 
-    * Example: `/setcurrency EUR`
+  * Example: `/setcurrency EUR`
 * **`/addtraveler`** — Adds a traveler with the specified name to the travel plan.
 
-    * Example: `/addtraveler Alice`
+  * Example: `/addtraveler Alice`
 * **`/deletetraveler`** — Removes the traveler with the specified name from the travel plan.
 
-    * Example: `/deletetraveler Alice`
+  * Example: `/deletetraveler Alice`
 * **`/listtravelers`** — Displays the travelers in the travel plan.
 
-    * Example: `/listtravelers`
+  * Example: `/listtravelers`
 * **`/addexpense`** — Starts a new interactive session to add an expense to the travel plan.
 
-    * Example: `/addexpense` (a series of interactive questions will follow)
+  * Example: `/addexpense` (a series of interactive questions will follow)
 * **`/deleteexpense`** — Deletes the expense with the specified identifier from the travel plan.
 
-    * Example: `/deleteexpense 3`
+  * Example: `/deleteexpense 3`
 * **`/listexpenses`** — Displays the expenses in the travel plan. If a description is specified, it shows only the expenses matching the provided description. Supports fuzzy search for flexible matching.
 
-    * Example: `/listexpenses`
-    * Example: `/listexpenses Toll`
+  * Example: `/listexpenses`
+  * Example: `/listexpenses Toll`
 * **`/showexpense`** — Displays the details of the expense with the specified identifier.
 
-    * Example: `/showexpense 3`
+  * Example: `/showexpense 3`
 * **`/transfer`** — Transfers the specified amount from one traveler to another.
 
-    * Example: `/transfer Alice Bob 25.00`
+  * Example: `/transfer Alice Bob 25.00`
 * **`/deletetransfer`** — Deletes the transfer with the specified identifier from the travel plan.
 
-    * Example: `/deletetransfer 7`
+  * Example: `/deletetransfer 7`
 * **`/listtransfers`** — Displays the transfers in the travel plan. If a name is specified, it shows only the transfers involving that traveler.
 
-    * Example: `/listtransfers`
-    * Example: `/listtransfers Alice`
+  * Example: `/listtransfers`
+  * Example: `/listtransfers Alice`
 * **`/showbalances`** — Displays simplified balances for all travelers, minimizing the total number of transfers needed to settle debts. If a name is specified, it shows the balance for the specified traveler.
 
-    * Example: `/showbalances`
-    * Example: `/showbalances Alice`
+  * Example: `/showbalances`
+  * Example: `/showbalances Alice`
 * **`/showstats`** — Displays statistics for expenses, transfers and travelers.
 
-    * Example: `/showstats`
+  * Example: `/showstats`
 * **`/cancel`** — Cancels the currently running interactive dialogue.
 
-    * Example: `/cancel`
+  * Example: `/cancel`
+* **`/app`** — Opens the Mini App for visual expense management (requires `[api]` configuration with `miniapp_url`).
+
+  * Example: `/app`
 
 These commands provide a comprehensive way to interact with the bot and effectively manage travel-related expenses.
 
@@ -106,11 +109,11 @@ These commands provide a comprehensive way to interact with the bot and effectiv
 
 Here are some detailed examples of how to use the bot to manage expenses for a group trip:
 
-1.  **Adding Travelers**:
+1. **Adding Travelers**:
 
     A group of friends, Alice, Bob, and Charles, are organizing a trip. Add them using the `/addtraveler` command:
 
-    ```
+    ```text
     User: /addtraveler Alice
     Bot:  Traveler Alice added successfully.
     
@@ -121,22 +124,22 @@ Here are some detailed examples of how to use the bot to manage expenses for a g
     Bot:  Traveler Charles added successfully.
     ```
 
-2.  **Viewing Travelers**:
+2. **Viewing Travelers**:
 
     To confirm that everyone has been added correctly, use the `/listtravelers` command:
 
-    ```
+    ```text
     User: /listtravelers
     Bot:  Alice
           Bob
           Charles
     ```
 
-3.  **Adding an Expense**:
+3. **Adding an Expense**:
 
     Alice pays $50 for the highway toll. To record the expense, use the `/addexpense` command to start a conversation with the bot:
 
-    ```
+    ```text
     User: /addexpense
     Bot:  The process can be interrupted at any time by sending `/cancel`.
 
@@ -155,20 +158,20 @@ Here are some detailed examples of how to use the bot to manage expenses for a g
 
     This will record an expense of $50 paid by Alice, divided equally among Alice, Bob, and Charles.
 
-4.  **Cancelling a Dialogue**:
+4. **Cancelling a Dialogue**:
 
     To interrupt an ongoing dialogue, use the `/cancel` command:
 
-    ```
+    ```text
     User: /cancel
     Bot:  The process was cancelled.
     ```
 
-5.  **Viewing Expenses**:
+5. **Viewing Expenses**:
 
     To see all the expenses recorded so far, use the `/listexpenses` command:
 
-    ```
+    ```text
     User: /listexpenses
     Bot:  Expense #1: Highway toll - $50
           Expense #2: Hotel - $150
@@ -176,27 +179,27 @@ Here are some detailed examples of how to use the bot to manage expenses for a g
 
     You can filter expenses by specifying a search term:
 
-    ```
+    ```text
     User: /listexpenses Toll
     Bot:  Expense #1: Highway toll - $50
     ```
 
     The bot will display a list of expenses, including the expense numeric IDs.
 
-6.  **Deleting an Expense**:
+6. **Deleting an Expense**:
 
     If there is an error in entering an expense, it can be deleted using `/deleteexpense` followed by the expense ID:
 
-    ```
+    ```text
     User: /deleteexpense 2
     Bot:  Expense #2 deleted successfully.
     ```
 
-7.  **Viewing Expense Details**:
+7. **Viewing Expense Details**:
 
     The `/listexpenses` command provides a concise summary of expenses, displaying their numeric IDs, descriptions, and total amounts. To view detailed information about a specific expense, use the `/showexpense` command followed by the expense ID:
 
-    ```
+    ```text
     User: /showexpense 1
     Bot:  Number: 1 - Description: Highway Toll
           Amount: $50
@@ -208,17 +211,17 @@ Here are some detailed examples of how to use the bot to manage expenses for a g
     ```
 
     This command reveals comprehensive details about the selected expense, including:
-    - The numeric identifier
-    - The description
-    - The total amount spent
-    - The name of the payer
-    - A breakdown of the shares for each participant
+    * The numeric identifier
+    * The description
+    * The total amount spent
+    * The name of the payer
+    * A breakdown of the shares for each participant
 
-8.  **Viewing Balances**:
+8. **Viewing Balances**:
 
     To see how much everyone owes or is owed, use the `/showbalances` command:
 
-    ```
+    ```text
     User: /showbalances
     Bot:  Bob owes $16.67 to Alice.
           Charles owes $16.67 to Alice.
@@ -226,18 +229,18 @@ Here are some detailed examples of how to use the bot to manage expenses for a g
 
     To see the balance of a single traveler:
 
-    ```
+    ```text
     User: /showbalances Bob
     Bot:  Bob owes $16.67 to Alice.
     ```
 
     The bot will display the simplified balances.
 
-9.  **Recording a Transfer**:
+9. **Recording a Transfer**:
 
     Bob pays $16.67 to Alice for his share of the toll. To record the transfer, use `/transfer` followed by the sender name, the receiver name, and the transferred amount:
 
-    ```
+    ```text
     User: /transfer Bob Alice 16.67
     Bot:  Transfer recorded successfully.
     ```
@@ -246,14 +249,14 @@ Here are some detailed examples of how to use the bot to manage expenses for a g
 
     To see all the transfers made, use the `/listtransfers` command:
 
-    ```
+    ```text
     User: /listtransfers
     Bot:  Transfer #1: Bob sent $16.67 to Alice
     ```
 
     To see transfers to or from a specific traveler:
 
-    ```
+    ```text
     User: /listtransfers Alice
     Bot:  Transfer #1: Bob sent $16.67 to Alice
     ```
@@ -278,36 +281,54 @@ The profile-specific configuration files are structured into sections, each serv
 
 * `[logging]`
 
-    * **`path`**: Specifies the directory where log files are stored.
-    * **`file_name_prefix`**: Defines the prefix for log file names. The log files will be named by appending the date in UTC format to the prefix.
-    * **`level`**: Sets the log level. Supported values are `"error"`, `"warn"`, `"info"`, `"debug"`, and `"trace"` or their corresponding numeric values (from `1` to `5` respectively).
+  * **`path`**: Specifies the directory where log files are stored.
+  * **`file_name_prefix`**: Defines the prefix for log file names. The log files will be named by appending the date in UTC format to the prefix.
+  * **`level`**: Sets the log level. Supported values are `"error"`, `"warn"`, `"info"`, `"debug"`, and `"trace"` or their corresponding numeric values (from `1` to `5` respectively).
 
 * `[bot]`
 
-    * **`token_source`**: Determines how the bot token is provided. Possible values:
+  * **`token_source`**: Determines how the bot token is provided. Possible values:
 
-        * `"file"`: Reads the token from a file.
-        * `"env"`: Reads the token from an environment variable.
-        * `"string"`: Uses the token directly as a string.
-    * **`token`**: Specifies the bot token. Its value depends on `token_source`:
+    * `"file"`: Reads the token from a file.
+    * `"env"`: Reads the token from an environment variable.
+    * `"string"`: Uses the token directly as a string.
+  * **`token`**: Specifies the bot token. Its value depends on `token_source`:
 
-        * If `"file"`, this is the path to the file containing the token.
-        * If `"env"`, this is the name of the environment variable holding the token.
-        * If `"string"`, this is the token itself.
+    * If `"file"`, this is the path to the file containing the token.
+    * If `"env"`, this is the name of the environment variable holding the token.
+    * If `"string"`, this is the token itself.
 
 * `[database]`
 
-    * **`address`**: The address of the database server (e.g., `ws://127.0.0.1:8000`).
-    * **`username`**: The username for database authentication.
-    * **`password`**: The password for database authentication.
-    * **`namespace`**: The namespace used in the database.
-    * **`database`**: The name of the database.
+  * **`address`**: The address of the database server (e.g., `ws://127.0.0.1:8000`).
+  * **`username`**: The username for database authentication.
+  * **`password`**: The password for database authentication.
+  * **`namespace`**: The namespace used in the database.
+  * **`database`**: The name of the database.
 
 * `[i18n]`
 
-    * **`default_locale`**: Specifies the default locale for the bot (e.g., `"en-US"`).
-    * **`locales_path`**: Path to the directory containing localization files.
-    * **`default_currency`**: Sets the default currency for formatting purposes (e.g., `"USD"`).
+  * **`default_locale`**: Specifies the default locale for the bot (e.g., `"en-US"`).
+  * **`locales_path`**: Path to the directory containing localization files.
+  * **`default_currency`**: Sets the default currency for formatting purposes (e.g., `"USD"`).
+
+* `[api]` *(optional)*
+
+  * **`bind`**: Address and port for the HTTP server (e.g., `"0.0.0.0:8080"`).
+  * **`miniapp_dir`**: Path to the Mini App build output directory (e.g., `"miniapp/dist"`).
+
+  When this section is present the bot starts an HTTP server that:
+  * Serves the Mini App at `/miniapp/` with SPA fallback (hashed Trunk assets supported).
+  * Exposes health and version endpoints at `/healthz` and `/api/version`.
+  * Provides the `/api/miniapp/auth` endpoint for Telegram initData validation.
+  * Provides the `/api/auth/session` endpoint for secure session creation with membership verification.
+
+  **Session Endpoint (`POST /api/auth/session`):**
+  * Validates the Telegram `initData` hash
+  * Rejects stale auth (> 5 minutes old)
+  * Extracts `chat_id` from the `startapp` parameter (format: `chat_<id>`)
+  * Verifies chat membership via Telegram's `getChatMember` API
+  * Returns session info or an appropriate error
 
 This modular structure allows users to easily configure the bot's behavior for different environments or use cases.
 
@@ -352,26 +373,26 @@ Each locale directory contains the following `.ftl` files, each serving a specif
 * `help.ftl`: Includes descriptions, help text, and usage instructions for various bot commands.
 * The `dialogues/` folder contains translation files for interactive dialogues:
 
-    * `dialogues/add-expense.ftl`: Handles translations for dialogues related to adding expenses, including prompts and confirmations.
+  * `dialogues/add-expense.ftl`: Handles translations for dialogues related to adding expenses, including prompts and confirmations.
 
 These files are organized by locale (e.g., `en-US/messages.ftl`, `it-IT/messages.ftl`) to ensure seamless language support and easy customization.
 
 #### Adding or Modifying Translations
 
-1.  **Locate the Locale Folder**: Navigate to the folder corresponding to the desired locale in the `locales/` directory.
-2.  **Edit or Add Messages**: Open the appropriate `.ftl` file and use Fluent's syntax to define or update translations. For example:
+1. **Locate the Locale Folder**: Navigate to the folder corresponding to the desired locale in the `locales/` directory.
+2. **Edit or Add Messages**: Open the appropriate `.ftl` file and use Fluent's syntax to define or update translations. For example:
 
-    ```
+    ```text
     welcome-message = Welcome to Travel-RS Bot!
     ```
 
-3.  **Save Changes**: Save the file. A restart of the bot is necessary for the changes to take effect.
+3. **Save Changes**: Save the file. A restart of the bot is necessary for the changes to take effect.
 
 #### Adding a New Language
 
-1.  **Create a New Locale Folder**: Add a new folder in the `locales/` directory with the appropriate locale code (e.g., `fr-FR` for French).
-2.  **Add .ftl Files**: Populate the folder with `.ftl` files containing translations for all required messages.
-3.  **Update Configuration**: Ensure the new language is listed in the bot's configuration or accessible via the `/setlanguage` command.
+1. **Create a New Locale Folder**: Add a new folder in the `locales/` directory with the appropriate locale code (e.g., `fr-FR` for French).
+2. **Add .ftl Files**: Populate the folder with `.ftl` files containing translations for all required messages.
+3. **Update Configuration**: Ensure the new language is listed in the bot's configuration or accessible via the `/setlanguage` command.
 
 This structure ensures that localization is both flexible and scalable, allowing contributors to easily adapt the bot for different languages and regions. Users can switch languages using the `/setlanguage` command.
 
@@ -387,10 +408,10 @@ Travel-RS Bot can be run as a Docker container, with the container published to 
 
 Using Docker Compose simplifies managing the Travel-RS Bot container and its volumes. A [`docker-compose.yml`](docker-compose.yml) file is provided in the same directory as this `README`.
 
-1.  **Ensure prerequisites:**
+1. **Ensure prerequisites:**
     * **Docker Desktop** (Windows/macOS) or **Docker Engine** (Linux) is installed and running.
     * You'll need to prepare the local directories for configuration, locales, and logs. By default, the `docker-compose.yml` expects these to be named `config`, `locales`, and `logs` in the **same directory as your `docker-compose.yml` file**. These directories will be mounted as volumes into the container. **You can, however, modify the volume paths in the `docker-compose.yml` if you prefer to store them elsewhere.**
-    
+
         ```yaml
         # docker-compose.yml volumes configuration:
         volumes:
@@ -399,40 +420,42 @@ Using Docker Compose simplifies managing the Travel-RS Bot container and its vol
         - /path/to/logs:/app/logs
         ```
 
-2.  **Prepare your configuration:**
+2. **Prepare your configuration:**
     * Place your `config.toml` file inside your chosen config volume location (`./config` by default).
     * Create a `profiles/` directory inside your chosen config volume location (`./config` by default) and add your profile-specific configurations there.
     * Ensure your locale files are placed in your chosen locales volume location (`./locales` by default), organized by locale (e.g., `./locales/en-US`, `./locales/it-IT`).
 
-3.  **Start the container:**
+3. **Start the container:**
     Navigate to the directory containing `docker-compose.yml` in your terminal or PowerShell, then run:
 
     ```bash
     docker compose up -d
     ```
+
     This command will:
     * Pull the `ghcr.io/princeofborgo/travel-rs:latest` image if it's not already present.
     * Create and start a container named `travel-rs`.
     * Mount the local directories (as defined in your `docker-compose.yml`) to `/app/config`, `/app/locales`, and `/app/logs` inside the container, respectively.
     * Configure the container to restart automatically unless explicitly stopped (`restart: unless-stopped`).
 
-4.  **Update to the Latest Image:**
+4. **Update to the Latest Image:**
     If you are already running the bot and want to ensure you have the absolute latest version of the `ghcr.io/princeofborgo/travel-rs:latest` image, use the following commands:
 
     ```bash
     docker compose pull travel-rs # Pulls the latest image for the 'travel-rs' service
     docker compose up -d          # Recreates the container using the newly pulled image
     ```
+
     The `docker compose pull` command explicitly downloads the freshest image from the registry. Then, `docker compose up -d` will detect that the image has changed and recreate the `travel-rs` container with the new image, while preserving your data volumes.
 
-5.  **Stop the container:**
+5. **Stop the container:**
     To stop and remove the container, run:
 
     ```bash
     docker compose down
     ```
 
-6.  **View logs:**
+6. **View logs:**
     To view the logs of the running container:
 
     ```bash
@@ -470,6 +493,7 @@ docker run -d `
 ```
 
 For Linux/Unix systems:
+
 ```bash
 # Pull the latest image
 docker pull ghcr.io/princeofborgo/travel-rs:latest
@@ -491,32 +515,33 @@ docker run -d \
     ghcr.io/princeofborgo/travel-rs:latest
 ```
 
-### Configuration
+### Docker Configuration
 
 The container expects configuration files to be mounted at `/app/config`. Make sure your local `config` directory contains:
-- `config.toml`: Main configuration file
-- `profiles/`: Directory containing profile-specific configurations
+
+* `config.toml`: Main configuration file
+* `profiles/`: Directory containing profile-specific configurations
 
 ### Volume Configuration
 
 The container requires three volume mounts to function properly:
 
 1. **`config` Volume** (mounted at `/app/config`)
-   - Contains essential configuration files
-   - Required for bot token and profile settings
-   - Must include:
-     - `config.toml`: Main configuration file
-     - `profiles/`: Directory with environment-specific settings
+   * Contains essential configuration files
+   * Required for bot token and profile settings
+   * Must include:
+     * `config.toml`: Main configuration file
+     * `profiles/`: Directory with environment-specific settings
 
 2. **`locales` Volume** (mounted at `/app/locales`)
-   - Contains Fluent translation files
-   - Required for multi-language support
-   - Organized by locale (e.g., `en-US`, `it-IT`)
+   * Contains Fluent translation files
+   * Required for multi-language support
+   * Organized by locale (e.g., `en-US`, `it-IT`)
 
 3. **`logs` Volume** (mounted at `/app/logs`)
-   - Persists application logs across container restarts
-   - Enables log access from the host machine
-   - Files are organized by profile and date
+   * Persists application logs across container restarts
+   * Enables log access from the host machine
+   * Files are organized by profile and date
 
 ## Support Travel-RS Bot
 
@@ -539,20 +564,20 @@ Your contributions can significantly help enhance the bot, expand its features, 
 ### How You Can Contribute
 
 * **Code Contributions:**
-    * **Bug Reports:** Found an issue? Please open a [new issue](https://github.com/PrinceOfBorgo/travel-rs/issues/new?assignees=&labels=bug&projects=&template=bug_report.md&title=) on GitHub with a detailed description of the bug and steps to reproduce it. (This link attempts to pre-fill a bug report template if you have one).
-    * **Feature Requests:** Have an idea for a new command or functionality? Feel free to open a [feature request issue](https://github.com/PrinceOfBorgo/travel-rs/issues/new?assignees=&labels=enhancement&projects=&template=feature_request.md&title=) to discuss it. (This link attempts to pre-fill an enhancement/feature request template).
-    * **Pull Requests:** Want to dive into the code? Check out the [issue tracker](https://github.com/PrinceOfBorgo/travel-rs/issues) for open issues, or propose your own improvements. Please follow the existing code style and include tests where appropriate.
+  * **Bug Reports:** Found an issue? Please open a [new issue](https://github.com/PrinceOfBorgo/travel-rs/issues/new?assignees=&labels=bug&projects=&template=bug_report.md&title=) on GitHub with a detailed description of the bug and steps to reproduce it. (This link attempts to pre-fill a bug report template if you have one).
+  * **Feature Requests:** Have an idea for a new command or functionality? Feel free to open a [feature request issue](https://github.com/PrinceOfBorgo/travel-rs/issues/new?assignees=&labels=enhancement&projects=&template=feature_request.md&title=) to discuss it. (This link attempts to pre-fill an enhancement/feature request template).
+  * **Pull Requests:** Want to dive into the code? Check out the [issue tracker](https://github.com/PrinceOfBorgo/travel-rs/issues) for open issues, or propose your own improvements. Please follow the existing code style and include tests where appropriate.
 * **Documentation:** Improve existing documentation, add new examples, or help translate the bot's features and commands into other languages.
 * **Localization:** Expand the bot's language support by contributing new Fluent localization files or improving existing translations.
 * **Feedback and Ideas:** Even if you don't code, your insights as a user are invaluable! Share your thoughts on how the bot could be better or what features you'd love to see.
 
 ### Getting Started
 
-1.  **Fork the Repository:** Start by forking the `Travel-RS Bot` repository on GitHub.
-2.  **Clone Your Fork:** Clone your forked repository to your local machine.
-3.  **Set Up Your Environment:** Follow the development setup instructions (if any, consider adding a brief "Development Setup" section if not already clear) to get the project running locally.
-4.  **Explore Issues:** Look at the [issue tracker](https://github.com/PrinceOfBorgo/travel-rs/issues) and consider filtering by labels like [`good first issue`](https://github.com/PrinceOfBorgo/travel-rs/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22) if you're new to the project, or [`help wanted`](https://github.com/PrinceOfBorgo/travel-rs/issues?q=is%3Aopen+is%3Aissue+label%3A%22help+wanted%22) for more complex tasks.
-5.  **Submit a Pull Request:** Once you've made your changes, create a pull request to the `main` branch of the original repository. Please describe your changes clearly and link to any relevant issues.
+1. **Fork the Repository:** Start by forking the `Travel-RS Bot` repository on GitHub.
+2. **Clone Your Fork:** Clone your forked repository to your local machine.
+3. **Set Up Your Environment:** Follow the development setup instructions (if any, consider adding a brief "Development Setup" section if not already clear) to get the project running locally.
+4. **Explore Issues:** Look at the [issue tracker](https://github.com/PrinceOfBorgo/travel-rs/issues) and consider filtering by labels like [`good first issue`](https://github.com/PrinceOfBorgo/travel-rs/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22) if you're new to the project, or [`help wanted`](https://github.com/PrinceOfBorgo/travel-rs/issues?q=is%3Aopen+is%3Aissue+label%3A%22help+wanted%22) for more complex tasks.
+5. **Submit a Pull Request:** Once you've made your changes, create a pull request to the `main` branch of the original repository. Please describe your changes clearly and link to any relevant issues.
 
 I'm committed to providing a welcoming and inclusive environment for all contributors. If you have any questions or need guidance, don't hesitate to open an issue or reach out directly.
 
@@ -561,6 +586,49 @@ Let's build something amazing together!
 ## Roadmap
 
 Planned features and improvements are documented in the [ROADMAP.md](ROADMAP.md) file.
+
+## Local Development
+
+### Prerequisites
+
+* [Rust toolchain](https://rustup.rs/) (stable)
+* `wasm32-unknown-unknown` target: `rustup target add wasm32-unknown-unknown`
+* [Trunk](https://trunkrs.dev/): `cargo install trunk`
+
+### Build everything
+
+```bash
+# Build the bot + all workspace crates (native)
+cargo build --workspace
+
+# Run tests
+cargo test --workspace
+
+# Build the Mini App (WASM, release)
+trunk build --config miniapp/Trunk.toml --release
+```
+
+### Run the Mini App dev server
+
+```bash
+trunk serve --config miniapp/Trunk.toml    # hot-reload on http://localhost:8081
+```
+
+### Run the bot (with HTTP API)
+
+Add an `[api]` section to your profile (see `config/profiles/dev-local.toml` for an example), then start the bot as usual:
+
+```bash
+cargo run -- --profile dev-local
+```
+
+or omit `--profile` to load the one specified in `config.toml`:
+
+```bash
+cargo run
+```
+
+The HTTP server will serve the Mini App at `/miniapp/` and expose API routes under `/api/`. If no `[api]` section is present the bot starts without the HTTP server, running as a Telegram bot only.
 
 ## Changelog
 

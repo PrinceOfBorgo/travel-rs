@@ -2,11 +2,10 @@ use crate::{
     Context,
     consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     errors::CommandError,
-    expense::Expense,
     i18n::{self, Translate, TranslateWithArgs},
+    services,
     trace_command_db,
-    traveler::{Name, Traveler},
-    utils::update_debts,
+    traveler::Name,
 };
 use macro_rules_attribute::apply;
 use maplit::hashmap;
@@ -27,60 +26,15 @@ pub async fn delete_traveler(
         return Err(CommandError::EmptyInput);
     }
 
-    // Retrieve traveler from db
-    let select_res = Traveler::db_select_by_name(db.clone(), msg.chat.id, &name).await;
-    match select_res {
-        Ok(Some(traveler)) => {
-            // Check if traveler has paid for expenses
-            let list_res = Expense::db_select_by_payer(db.clone(), traveler).await;
-            match list_res {
-                Ok(expenses) if expenses.is_empty() => {
-                    // Delete traveler from db
-                    let delete_res = Traveler::db_delete(db.clone(), msg.chat.id, &name).await;
-                    match delete_res {
-                        Ok(_) => {
-                            if let Err(err_update) = update_debts(db, msg.chat.id).await {
-                                tracing::warn!("{err_update}");
-                            }
-                            tracing::debug!("{LOG_DEBUG_SUCCESS}");
-                            Ok(i18n::commands::DELETE_TRAVELER_OK.translate_with_args(
-                                ctx,
-                                &hashmap! {i18n::args::NAME.into() => name.into()},
-                            ))
-                        }
-                        Err(err) => {
-                            tracing::error!("{err}");
-                            Err(CommandError::DeleteTraveler { name })
-                        }
-                    }
-                }
-                Ok(expenses) => {
-                    let expenses_reply = expenses
-                        .into_iter()
-                        .map(|expense| expense.translate(ctx.clone()))
-                        .collect::<Vec<_>>()
-                        .join("\n");
-
-                    tracing::warn!(
-                        "Unable to delete traveler '{name}' because they have associated expenses.",
-                    );
-                    Ok(
-                        i18n::commands::DELETE_TRAVELER_HAS_EXPENSES.translate_with_args(
-                            ctx,
-                            &hashmap! {
-                                i18n::args::NAME.into() => name.clone().into(),
-                                i18n::args::EXPENSES.into() => expenses_reply.into(),
-                            },
-                        ),
-                    )
-                }
-                Err(err) => {
-                    tracing::error!("{err}");
-                    return Err(CommandError::DeleteTraveler { name });
-                }
-            }
+    match services::traveler::delete_traveler(db, msg.chat.id, &name).await {
+        Ok(()) => {
+            tracing::debug!("{LOG_DEBUG_SUCCESS}");
+            Ok(i18n::commands::DELETE_TRAVELER_OK.translate_with_args(
+                ctx,
+                &hashmap! {i18n::args::NAME.into() => name.into()},
+            ))
         }
-        Ok(_) => {
+        Err(services::ServiceError::NotFound(_)) => {
             tracing::warn!(
                 "{}",
                 i18n::commands::DELETE_TRAVELER_NOT_FOUND.translate_with_args_default(
@@ -90,11 +44,29 @@ pub async fn delete_traveler(
             Ok(i18n::commands::DELETE_TRAVELER_NOT_FOUND
                 .translate_with_args(ctx, &hashmap! {i18n::args::NAME.into() => name.into()}))
         }
+        Err(services::ServiceError::HasAssociatedExpenses(expenses)) => {
+            let expenses_reply = expenses
+                .into_iter()
+                .map(|expense| expense.translate(ctx.clone()))
+                .collect::<Vec<_>>()
+                .join("\n");
+
+            tracing::warn!(
+                "Unable to delete traveler '{name}' because they have associated expenses.",
+            );
+            Ok(
+                i18n::commands::DELETE_TRAVELER_HAS_EXPENSES.translate_with_args(
+                    ctx,
+                    &hashmap! {
+                        i18n::args::NAME.into() => name.clone().into(),
+                        i18n::args::EXPENSES.into() => expenses_reply.into(),
+                    },
+                ),
+            )
+        }
         Err(err) => {
             tracing::error!("{err}");
-            Err(CommandError::DeleteTraveler {
-                name: name.to_owned(),
-            })
+            Err(CommandError::DeleteTraveler { name })
         }
     }
 }

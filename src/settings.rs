@@ -121,12 +121,21 @@ pub struct I18n {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct Api {
+    pub bind: String,
+    pub miniapp_dir: String,
+    /// Direct link to the Mini App (e.g., "https://t.me/BOT_USERNAME/app")
+    pub miniapp_url: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct Settings {
     pub profile: String,
     pub logging: Logging,
     pub bot: Bot,
     pub database: Database,
     pub i18n: I18n,
+    pub api: Option<Api>,
 }
 
 impl Settings {

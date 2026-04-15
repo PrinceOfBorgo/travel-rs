@@ -1,0 +1,335 @@
+/* TravelRS Mini App styles – uses Telegram theme variables */
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--tg-theme-bg-color, #fff);
+    color: var(--tg-theme-text-color, #000);
+    -webkit-font-smoothing: antialiased;
+}
+
+.app {
+    max-width: 480px;
+    margin: 0 auto;
+    padding-bottom: 72px; /* space for bottom nav */
+    min-height: 100vh;
+}
+
+/* Header */
+.app-header {
+    text-align: center;
+    padding: 20px 16px 12px;
+}
+
+.app-header h1 {
+    font-size: 1.3rem;
+    margin-bottom: 4px;
+}
+
+.subtitle {
+    color: var(--tg-theme-hint-color, #999);
+    font-size: 0.85rem;
+}
+
+/* Main content */
+.app-content {
+    padding: 0 16px 16px;
+}
+
+/* Cards */
+.card {
+    background: var(--tg-theme-secondary-bg-color, #f5f5f5);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+}
+
+.card h2 {
+    font-size: 1.05rem;
+    margin-bottom: 12px;
+}
+
+/* Loading */
+.loading-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 32px 16px;
+}
+
+.spinner {
+    width: 28px;
+    height: 28px;
+    border: 3px solid var(--tg-theme-hint-color, #ccc);
+    border-top-color: var(--tg-theme-link-color, #2481cc);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Error */
+.error-card {
+    text-align: center;
+    padding: 24px 16px;
+    color: var(--tg-theme-destructive-text-color, #e53935);
+}
+
+.error-icon {
+    font-size: 1.8rem;
+    margin-bottom: 8px;
+}
+
+/* Empty state */
+.empty-state {
+    text-align: center;
+    padding: 32px 16px;
+    color: var(--tg-theme-hint-color, #999);
+}
+
+/* Stats grid (Dashboard) */
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 8px;
+    background: var(--tg-theme-bg-color, #fff);
+    border-radius: 8px;
+}
+
+.stat-value {
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: var(--tg-theme-hint-color, #999);
+    margin-top: 4px;
+}
+
+/* Lists */
+.list {
+    list-style: none;
+}
+
+.list-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--tg-theme-bg-color, #eee);
+}
+
+.list-item:last-child {
+    border-bottom: none;
+}
+
+.item-icon {
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+/* Expense & Transfer items */
+.expense-item,
+.transfer-item,
+.balance-item {
+    justify-content: space-between;
+}
+
+.item-main {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    flex: 1;
+}
+
+.item-number {
+    color: var(--tg-theme-hint-color, #999);
+    font-size: 0.8rem;
+    flex-shrink: 0;
+}
+
+.item-description {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.item-amount {
+    font-weight: 600;
+    flex-shrink: 0;
+    margin-left: 8px;
+}
+
+/* Balance-specific */
+.balance-debtor,
+.balance-creditor {
+    font-weight: 500;
+}
+
+.balance-arrow {
+    color: var(--tg-theme-hint-color, #999);
+    font-size: 0.85rem;
+}
+
+.balance-debt {
+    color: var(--tg-theme-destructive-text-color, #e53935);
+}
+
+/* Forms */
+.form-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.form-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.form-input {
+    flex: 1;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--tg-theme-hint-color, #ccc);
+    background: var(--tg-theme-bg-color, #fff);
+    color: var(--tg-theme-text-color, #000);
+    font-size: 0.9rem;
+    outline: none;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.form-input:focus {
+    border-color: var(--tg-theme-link-color, #2481cc);
+}
+
+select.form-input {
+    -webkit-appearance: none;
+    appearance: none;
+    cursor: pointer;
+}
+
+/* Buttons */
+.btn {
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-primary {
+    background: var(--tg-theme-button-color, #2481cc);
+    color: var(--tg-theme-button-text-color, #fff);
+}
+
+.btn-danger {
+    background: var(--tg-theme-destructive-text-color, #e53935);
+    color: #fff;
+}
+
+.btn-sm {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+}
+
+/* Card header with action button */
+.card-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.card-header-row h2 {
+    margin-bottom: 0;
+}
+
+/* Utility */
+.flex-1 {
+    flex: 1;
+    min-width: 0;
+}
+
+/* Feedback messages */
+.feedback {
+    font-size: 0.85rem;
+    margin-top: 8px;
+}
+
+.success-text {
+    color: var(--tg-theme-link-color, #2481cc);
+}
+
+.error-text {
+    color: var(--tg-theme-destructive-text-color, #e53935);
+}
+
+/* Bottom navigation */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-around;
+    background: var(--tg-theme-secondary-bg-color, #f5f5f5);
+    border-top: 1px solid var(--tg-theme-bg-color, #eee);
+    padding: 6px 0 env(safe-area-inset-bottom, 6px);
+    z-index: 100;
+}
+
+.nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    background: none;
+    border: none;
+    color: var(--tg-theme-hint-color, #999);
+    font-size: 0.65rem;
+    padding: 4px 8px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.nav-item.active {
+    color: var(--tg-theme-link-color, #2481cc);
+}
+
+.nav-icon {
+    font-size: 1.2rem;
+}
+
+.nav-label {
+    font-size: 0.65rem;
+}

@@ -46,6 +46,7 @@ static LOCALES: LazyLock<ArcLoader> = LazyLock::new(|| {
                 {SHOW_BALANCES_COMMAND} = {show_balances}
                 {SHOW_STATS_COMMAND} = {show_stats}
                 {CANCEL_COMMAND} = {cancel}
+                {APP_COMMAND} = {app}
                 ",
                 help = variant_to_string!(Command::Help),
                 set_language = variant_to_string!(Command::SetLanguage),
@@ -63,6 +64,7 @@ static LOCALES: LazyLock<ArcLoader> = LazyLock::new(|| {
                 show_balances = variant_to_string!(Command::ShowBalances),
                 show_stats = variant_to_string!(Command::ShowStats),
                 cancel = variant_to_string!(Command::Cancel),
+                app = variant_to_string!(Command::App),
             );
 
             let consts = formatdoc!(

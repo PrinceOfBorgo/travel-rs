@@ -13,6 +13,7 @@ pub const COMMAND_ERROR_DELETE_TRANSFER: &str = "command-error-delete-transfer";
 pub const COMMAND_ERROR_LIST_TRANSFERS: &str = "command-error-list-transfers";
 pub const COMMAND_ERROR_SHOW_BALANCES: &str = "command-error-show-balances";
 pub const COMMAND_ERROR_SHOW_STATS: &str = "command-error-show-stats";
+pub const COMMAND_ERROR_MINIAPP_NOT_CONFIGURED: &str = "command-error-miniapp-not-configured";
 
 pub const NAME_VALIDATION_ERROR_STARTS_WITH_SLASH: &str = "name-validation-error-starts-with-slash";
 pub const NAME_VALIDATION_ERROR_INVALID_CHAR: &str = "name-validation-error-invalid-char";

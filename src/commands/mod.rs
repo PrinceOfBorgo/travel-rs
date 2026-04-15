@@ -1,4 +1,5 @@
 mod add_traveler;
+mod app;
 mod cancel;
 mod command;
 mod delete_expense;
@@ -18,6 +19,7 @@ mod transfer;
 mod unknown_command;
 
 pub use add_traveler::add_traveler;
+pub use app::app;
 pub use cancel::cancel;
 pub use command::*;
 pub use delete_expense::delete_expense;

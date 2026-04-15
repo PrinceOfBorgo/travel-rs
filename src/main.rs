@@ -12,9 +12,11 @@ mod debt;
 mod dialogues;
 mod errors;
 mod expense_details;
+mod http;
 mod i18n;
 mod money_wrapper;
 mod relationships;
+mod services;
 mod settings;
 mod stats;
 mod tables;
@@ -103,20 +105,24 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("Using profile {}", SETTINGS.profile);
     tracing::debug!("Settings: {:#?}", SETTINGS);
 
-    // Start the bot
-    start_bot().await;
+    // Run the bot and HTTP server concurrently
+    let token = SETTINGS.token_value();
+    let db_instance = db::db().await;
+    let http_future = http::start_http(token.clone(), db_instance.clone());
+    let bot_future = start_bot(token, db_instance);
+
+    tokio::select! {
+        _ = bot_future => {},
+        _ = http_future => {},
+    }
 
     Ok(())
 }
 
-async fn start_bot() {
+async fn start_bot(token: String, db_instance: Arc<Surreal<Any>>) {
     tracing::info!("Starting TravelRS bot...");
-    let token = SETTINGS.token_value();
     let bot = Bot::new(token);
     tracing::info!("TravelRS bot started.");
-
-    // Initialize the database connection.
-    let db_instance = db::db().await;
 
     Dispatcher::builder(bot, handler_tree())
         .error_handler(LoggingErrorHandler::with_custom_text(

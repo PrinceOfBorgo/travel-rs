@@ -3,10 +3,9 @@ use crate::{
     consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     errors::CommandError,
     i18n::{self, Translate, TranslateWithArgs},
+    services,
     trace_command_db,
-    transferred_to::TransferredTo,
-    traveler::{Name, Traveler},
-    update_debts,
+    traveler::Name,
 };
 use macro_rules_attribute::apply;
 use maplit::hashmap;
@@ -29,75 +28,33 @@ pub async fn transfer(
     if from.is_empty() || to.is_empty() {
         return Err(CommandError::EmptyInput);
     }
-    let chat_id = msg.chat.id;
 
-    // Get sender from db
-    let select_from_res = Traveler::db_select_by_name(db.clone(), chat_id, &from).await;
-    match select_from_res {
-        Ok(Some(sender)) => {
-            // Get receiver from db
-            let select_to_res = Traveler::db_select_by_name(db.clone(), chat_id, &to).await;
-            match select_to_res {
-                Ok(Some(recv)) => {
-                    // Record the new transfer on db
-                    let relate_res =
-                        TransferredTo::db_relate(db.clone(), amount, sender.id, recv.id).await;
-                    match relate_res {
-                        Ok(Some(transfer)) => {
-                            if let Err(err_update) = update_debts(db, chat_id).await {
-                                tracing::warn!("{err_update}");
-                            }
-                            tracing::debug!("{LOG_DEBUG_SUCCESS} - id: {}", transfer.id);
-                            Ok(i18n::commands::TRANSFER_OK.translate(ctx))
-                        }
-                        Ok(None) => {
-                            let err = CommandError::Transfer {
-                                sender: from.to_owned(),
-                                receiver: to.to_owned(),
-                                amount,
-                            };
-                            tracing::warn!("{err}");
-                            Err(err)
-                        }
-                        Err(err) => {
-                            tracing::error!("{err}");
-                            Err(CommandError::Transfer {
-                                sender: from.to_owned(),
-                                receiver: to.to_owned(),
-                                amount,
-                            })
-                        }
-                    }
-                }
-                Ok(_) => {
-                    tracing::warn!(
-                        "{}",
-                        i18n::commands::TRANSFER_RECEIVER_NOT_FOUND.translate_with_args_default(
-                            &hashmap! {i18n::args::NAME.into() => to.clone().into()},
-                        )
-                    );
-                    Ok(i18n::commands::TRANSFER_RECEIVER_NOT_FOUND
-                        .translate_with_args(ctx, &hashmap! {i18n::args::NAME.into() => to.into()}))
-                }
-                Err(err) => {
-                    tracing::error!("{err}");
-                    Err(CommandError::Transfer {
-                        sender: from.to_owned(),
-                        receiver: to.to_owned(),
-                        amount,
-                    })
-                }
-            }
+    match services::transfer::create_transfer(db, msg.chat.id, &from, &to, amount).await {
+        Ok(transfer) => {
+            tracing::debug!("{LOG_DEBUG_SUCCESS} - id: {}", transfer.id);
+            Ok(i18n::commands::TRANSFER_OK.translate(ctx))
         }
-        Ok(_) => {
-            tracing::warn!(
-                "{}",
-                i18n::commands::TRANSFER_SENDER_NOT_FOUND.translate_with_args_default(
-                    &hashmap! {i18n::args::NAME.into() => from.clone().into()},
-                )
-            );
-            Ok(i18n::commands::TRANSFER_SENDER_NOT_FOUND
-                .translate_with_args(ctx, &hashmap! {i18n::args::NAME.into() => from.into()}))
+        Err(services::ServiceError::NotFound(what)) => {
+            // Distinguish sender vs receiver not found
+            if what == "Sender" {
+                tracing::warn!(
+                    "{}",
+                    i18n::commands::TRANSFER_SENDER_NOT_FOUND.translate_with_args_default(
+                        &hashmap! {i18n::args::NAME.into() => from.clone().into()},
+                    )
+                );
+                Ok(i18n::commands::TRANSFER_SENDER_NOT_FOUND
+                    .translate_with_args(ctx, &hashmap! {i18n::args::NAME.into() => from.into()}))
+            } else {
+                tracing::warn!(
+                    "{}",
+                    i18n::commands::TRANSFER_RECEIVER_NOT_FOUND.translate_with_args_default(
+                        &hashmap! {i18n::args::NAME.into() => to.clone().into()},
+                    )
+                );
+                Ok(i18n::commands::TRANSFER_RECEIVER_NOT_FOUND
+                    .translate_with_args(ctx, &hashmap! {i18n::args::NAME.into() => to.into()}))
+            }
         }
         Err(err) => {
             tracing::error!("{err}");

@@ -2,10 +2,9 @@ use crate::{
     Context,
     consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     errors::CommandError,
-    expense::Expense,
     i18n::{self, TranslateWithArgs},
+    services,
     trace_command_db,
-    utils::update_debts,
 };
 use macro_rules_attribute::apply;
 use maplit::hashmap;
@@ -23,30 +22,15 @@ pub async fn delete_expense(
 ) -> Result<String, CommandError> {
     tracing::debug!("{LOG_DEBUG_START}");
 
-    // Check if expense exists on db
-    let count_res = Expense::db_count_by_number(db.clone(), msg.chat.id, number).await;
-    match count_res {
-        Ok(Some(count)) if *count > 0 => {
-            // Delete expense from db
-            let delete_res = Expense::db_delete_by_number(db.clone(), msg.chat.id, number).await;
-            match delete_res {
-                Ok(_) => {
-                    if let Err(err_update) = update_debts(db, msg.chat.id).await {
-                        tracing::warn!("{err_update}");
-                    }
-                    tracing::debug!("{LOG_DEBUG_SUCCESS}");
-                    Ok(i18n::commands::DELETE_EXPENSE_OK.translate_with_args(
-                        ctx,
-                        &hashmap! {i18n::args::NUMBER.into() => number.into()},
-                    ))
-                }
-                Err(err) => {
-                    tracing::error!("{err}");
-                    Err(CommandError::DeleteExpense { number })
-                }
-            }
+    match services::expense::delete_expense(db, msg.chat.id, number).await {
+        Ok(()) => {
+            tracing::debug!("{LOG_DEBUG_SUCCESS}");
+            Ok(i18n::commands::DELETE_EXPENSE_OK.translate_with_args(
+                ctx,
+                &hashmap! {i18n::args::NUMBER.into() => number.into()},
+            ))
         }
-        Ok(_) => {
+        Err(services::ServiceError::NotFound(_)) => {
             tracing::warn!(
                 "{}",
                 i18n::commands::DELETE_EXPENSE_NOT_FOUND.translate_with_args_default(

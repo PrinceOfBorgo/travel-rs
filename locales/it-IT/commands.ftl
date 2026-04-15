@@ -82,6 +82,10 @@ show-balances-traveler-not-found = Impossibile trovare il viaggiatore "{$name}" 
 cancel-no-process-to-cancel = Non c'è nessun processo da annullare.
 cancel-ok = Il processo è stato annullato.
 
+## /app
+
+app-ok = 🚀 Apri la Mini App: {$url}
+
 ## unknown command
 
 invalid-command-usage = 

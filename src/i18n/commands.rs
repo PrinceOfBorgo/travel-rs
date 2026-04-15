@@ -43,6 +43,8 @@ pub const LIST_TRANSFERS_NOT_FOUND: &str = "list-transfers-not-found";
 pub const CANCEL_NO_PROCESS_TO_CANCEL: &str = "cancel-no-process-to-cancel";
 pub const CANCEL_OK: &str = "cancel-ok";
 
+pub const APP_OK: &str = "app-ok";
+
 pub const INVALID_COMMAND_USAGE: &str = "invalid-command-usage";
 pub const UNKNOWN_COMMAND: &str = "unknown-command";
 pub const UNKNOWN_COMMAND_BEST_MATCH: &str = "unknown-command-best-match";

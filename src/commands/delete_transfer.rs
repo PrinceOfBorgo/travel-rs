@@ -3,9 +3,8 @@ use crate::{
     consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     errors::CommandError,
     i18n::{self, TranslateWithArgs},
+    services,
     trace_command_db,
-    transferred_to::TransferredTo,
-    utils::update_debts,
 };
 use macro_rules_attribute::apply;
 use maplit::hashmap;
@@ -23,30 +22,15 @@ pub async fn delete_transfer(
 ) -> Result<String, CommandError> {
     tracing::debug!("{LOG_DEBUG_START}");
 
-    // Check if transfer relation exists on db
-    let count_res = TransferredTo::db_count(db.clone(), msg.chat.id, number).await;
-    match count_res {
-        Ok(Some(count)) if *count > 0 => {
-            // Delete transfer relation from db
-            let delete_res = TransferredTo::db_delete(db.clone(), msg.chat.id, number).await;
-            match delete_res {
-                Ok(_) => {
-                    if let Err(err_update) = update_debts(db, msg.chat.id).await {
-                        tracing::warn!("{err_update}");
-                    }
-                    tracing::debug!("{LOG_DEBUG_SUCCESS}");
-                    Ok(i18n::commands::DELETE_TRANSFER_OK.translate_with_args(
-                        ctx,
-                        &hashmap! {i18n::args::NUMBER.into() => number.into()},
-                    ))
-                }
-                Err(err) => {
-                    tracing::error!("{err}");
-                    Err(CommandError::DeleteTransfer { number })
-                }
-            }
+    match services::transfer::delete_transfer(db, msg.chat.id, number).await {
+        Ok(()) => {
+            tracing::debug!("{LOG_DEBUG_SUCCESS}");
+            Ok(i18n::commands::DELETE_TRANSFER_OK.translate_with_args(
+                ctx,
+                &hashmap! {i18n::args::NUMBER.into() => number.into()},
+            ))
         }
-        Ok(_) => {
+        Err(services::ServiceError::NotFound(_)) => {
             tracing::warn!(
                 "{}",
                 i18n::commands::DELETE_TRANSFER_NOT_FOUND.translate_with_args_default(

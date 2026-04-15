@@ -3,8 +3,9 @@ use crate::{
     consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     errors::CommandError,
     i18n::{self, TranslateWithArgs},
+    services,
     trace_command_db,
-    traveler::{Name, Traveler},
+    traveler::Name,
 };
 use macro_rules_attribute::apply;
 use maplit::hashmap;
@@ -25,10 +26,15 @@ pub async fn add_traveler(
         return Err(CommandError::EmptyInput);
     }
 
-    // Check if traveler exists on db
-    let count_res = Traveler::db_count(db.clone(), msg.chat.id, &name).await;
-    match count_res {
-        Ok(Some(count)) if *count > 0 => {
+    match services::traveler::add_traveler(db, msg.chat.id, &name).await {
+        Ok(()) => {
+            tracing::debug!("{LOG_DEBUG_SUCCESS}");
+            Ok(i18n::commands::ADD_TRAVELER_OK.translate_with_args(
+                ctx,
+                &hashmap! {i18n::args::NAME.into() => name.into()},
+            ))
+        }
+        Err(services::ServiceError::AlreadyExists(_)) => {
             tracing::warn!(
                 "{}",
                 i18n::commands::ADD_TRAVELER_ALREADY_ADDED.translate_with_args_default(
@@ -38,28 +44,9 @@ pub async fn add_traveler(
             Ok(i18n::commands::ADD_TRAVELER_ALREADY_ADDED
                 .translate_with_args(ctx, &hashmap! {i18n::args::NAME.into() => name.into()}))
         }
-        Ok(_) => {
-            // Create traveler on db
-            let create_res = Traveler::db_create(db, msg.chat.id, &name).await;
-            match create_res {
-                Ok(_) => {
-                    tracing::debug!("{LOG_DEBUG_SUCCESS}");
-                    Ok(i18n::commands::ADD_TRAVELER_OK.translate_with_args(
-                        ctx,
-                        &hashmap! {i18n::args::NAME.into() => name.into()},
-                    ))
-                }
-                Err(err) => {
-                    tracing::error!("{err}");
-                    Err(CommandError::AddTraveler { name })
-                }
-            }
-        }
         Err(err) => {
             tracing::error!("{err}");
-            Err(CommandError::AddTraveler {
-                name: name.to_owned(),
-            })
+            Err(CommandError::AddTraveler { name })
         }
     }
 }

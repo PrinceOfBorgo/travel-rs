@@ -1,9 +1,9 @@
 use crate::{
     Context,
-    chat::Chat,
     consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     errors::CommandError,
     i18n::{self, TranslateWithArgs},
+    services,
     trace_command_db,
 };
 use macro_rules_attribute::apply;
@@ -21,11 +21,9 @@ pub async fn set_currency(
     ctx: Arc<Mutex<Context>>,
 ) -> Result<String, CommandError> {
     tracing::debug!("{LOG_DEBUG_START}");
-    let currency = currency.to_uppercase();
-    // Update chat currency on db
-    let update_res = Chat::db_update_currency(db, msg.chat.id, &currency).await;
-    match update_res {
-        Ok(_) => {
+
+    match services::settings::set_currency(db, msg.chat.id, currency).await {
+        Ok(currency) => {
             tracing::debug!("{LOG_DEBUG_SUCCESS}");
             {
                 let mut ctx_guard = ctx.lock().expect("Failed to lock context");

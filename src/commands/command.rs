@@ -1,7 +1,7 @@
 use crate::{
     Context, HandlerResult,
     commands::{
-        HelpMessage, add_traveler, delete_expense, delete_transfer, delete_traveler, help,
+        HelpMessage, add_traveler, app, delete_expense, delete_transfer, delete_traveler, help,
         list_expenses, list_transfers, list_travelers, set_currency, set_language, show_balances,
         show_expense, show_stats, transfer,
     },
@@ -65,6 +65,8 @@ pub enum Command {
     ShowStats,
     #[command(description = "{descr-cancel}")]
     Cancel,
+    #[command(description = "{descr-app}")]
+    App,
 }
 
 pub enum ParseCommand {
@@ -147,6 +149,7 @@ impl HelpMessage for Command {
             ShowBalances { name: _ } => HELP_SHOW_BALANCES.translate(ctx),
             ShowStats => HELP_SHOW_STATS.translate(ctx),
             Cancel => HELP_CANCEL.translate(ctx),
+            App => HELP_APP.translate(ctx),
         }
     }
 }
@@ -186,6 +189,7 @@ pub async fn command_reply(
         ListTransfers { name } => list_transfers(db, msg, name, ctx.clone()).await,
         ShowBalances { name } => show_balances(db, msg, name, ctx.clone()).await,
         ShowStats => show_stats(db, msg, ctx.clone()).await,
+        App => app(msg, ctx.clone()),
         Cancel | AddExpense => {
             unreachable!("This command is handled before calling this function.")
         }

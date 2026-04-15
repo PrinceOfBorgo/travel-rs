@@ -16,6 +16,7 @@ command-error-list-transfers = Couldn't list transfers.
 command-error-show-balance = Couldn't show balance for traveler "{$name}".
 command-error-show-balances = Couldn't show balances.
 command-error-show-stats = Couldn't show statistics.
+command-error-miniapp-not-configured = Mini App is not configured. Please set `miniapp_url` in the `[api]` section of your profile.
 
 ## NameValidationError
 

@@ -45,3 +45,4 @@ pub const TRAVELERS_PAID_LEAST: &str = "travelers-paid-least";
 pub const TRAVELERS_PAID_MOST: &str = "travelers-paid-most";
 pub const TRAVELERS_PAYS_LEAST_FREQUENTLY: &str = "travelers-pays-least-frequently";
 pub const TRAVELERS_PAYS_MOST_FREQUENTLY: &str = "travelers-pays-most-frequently";
+pub const URL: &str = "url";

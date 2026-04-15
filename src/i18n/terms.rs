@@ -14,6 +14,7 @@ pub const SHOW_STATS_COMMAND: &str = "-show-stats-command";
 pub const TRANSFER_COMMAND: &str = "-transfer-command";
 pub const DELETE_TRANSFER_COMMAND: &str = "-delete-transfer-command";
 pub const LIST_TRANSFERS_COMMAND: &str = "-list-transfers-command";
+pub const APP_COMMAND: &str = "-app-command";
 
 pub const I18N_DECIMAL_SEP: &str = "-decimal-sep";
 pub const I18N_SPLIT_AMONG_ENTRIES_SEP: &str = "-split-among-entries-sep";

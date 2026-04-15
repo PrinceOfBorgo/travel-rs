@@ -49,3 +49,8 @@ database = "<YOUR_DEV_DATABASE>"
 default_locale = "en-US"
 locales_path = "locales"
 default_currency = "USD"
+
+[api]
+bind = "0.0.0.0:8080"
+miniapp_dir = "miniapp/dist"
+# miniapp_url = "https://t.me/DEV_TravelRS_bot/app"  # Optional: Mini App direct link

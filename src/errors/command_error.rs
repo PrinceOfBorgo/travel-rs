@@ -55,6 +55,7 @@ pub enum CommandError {
         name: Name,
     },
     ShowStats,
+    MiniAppNotConfigured,
 }
 
 impl Translate for CommandError {
@@ -172,6 +173,8 @@ impl Translate for CommandError {
             ShowStats => {
                 i18n::errors::COMMAND_ERROR_SHOW_STATS.translate_with_indent(ctx, indent_lvl)
             }
+            MiniAppNotConfigured => i18n::errors::COMMAND_ERROR_MINIAPP_NOT_CONFIGURED
+                .translate_with_indent(ctx, indent_lvl),
         }
     }
 }

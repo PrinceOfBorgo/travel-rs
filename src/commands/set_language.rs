@@ -1,9 +1,9 @@
 use crate::{
     Context,
-    chat::Chat,
     consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     errors::CommandError,
     i18n::{self, TranslateWithArgs},
+    services,
     trace_command_db,
 };
 use macro_rules_attribute::apply;
@@ -22,29 +22,9 @@ pub async fn set_language(
     ctx: Arc<Mutex<Context>>,
 ) -> Result<String, CommandError> {
     tracing::debug!("{LOG_DEBUG_START}");
-    // Check if language is available
-    if !i18n::is_lang_available(&langid) {
-        tracing::debug!("{LOG_DEBUG_SUCCESS}");
-        return Ok(
-            i18n::commands::SET_LANGUAGE_NOT_AVAILABLE.translate_with_args(
-                ctx,
-                &hashmap! {
-                    i18n::args::LANGID.into() => langid.to_string().into(),
-                    i18n::args::AVAILABLE_LANGS.into() =>
-                        i18n::available_langs()
-                        .map(|lang| format!("- {lang}"))
-                        .collect::<Vec<_>>()
-                        .join("\n")
-                        .into(),
-                },
-            ),
-        );
-    }
 
-    // Update chat language on db
-    let update_res = Chat::db_update_lang(db, msg.chat.id, &langid).await;
-    match update_res {
-        Ok(_) => {
+    match services::settings::set_language(db, msg.chat.id, &langid).await {
+        Ok(()) => {
             tracing::debug!("{LOG_DEBUG_SUCCESS}");
             {
                 let mut ctx_guard = ctx.lock().expect("Failed to lock context");
@@ -55,6 +35,23 @@ pub async fn set_language(
                 ctx.clone(),
                 &hashmap! {i18n::args::LANGID.into() => langid.to_string().into()},
             ))
+        }
+        Err(services::ServiceError::LanguageNotAvailable { .. }) => {
+            tracing::debug!("{LOG_DEBUG_SUCCESS}");
+            Ok(
+                i18n::commands::SET_LANGUAGE_NOT_AVAILABLE.translate_with_args(
+                    ctx,
+                    &hashmap! {
+                        i18n::args::LANGID.into() => langid.to_string().into(),
+                        i18n::args::AVAILABLE_LANGS.into() =>
+                            i18n::available_langs()
+                            .map(|lang| format!("- {lang}"))
+                            .collect::<Vec<_>>()
+                            .join("\n")
+                            .into(),
+                    },
+                ),
+            )
         }
         Err(err) => {
             tracing::error!("{err}");

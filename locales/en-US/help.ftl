@@ -151,3 +151,11 @@ help-cancel =
     /{-cancel-command} — {descr-cancel}
 
     Usage: /{-cancel-command}
+
+## /app
+
+descr-app = Open the Mini App for visual expense management.
+help-app = 
+    /{-app-command} — {descr-app}
+
+    Usage: /{-app-command}
