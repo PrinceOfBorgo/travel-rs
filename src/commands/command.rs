@@ -16,7 +16,11 @@ use std::sync::{Arc, Mutex};
 use std::{str::FromStr, sync::LazyLock};
 use strum::{AsRefStr, EnumIter, EnumString, IntoEnumIterator};
 use surrealdb::{Surreal, engine::any::Any};
-use teloxide::{prelude::*, utils::command::BotCommands};
+use teloxide::{
+    prelude::*,
+    types::{BotCommand, BotCommandScope, Recipient},
+    utils::command::BotCommands,
+};
 use unic_langid::LanguageIdentifier;
 
 pub static COMMANDS: LazyLock<Vec<String>> = LazyLock::new(|| {
@@ -74,6 +78,75 @@ pub enum ParseCommand {
 }
 
 impl Command {
+    pub fn localized_bot_commands(ctx: Arc<Mutex<Context>>) -> Vec<BotCommand> {
+        vec![
+            BotCommand::new(
+                variant_to_string!(Command::Help),
+                i18n::help::DESCR_HELP.translate(ctx.clone()),
+            ),
+            BotCommand::new(
+                variant_to_string!(Command::SetLanguage),
+                i18n::help::DESCR_SET_LANGUAGE.translate(ctx.clone()),
+            ),
+            BotCommand::new(
+                variant_to_string!(Command::SetCurrency),
+                i18n::help::DESCR_SET_CURRENCY.translate(ctx.clone()),
+            ),
+            BotCommand::new(
+                variant_to_string!(Command::AddTraveler),
+                i18n::help::DESCR_ADD_TRAVELER.translate(ctx.clone()),
+            ),
+            BotCommand::new(
+                variant_to_string!(Command::DeleteTraveler),
+                i18n::help::DESCR_DELETE_TRAVELER.translate(ctx.clone()),
+            ),
+            BotCommand::new(
+                variant_to_string!(Command::ListTravelers),
+                i18n::help::DESCR_LIST_TRAVELERS.translate(ctx.clone()),
+            ),
+            BotCommand::new(
+                variant_to_string!(Command::AddExpense),
+                i18n::help::DESCR_ADD_EXPENSE.translate(ctx.clone()),
+            ),
+            BotCommand::new(
+                variant_to_string!(Command::DeleteExpense),
+                i18n::help::DESCR_DELETE_EXPENSE.translate(ctx.clone()),
+            ),
+            BotCommand::new(
+                variant_to_string!(Command::ListExpenses),
+                i18n::help::DESCR_LIST_EXPENSES.translate(ctx.clone()),
+            ),
+            BotCommand::new(
+                variant_to_string!(Command::ShowExpense),
+                i18n::help::DESCR_SHOW_EXPENSE.translate(ctx.clone()),
+            ),
+            BotCommand::new(
+                variant_to_string!(Command::Transfer),
+                i18n::help::DESCR_TRANSFER.translate(ctx.clone()),
+            ),
+            BotCommand::new(
+                variant_to_string!(Command::DeleteTransfer),
+                i18n::help::DESCR_DELETE_TRANSFER.translate(ctx.clone()),
+            ),
+            BotCommand::new(
+                variant_to_string!(Command::ListTransfers),
+                i18n::help::DESCR_LIST_TRANSFERS.translate(ctx.clone()),
+            ),
+            BotCommand::new(
+                variant_to_string!(Command::ShowBalances),
+                i18n::help::DESCR_SHOW_BALANCES.translate(ctx.clone()),
+            ),
+            BotCommand::new(
+                variant_to_string!(Command::ShowStats),
+                i18n::help::DESCR_SHOW_STATS.translate(ctx.clone()),
+            ),
+            BotCommand::new(
+                variant_to_string!(Command::Cancel),
+                i18n::help::DESCR_CANCEL.translate(ctx),
+            ),
+        ]
+    }
+
     pub fn parse_cmd_name(cmd_name: &str) -> ParseCommand {
         let available_cmd_names: Vec<&str> = COMMANDS.iter().map(String::as_ref).collect();
 
@@ -158,8 +231,27 @@ pub async fn commands_handler(
     cmd: Command,
     ctx: Arc<Mutex<Context>>,
 ) -> HandlerResult {
-    let reply = command_reply(db, &msg, &cmd, ctx).await;
+    let reply = command_reply(db, &msg, &cmd, ctx.clone()).await;
     bot.send_message(msg.chat.id, reply).await?;
+
+    // After a successful /setlanguage, re-register the bot commands for this
+    // chat so Telegram shows the descriptions in the newly selected language.
+    if matches!(cmd, Command::SetLanguage { .. }) {
+        let translated = Command::localized_bot_commands(ctx);
+        if let Err(err) = bot
+            .set_my_commands(translated)
+            .scope(BotCommandScope::Chat {
+                chat_id: Recipient::Id(msg.chat.id),
+            })
+            .await
+        {
+            tracing::error!(
+                "Failed updating bot commands for chat {}: {err}",
+                msg.chat.id
+            );
+        }
+    }
+
     Ok(())
 }
 

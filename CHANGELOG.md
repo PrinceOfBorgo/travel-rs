@@ -2,12 +2,13 @@
 
 ## [0.2.6-SNAPSHOT] - Unreleased
 ### Added
-- N/A
+- Command descriptions shown by Telegram are now translated into the chat's selected language, and update automatically when the language is changed via `/setlanguage`.
 
 ### Changed
 - Added disk space cleanup step to `ci.yml` workflow.
 - Fixed descriptions for `dev-local` and `dev-local-docker` profiles settings files.
 - Replaced the batch script `start_docker_db.bat` with an enhanced PowerShell script. The new `start_docker_db.ps1` contains configurable variables for Docker parameters and retrieves the SurrealDB version from `Cargo.toml` to ensure a compatible Docker image is used.
+- Reworked `README.md` for clarity and updated structure.
 
 ### Fixed
 - N/A

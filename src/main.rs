@@ -28,11 +28,13 @@ use dialogues::add_expense_dialogue::{self, AddExpenseState};
 use dptree::{case, deps};
 use macro_rules_attribute::apply;
 use settings::{Logging, SETTINGS};
+use std::collections::HashSet;
 use std::sync::{Arc, LazyLock, Mutex};
 use surrealdb::{Surreal, engine::any::Any};
 use teloxide::{
     dispatching::{UpdateHandler, dialogue::InMemStorage},
     prelude::*,
+    types::{BotCommandScope, Recipient},
 };
 use tracing::Level;
 use tracing_appender::rolling::daily;
@@ -72,6 +74,11 @@ pub struct Args {
 
 pub static ARGS: LazyLock<Args> = LazyLock::new(Args::parse);
 
+/// Tracks which (chat, language) pairs have already had their localized
+/// command list registered with Telegram during this process lifetime.
+static REGISTERED_LOCALIZED_COMMANDS: LazyLock<Mutex<HashSet<(ChatId, String)>>> =
+    LazyLock::new(|| Mutex::new(HashSet::new()));
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     // Setup logs
@@ -102,6 +109,8 @@ async fn main() -> anyhow::Result<()> {
 
     tracing::info!("Using profile {}", SETTINGS.profile);
     tracing::debug!("Settings: {:#?}", SETTINGS);
+    println!("Using profile {}", SETTINGS.profile);
+    println!("Settings: {:#?}", SETTINGS);
 
     // Start the bot
     start_bot().await;
@@ -224,6 +233,7 @@ fn is_chat_whitelisted(chat_id: ChatId) -> bool {
 
 #[apply(trace_skip_all)]
 async fn update_chat_db(
+    bot: Bot,
     db: Arc<Surreal<Any>>,
     msg: Message,
     ctx: Arc<Mutex<Context>>,
@@ -271,13 +281,52 @@ async fn update_chat_db(
     }
 
     if let Ok(Some(chat)) = chat_res {
-        let mut ctx = ctx.lock().expect("Failed to lock context");
-        ctx.langid = chat
-            .lang
-            .parse()
-            .unwrap_or(SETTINGS.i18n.default_locale.clone());
-        ctx.currency = chat.currency;
+        let langid = {
+            let mut ctx_guard = ctx.lock().expect("Failed to lock context");
+            ctx_guard.langid = chat
+                .lang
+                .parse()
+                .unwrap_or(SETTINGS.i18n.default_locale.clone());
+            ctx_guard.currency = chat.currency;
+            ctx_guard.langid.clone()
+        };
+
+        register_localized_commands(&bot, msg.chat.id, &langid, ctx).await;
     }
 
     Ok(())
+}
+
+async fn register_localized_commands(
+    bot: &Bot,
+    chat_id: ChatId,
+    langid: &LanguageIdentifier,
+    ctx: Arc<Mutex<Context>>,
+) {
+    let key = (chat_id, langid.to_string());
+    {
+        let mut registered = REGISTERED_LOCALIZED_COMMANDS
+            .lock()
+            .expect("Failed to lock REGISTERED_LOCALIZED_COMMANDS");
+        if registered.contains(&key) {
+            return;
+        }
+        registered.insert(key.clone());
+    }
+
+    let translated = Command::localized_bot_commands(ctx);
+    if let Err(err) = bot
+        .set_my_commands(translated)
+        .scope(BotCommandScope::Chat {
+            chat_id: Recipient::Id(chat_id),
+        })
+        .await
+    {
+        tracing::error!("Failed setting bot commands for chat {chat_id}: {err}");
+        // Roll back so a future message retries.
+        REGISTERED_LOCALIZED_COMMANDS
+            .lock()
+            .expect("Failed to lock REGISTERED_LOCALIZED_COMMANDS")
+            .remove(&key);
+    }
 }
