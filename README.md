@@ -90,9 +90,10 @@ The following commands are supported by Travel-RS Bot:
 * **`/setcurrency`** — Sets the default currency for the travel plan.
 
   * Example: `/setcurrency EUR`
-* **`/addtraveler`** — Adds a traveler with the specified name to the travel plan.
+* **`/addtraveler`** — Adds a traveler with the specified name to the travel plan. If invoked without a name, the bot prompts for one interactively.
 
   * Example: `/addtraveler Alice`
+  * Example: `/addtraveler` (the bot will ask for the name)
 * **`/deletetraveler`** — Removes the traveler with the specified name from the travel plan.
 
   * Example: `/deletetraveler Alice`

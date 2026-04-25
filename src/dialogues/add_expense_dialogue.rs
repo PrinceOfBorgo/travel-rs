@@ -25,7 +25,7 @@ use surrealdb::{
 };
 use teloxide::{
     Bot,
-    dispatching::dialogue::InMemStorage,
+    dispatching::{HandlerExt, UpdateHandler, dialogue::InMemStorage},
     prelude::Dialogue,
     requests::Requester,
     types::{ChatId, Message},
@@ -701,6 +701,44 @@ async fn relate_shares(
 
     query = query.query(CommitStatement::default());
     query.await.map(|_| {})
+}
+
+/// Returns the dispatcher subtree that drives the AddExpense dialogue.
+/// Composed into [`crate::handler_tree`] alongside other dialogues' branches.
+pub fn handler_branch() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'static>> {
+    use AddExpenseState::*;
+    use teloxide::dptree::{self, case};
+
+    dptree::entry()
+        // Only enter this subtree if an AddExpense dialogue is active.
+        .filter_async(crate::dialogues::storage::is_running::<AddExpenseState>)
+        .enter_dialogue::<Message, InMemStorage<AddExpenseState>, AddExpenseState>()
+        .branch(case![ReceiveDescription].endpoint(receive_description))
+        .branch(case![ReceiveAmount { description }].endpoint(receive_amount))
+        .branch(
+            case![ReceivePaidBy {
+                description,
+                amount
+            }]
+            .endpoint(receive_paid_by),
+        )
+        .branch(
+            case![StartSplitAmong {
+                description,
+                amount,
+                paid_by
+            }]
+            .endpoint(start_split_among),
+        )
+        .branch(
+            case![ReceiveSplitAmong {
+                description,
+                amount,
+                paid_by,
+                split_among
+            }]
+            .endpoint(receive_split_among),
+        )
 }
 
 #[cfg(test)]

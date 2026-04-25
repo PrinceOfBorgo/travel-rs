@@ -9,6 +9,8 @@
 - Fixed descriptions for `dev-local` and `dev-local-docker` profiles settings files.
 - Replaced the batch script `start_docker_db.bat` with an enhanced PowerShell script. The new `start_docker_db.ps1` contains configurable variables for Docker parameters and retrieves the SurrealDB version from `Cargo.toml` to ensure a compatible Docker image is used.
 - Reworked `README.md` for clarity and updated structure.
+- `/addtraveler` now prompts for the traveler's name when invoked without one.
+- Heavily refactored dialogues a storages handling; `/cancel` works for any dialogue.
 
 ### Fixed
 - N/A

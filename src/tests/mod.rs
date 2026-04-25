@@ -1,4 +1,5 @@
 mod integration_tests;
+mod cross_dialogue;
 
 use crate::{Context, deps, handler_tree};
 use std::sync::{Arc, Mutex};

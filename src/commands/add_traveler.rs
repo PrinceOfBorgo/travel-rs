@@ -21,9 +21,6 @@ pub async fn add_traveler(
     ctx: Arc<Mutex<Context>>,
 ) -> Result<String, CommandError> {
     tracing::debug!("{LOG_DEBUG_START}");
-    if name.is_empty() {
-        return Err(CommandError::EmptyInput);
-    }
 
     // Check if traveler exists on db
     let count_res = Traveler::db_count(db.clone(), msg.chat.id, &name).await;
@@ -68,7 +65,6 @@ pub async fn add_traveler(
 mod tests {
     use crate::{
         db::db,
-        errors::CommandError,
         i18n::{self, Translate, TranslateWithArgs},
         tests::TestBot,
     };
@@ -101,12 +97,39 @@ mod tests {
     test! { add_traveler_empty_input,
         let db = db().await;
 
+        // Add traveler without specifying a name -> ask for name
         let mut bot = TestBot::new(db, "/addtraveler");
-        let err = CommandError::EmptyInput.translate_default();
-        assert!(
-            bot.dispatch_and_last_message()
-                .await
-                .is_some_and(|msg| msg.starts_with(&err))
+        let response = i18n::dialogues::ADD_TRAVELER_ASK_NAME.translate_default();
+        bot.test_last_message(&response).await;
+
+        // Provide the name as a follow-up message
+        bot.update("Alice");
+        let response = i18n::commands::ADD_TRAVELER_OK.translate_with_args_default(
+            &hashmap! {i18n::args::NAME.into() => "Alice".into()},
         );
+        bot.test_last_message(&response).await;
+    }
+
+    // The inline form `/addtraveler <name>` is a regular command, not a
+    // dialogue, so it must run even while another dialogue is active and
+    // must not disturb that dialogue
+    test! { inline_add_traveler_runs_during_add_expense_dialogue,
+        let db = db().await;
+
+        // Start AddExpense dialogue
+        let mut bot = TestBot::new(db, "/addexpense");
+        bot.dispatch().await;
+
+        // Inline `/addtraveler Alice` falls through to the command handler
+        bot.update("/addtraveler Alice");
+        let response = i18n::commands::ADD_TRAVELER_OK.translate_with_args_default(
+            &hashmap! {i18n::args::NAME.into() => "Alice".into()},
+        );
+        bot.test_last_message(&response).await;
+
+        // AddExpense is still alive: feeding text advances it to the next prompt
+        bot.update("My expense");
+        let response = i18n::dialogues::ADD_EXPENSE_ASK_AMOUNT.translate_default();
+        bot.test_last_message(&response).await;
     }
 }

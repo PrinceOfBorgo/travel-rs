@@ -82,9 +82,11 @@ attribute_alias! {
 const FN_CALC_DEBTS: &str = "fn::calc_debts";
 const FN_CLEAR_DEBTS: &str = "fn::clear_debts";
 
+/// Simplifies a list of debts by calculating the net balance for each participant
+/// and creating new debt transactions that reflect the simplified balances.
 fn simplify_balances(debts: &mut Vec<Debt>) {
     // Create a HashMap to store the original RecordId for each participant
-    // This avoids interior mutability issues by using String as the key
+    // This avoids interior mutability issues by using a String as the key
     let keys: HashMap<String, RecordId> = debts
         .iter()
         .flat_map(|d| {
@@ -122,9 +124,9 @@ fn simplify_balances(debts: &mut Vec<Debt>) {
         .collect();
 
     // Sort creditors in descending order of their balances
-    creditors.sort_by(|a, b| b.1.cmp(&a.1));
+    creditors.sort_by_key(|a| std::cmp::Reverse(a.1));
     // Sort debtors in ascending order of their balances
-    debtors.sort_by(|a, b| a.1.cmp(&b.1));
+    debtors.sort_by_key(|a| a.1);
 
     // Clear the original list of debts
     debts.clear();

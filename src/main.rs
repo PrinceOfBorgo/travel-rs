@@ -25,6 +25,11 @@ use chat::Chat;
 use clap::Parser;
 use commands::*;
 use dialogues::add_expense_dialogue::{self, AddExpenseState};
+use dialogues::pending_command_dialogue::{
+    self, PendingCommandState, PendingCommandStorage,
+    add_traveler::{self as pending_add_traveler},
+};
+use dialogues::storage::{self as dialogue_storage, DialogueRegistry, DialogueStorages};
 use dptree::{case, deps};
 use macro_rules_attribute::apply;
 use settings::{Logging, SETTINGS};
@@ -139,77 +144,72 @@ async fn start_bot() {
 }
 
 fn deps(db_instance: Arc<Surreal<Any>>) -> DependencyMap {
+    let storages = DialogueStorages {
+        add_expense: InMemStorage::<AddExpenseState>::new(),
+        pending_command: PendingCommandStorage::new(),
+    };
+    let registry = DialogueRegistry::build(&storages);
+    let DialogueStorages {
+        add_expense,
+        pending_command,
+    } = storages;
     deps![
-        InMemStorage::<AddExpenseState>::new(),
+        add_expense,
+        pending_command,
+        registry,
         Arc::new(Mutex::new(Context::default())),
         db_instance
     ]
 }
 
 pub(crate) fn handler_tree() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'static>> {
+    // Symmetric guard applied before every dialogue entry point: if *any*
+    // known dialogue is already running for this chat, reply with
+    // `process-already-running` and stop. This prevents two dialogues from
+    // being alive at the same time regardless of which one is started first.
+    let any_dialogue_running_guard = || {
+        dptree::entry()
+            .filter_async(dialogue_storage::any_running)
+            .endpoint(dialogue_storage::process_already_running_endpoint)
+    };
+
     let command_branch = dptree::entry()
         // Check if a command is received...
         .filter_command::<Command>()
         // Cancel command
-        .branch(
-            case![Command::Cancel]
-                .endpoint(cancel::<InMemStorage<AddExpenseState>, AddExpenseState>),
-        )
-        // AddExpense command -> starts a new dialogue to add an expense
+        .branch(case![Command::Cancel].endpoint(cancel))
+        // AddExpense command -> start a new dialogue to add an expense.
+        // Refuse if any dialogue is already running.
         .branch(
             case![Command::AddExpense]
+                .branch(any_dialogue_running_guard())
                 .enter_dialogue::<Message, InMemStorage<AddExpenseState>, AddExpenseState>()
-                .branch(case![AddExpenseState::Start].endpoint(add_expense_dialogue::start))
-                // The dialogue has already been started...
-                .endpoint(
-                    dialogues::Dialogue::<InMemStorage<AddExpenseState>, AddExpenseState>::handle_already_running,
-                ),
+                .branch(case![AddExpenseState::Start].endpoint(add_expense_dialogue::start)),
+        )
+        // AddTraveler command without an inline name -> start a dialogue to
+        // ask for the name. If a name was supplied inline, this branch is
+        // skipped and the message falls through to `commands_handler`.
+        // Refuse if any dialogue is already running.
+        .branch(
+            case![Command::AddTraveler { name }]
+                .filter(|name: traveler::Name| name.trim().is_empty())
+                .branch(any_dialogue_running_guard())
+                .enter_dialogue::<Message, PendingCommandStorage, PendingCommandState>()
+                .branch(case![PendingCommandState::Start].endpoint(pending_add_traveler::start)),
         )
         // Otherwise -> handle other commands
         .endpoint(commands_handler);
 
-    let dialogue_branch = {
-        use {AddExpenseState::*, add_expense_dialogue::*};
-        dptree::entry()
-            // Check if a process is running, otherwise skip the branch...
-            .filter_async(
-                dialogues::Dialogue::<InMemStorage<AddExpenseState>, AddExpenseState>::is_already_running,
-            )
-            // Check if the message is a response to an add expense dialogue...
-            .enter_dialogue::<Message, InMemStorage<AddExpenseState>, AddExpenseState>()
-            .branch(case![ReceiveDescription].endpoint(receive_description))
-            .branch(case![ReceiveAmount { description }].endpoint(receive_amount))
-            .branch(
-                case![ReceivePaidBy {
-                    description,
-                    amount
-                }]
-                .endpoint(receive_paid_by),
-            )
-            .branch(
-                case![StartSplitAmong {
-                    description,
-                    amount,
-                    paid_by
-                }]
-                .endpoint(start_split_among),
-            )
-            .branch(
-                case![ReceiveSplitAmong {
-                    description,
-                    amount,
-                    paid_by,
-                    split_among
-                }]
-                .endpoint(receive_split_among),
-            )
-    };
+    let pending_command_dialogue_branch = pending_command_dialogue::handler_branch();
+
+    let add_expense_dialogue_branch = add_expense_dialogue::handler_branch();
 
     Update::filter_message()
         .filter(|msg: Message| filter_auth(msg))
         .map_async(update_chat_db) // Create chat record on db if it does not exist yet or update it
         .branch(command_branch)
-        .branch(dialogue_branch)
+        .branch(add_expense_dialogue_branch)
+        .branch(pending_command_dialogue_branch)
         .endpoint(unknown_command)
 }
 
