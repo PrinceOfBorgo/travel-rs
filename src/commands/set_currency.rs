@@ -1,6 +1,7 @@
 use crate::{
     Context,
     chat::Chat,
+    commands::CommandOutcome,
     consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     errors::CommandError,
     i18n::{self, TranslateWithArgs},
@@ -19,7 +20,7 @@ pub async fn set_currency(
     msg: &Message,
     currency: &str,
     ctx: Arc<Mutex<Context>>,
-) -> Result<String, CommandError> {
+) -> Result<CommandOutcome, CommandError> {
     tracing::debug!("{LOG_DEBUG_START}");
     let currency = currency.to_uppercase();
     // Update chat currency on db
@@ -32,9 +33,11 @@ pub async fn set_currency(
                 ctx_guard.currency = currency.to_owned();
             }
 
-            Ok(i18n::commands::SET_CURRENCY_OK.translate_with_args(
-                ctx.clone(),
-                &hashmap! {i18n::args::CURRENCY.into() => currency.into()},
+            Ok(CommandOutcome::Success(
+                i18n::commands::SET_CURRENCY_OK.translate_with_args(
+                    ctx.clone(),
+                    &hashmap! {i18n::args::CURRENCY.into() => currency.into()},
+                ),
             ))
         }
         Err(err) => {

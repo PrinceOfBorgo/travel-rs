@@ -84,41 +84,47 @@ The following commands are supported by Travel-RS Bot:
 * **`/help`** — Displays a help message for the specified command. If no command is specified, it shows descriptions for all commands.
 
   * Example: `/help addexpense`
-* **`/setlanguage`** — Sets the default language for the bot in the chat.
+* **`/setlanguage`** — Sets the default language for the bot in the chat. If invoked without a language code, the bot prompts for one interactively.
 
   * Example: `/setlanguage it-IT`
-* **`/setcurrency`** — Sets the default currency for the travel plan.
+  * Example: `/setlanguage` (the bot will ask for the language)
+* **`/setcurrency`** — Sets the default currency for the travel plan. If invoked without a currency code, the bot prompts for one interactively.
 
   * Example: `/setcurrency EUR`
+  * Example: `/setcurrency` (the bot will ask for the currency)
 * **`/addtraveler`** — Adds a traveler with the specified name to the travel plan. If invoked without a name, the bot prompts for one interactively.
 
   * Example: `/addtraveler Alice`
   * Example: `/addtraveler` (the bot will ask for the name)
-* **`/deletetraveler`** — Removes the traveler with the specified name from the travel plan.
+* **`/deletetraveler`** — Removes the traveler with the specified name from the travel plan. If invoked without a name, the bot prompts for one interactively.
 
   * Example: `/deletetraveler Alice`
+  * Example: `/deletetraveler` (the bot will ask for the name)
 * **`/listtravelers`** — Displays the travelers in the travel plan.
 
   * Example: `/listtravelers`
 * **`/addexpense`** — Starts a new interactive session to add an expense to the travel plan.
 
   * Example: `/addexpense` (a series of interactive questions will follow)
-* **`/deleteexpense`** — Deletes the expense with the specified identifier from the travel plan.
+* **`/deleteexpense`** — Deletes the expense with the specified identifier from the travel plan. If invoked without an identifier, the bot prompts for one interactively.
 
   * Example: `/deleteexpense 3`
+  * Example: `/deleteexpense` (the bot will ask for the identifier)
 * **`/listexpenses`** — Displays the expenses in the travel plan. If a description is specified, it shows only the expenses matching the provided description. Supports fuzzy search for flexible matching.
 
   * Example: `/listexpenses`
   * Example: `/listexpenses Toll`
-* **`/showexpense`** — Displays the details of the expense with the specified identifier.
+* **`/showexpense`** — Displays the details of the expense with the specified identifier. If invoked without an identifier, the bot prompts for one interactively.
 
   * Example: `/showexpense 3`
+  * Example: `/showexpense` (the bot will ask for the identifier)
 * **`/transfer`** — Transfers the specified amount from one traveler to another.
 
   * Example: `/transfer Alice Bob 25.00`
-* **`/deletetransfer`** — Deletes the transfer with the specified identifier from the travel plan.
+* **`/deletetransfer`** — Deletes the transfer with the specified identifier from the travel plan. If invoked without an identifier, the bot prompts for one interactively.
 
   * Example: `/deletetransfer 7`
+  * Example: `/deletetransfer` (the bot will ask for the identifier)
 * **`/listtransfers`** — Displays the transfers in the travel plan. If a name is specified, it shows only the transfers involving that traveler.
 
   * Example: `/listtransfers`
@@ -405,7 +411,8 @@ These files are organized by locale (e.g., `en-US/messages.ftl`, `it-IT/messages
 
 1. **Create a New Locale Folder**: Add a new folder in the `locales/` directory with the appropriate locale code (e.g., `fr-FR` for French).
 2. **Add .ftl Files**: Populate the folder with `.ftl` files containing translations for all required messages.
-3. **Update Configuration**: Ensure the new language is listed in the bot's configuration or accessible via the `/setlanguage` command.
+3. **Register the Language Label in Every Locale**: Add a `language-label-<locale-code>` entry (e.g., `language-label-fr-FR = 🇫🇷 French (France)`) to the `labels.ftl` file of **every** existing language, not just the new one. This entry is used by the `/setlanguage` menu to display the language name, so a missing entry in any locale will leave that language unlabeled when that locale is active.
+4. **Update Configuration**: Ensure the new language is listed in the bot's configuration or accessible via the `/setlanguage` command.
 
 This structure ensures that localization is both flexible and scalable, allowing contributors to easily adapt the bot for different languages and regions. Users can switch languages using the `/setlanguage` command.
 

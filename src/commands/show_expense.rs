@@ -1,5 +1,6 @@
 use crate::{
     Context,
+    commands::CommandOutcome,
     consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     errors::CommandError,
     expense::Expense,
@@ -20,7 +21,7 @@ pub async fn show_expense(
     msg: &Message,
     number: i64,
     ctx: Arc<Mutex<Context>>,
-) -> Result<String, CommandError> {
+) -> Result<CommandOutcome, CommandError> {
     tracing::debug!("{LOG_DEBUG_START}");
 
     // Check if expense exists on db
@@ -33,7 +34,7 @@ pub async fn show_expense(
                 Ok(Some(expense_details)) => {
                     let reply = expense_details.translate(ctx.clone());
                     tracing::debug!("{LOG_DEBUG_SUCCESS}");
-                    Ok(reply)
+                    Ok(CommandOutcome::Success(reply))
                 }
                 Ok(_) => {
                     tracing::warn!(
@@ -42,9 +43,11 @@ pub async fn show_expense(
                             &hashmap! {i18n::args::NUMBER.into() => number.into()},
                         )
                     );
-                    Ok(i18n::commands::SHOW_EXPENSE_NOT_FOUND.translate_with_args(
-                        ctx,
-                        &hashmap! {i18n::args::NUMBER.into() => number.into()},
+                    Ok(CommandOutcome::Failure(
+                        i18n::commands::SHOW_EXPENSE_NOT_FOUND.translate_with_args(
+                            ctx,
+                            &hashmap! {i18n::args::NUMBER.into() => number.into()},
+                        ),
                     ))
                 }
                 Err(err) => {
@@ -60,8 +63,12 @@ pub async fn show_expense(
                     &hashmap! {i18n::args::NUMBER.into() => number.into()},
                 )
             );
-            Ok(i18n::commands::SHOW_EXPENSE_NOT_FOUND
-                .translate_with_args(ctx, &hashmap! {i18n::args::NUMBER.into() => number.into()}))
+            Ok(CommandOutcome::Failure(
+                i18n::commands::SHOW_EXPENSE_NOT_FOUND.translate_with_args(
+                    ctx,
+                    &hashmap! {i18n::args::NUMBER.into() => number.into()},
+                ),
+            ))
         }
         Err(err) => {
             tracing::error!("{err}");

@@ -1,5 +1,17 @@
-mod add_expense;
-mod add_traveler;
+pub mod add_expense;
+pub mod add_traveler;
+pub mod delete_expense;
+pub mod delete_transfer;
+pub mod delete_traveler;
+pub mod set_currency;
+pub mod set_language;
+pub mod show_expense;
 
 pub use add_expense::*;
 pub use add_traveler::*;
+pub use delete_expense::*;
+pub use delete_transfer::*;
+pub use delete_traveler::*;
+pub use set_currency::*;
+pub use set_language::*;
+pub use show_expense::*;

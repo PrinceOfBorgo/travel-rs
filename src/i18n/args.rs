@@ -19,6 +19,7 @@ pub const EXPENSES_COUNT: &str = "expenses-count";
 pub const HELP_MESSAGE: &str = "help-message";
 pub const INPUT: &str = "input";
 pub const LANGID: &str = "langid";
+pub const LANGUAGE: &str = "language";
 pub const MAJOR_CREDITORS: &str = "major-creditors";
 pub const MAJOR_DEBTORS: &str = "major-debtors";
 pub const MAX: &str = "max";

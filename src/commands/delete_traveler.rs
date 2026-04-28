@@ -1,5 +1,6 @@
 use crate::{
     Context,
+    commands::CommandOutcome,
     consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     errors::CommandError,
     expense::Expense,
@@ -21,11 +22,8 @@ pub async fn delete_traveler(
     msg: &Message,
     name: Name,
     ctx: Arc<Mutex<Context>>,
-) -> Result<String, CommandError> {
+) -> Result<CommandOutcome, CommandError> {
     tracing::debug!("{LOG_DEBUG_START}");
-    if name.is_empty() {
-        return Err(CommandError::EmptyInput);
-    }
 
     // Retrieve traveler from db
     let select_res = Traveler::db_select_by_name(db.clone(), msg.chat.id, &name).await;
@@ -43,9 +41,11 @@ pub async fn delete_traveler(
                                 tracing::warn!("{err_update}");
                             }
                             tracing::debug!("{LOG_DEBUG_SUCCESS}");
-                            Ok(i18n::commands::DELETE_TRAVELER_OK.translate_with_args(
-                                ctx,
-                                &hashmap! {i18n::args::NAME.into() => name.into()},
+                            Ok(CommandOutcome::Success(
+                                i18n::commands::DELETE_TRAVELER_OK.translate_with_args(
+                                    ctx,
+                                    &hashmap! {i18n::args::NAME.into() => name.into()},
+                                ),
                             ))
                         }
                         Err(err) => {
@@ -64,7 +64,7 @@ pub async fn delete_traveler(
                     tracing::warn!(
                         "Unable to delete traveler '{name}' because they have associated expenses.",
                     );
-                    Ok(
+                    Ok(CommandOutcome::Failure(
                         i18n::commands::DELETE_TRAVELER_HAS_EXPENSES.translate_with_args(
                             ctx,
                             &hashmap! {
@@ -72,7 +72,7 @@ pub async fn delete_traveler(
                                 i18n::args::EXPENSES.into() => expenses_reply.into(),
                             },
                         ),
-                    )
+                    ))
                 }
                 Err(err) => {
                     tracing::error!("{err}");
@@ -87,8 +87,12 @@ pub async fn delete_traveler(
                     &hashmap! {i18n::args::NAME.into() => name.clone().into()},
                 )
             );
-            Ok(i18n::commands::DELETE_TRAVELER_NOT_FOUND
-                .translate_with_args(ctx, &hashmap! {i18n::args::NAME.into() => name.into()}))
+            Ok(CommandOutcome::Failure(
+                i18n::commands::DELETE_TRAVELER_NOT_FOUND.translate_with_args(
+                    ctx,
+                    &hashmap! {i18n::args::NAME.into() => name.into()},
+                ),
+            ))
         }
         Err(err) => {
             tracing::error!("{err}");
@@ -103,7 +107,6 @@ pub async fn delete_traveler(
 mod tests {
     use crate::{
         db::db,
-        errors::CommandError,
         expense::Expense,
         i18n::{self, Translate, TranslateWithArgs},
         tests::TestBot,
@@ -198,15 +201,11 @@ mod tests {
         bot.test_last_message(&response).await;
     }
 
-    test! { delete_traveler_empty_input,
+    test! { delete_traveler_empty_input_starts_dialogue,
         let db = db().await;
 
         let mut bot = TestBot::new(db, "/deletetraveler");
-        let err = CommandError::EmptyInput.translate_default();
-        assert!(
-            bot.dispatch_and_last_message()
-                .await
-                .is_some_and(|msg| msg.starts_with(&err))
-        );
+        let response = i18n::dialogues::DELETE_TRAVELER_ASK_NAME.translate_default();
+        bot.test_last_message(&response).await;
     }
 }

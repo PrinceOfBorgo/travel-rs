@@ -1,5 +1,6 @@
 use crate::{
     Context,
+    commands::CommandOutcome,
     consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     errors::CommandError,
     expense::Expense,
@@ -20,7 +21,7 @@ pub async fn delete_expense(
     msg: &Message,
     number: i64,
     ctx: Arc<Mutex<Context>>,
-) -> Result<String, CommandError> {
+) -> Result<CommandOutcome, CommandError> {
     tracing::debug!("{LOG_DEBUG_START}");
 
     // Check if expense exists on db
@@ -35,9 +36,11 @@ pub async fn delete_expense(
                         tracing::warn!("{err_update}");
                     }
                     tracing::debug!("{LOG_DEBUG_SUCCESS}");
-                    Ok(i18n::commands::DELETE_EXPENSE_OK.translate_with_args(
-                        ctx,
-                        &hashmap! {i18n::args::NUMBER.into() => number.into()},
+                    Ok(CommandOutcome::Success(
+                        i18n::commands::DELETE_EXPENSE_OK.translate_with_args(
+                            ctx,
+                            &hashmap! {i18n::args::NUMBER.into() => number.into()},
+                        ),
                     ))
                 }
                 Err(err) => {
@@ -53,8 +56,12 @@ pub async fn delete_expense(
                     &hashmap! {i18n::args::NUMBER.into() => number.into()},
                 )
             );
-            Ok(i18n::commands::DELETE_EXPENSE_NOT_FOUND
-                .translate_with_args(ctx, &hashmap! {i18n::args::NUMBER.into() => number.into()}))
+            Ok(CommandOutcome::Failure(
+                i18n::commands::DELETE_EXPENSE_NOT_FOUND.translate_with_args(
+                    ctx,
+                    &hashmap! {i18n::args::NUMBER.into() => number.into()},
+                ),
+            ))
         }
         Err(err) => {
             tracing::error!("{err}");
@@ -148,21 +155,11 @@ mod tests {
         bot.test_last_message(&response).await;
     }
 
-    test! { delete_expense_invalid_usage,
+    test! { delete_expense_empty_input_starts_dialogue,
         let db = db().await;
 
         let mut bot = TestBot::new(db, "/deleteexpense");
-        let help_message = i18n::help::HELP_DELETE_EXPENSE.translate_default();
-        let err = i18n::commands::INVALID_COMMAND_USAGE.translate_with_args_default(
-            &hashmap! {
-                i18n::args::COMMAND.into() => "/deleteexpense".into(),
-                i18n::args::HELP_MESSAGE.into() => help_message.into()
-            },
-        );
-        assert!(
-            bot.dispatch_and_last_message()
-                .await
-                .is_some_and(|msg| msg.starts_with(&err))
-        );
+        let response = i18n::dialogues::DELETE_EXPENSE_ASK_NUMBER.translate_default();
+        bot.test_last_message(&response).await;
     }
 }

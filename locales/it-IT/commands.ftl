@@ -9,7 +9,7 @@ set-language-not-available =
 
     Lingue disponibili:
     {$available-langs}
-set-language-ok = Lingua della chat impostata correttamente su {$langid}.
+set-language-ok = Lingua della chat impostata correttamente su {$language}.
 
 ## /setcurrency
 

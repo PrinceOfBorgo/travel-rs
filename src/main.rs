@@ -1,3 +1,9 @@
+// `surrealdb::Error` is ~144 bytes, which trips clippy's `result_large_err` lint
+// for every function returning `Result<_, surrealdb::Error>`. Boxing the error
+// would require touching dozens of public signatures and all call sites, so we
+// allow the lint crate-wide instead.
+#![allow(clippy::result_large_err)]
+
 #[macro_use]
 mod macros;
 
@@ -28,6 +34,12 @@ use dialogues::add_expense_dialogue::{self, AddExpenseState};
 use dialogues::pending_command_dialogue::{
     self, PendingCommandState, PendingCommandStorage,
     add_traveler::{self as pending_add_traveler},
+    delete_expense::{self as pending_delete_expense},
+    delete_transfer::{self as pending_delete_transfer},
+    delete_traveler::{self as pending_delete_traveler},
+    set_currency::{self as pending_set_currency},
+    set_language::{self as pending_set_language},
+    show_expense::{self as pending_show_expense},
 };
 use dialogues::storage::{self as dialogue_storage, DialogueRegistry, DialogueStorages};
 use dptree::{case, deps};
@@ -192,10 +204,59 @@ pub(crate) fn handler_tree() -> UpdateHandler<Box<dyn std::error::Error + Send +
         // Refuse if any dialogue is already running.
         .branch(
             case![Command::AddTraveler { name }]
-                .filter(|name: traveler::Name| name.trim().is_empty())
+                .filter(|name: CommandArg<traveler::Name>| name.is_missing())
                 .branch(any_dialogue_running_guard())
                 .enter_dialogue::<Message, PendingCommandStorage, PendingCommandState>()
                 .branch(case![PendingCommandState::Start].endpoint(pending_add_traveler::start)),
+        )
+        // DeleteTraveler command without an inline name -> start a dialogue
+        // to ask for the name. Inline form falls through to `commands_handler`.
+        .branch(
+            case![Command::DeleteTraveler { name }]
+                .filter(|name: CommandArg<traveler::Name>| name.is_missing())
+                .branch(any_dialogue_running_guard())
+                .enter_dialogue::<Message, PendingCommandStorage, PendingCommandState>()
+                .branch(case![PendingCommandState::Start].endpoint(pending_delete_traveler::start)),
+        )
+        // DeleteExpense without an inline number -> start dialogue.
+        .branch(
+            case![Command::DeleteExpense { number }]
+                .filter(|number: CommandArg<i64>| number.is_missing())
+                .branch(any_dialogue_running_guard())
+                .enter_dialogue::<Message, PendingCommandStorage, PendingCommandState>()
+                .branch(case![PendingCommandState::Start].endpoint(pending_delete_expense::start)),
+        )
+        // ShowExpense without an inline number -> start dialogue.
+        .branch(
+            case![Command::ShowExpense { number }]
+                .filter(|number: CommandArg<i64>| number.is_missing())
+                .branch(any_dialogue_running_guard())
+                .enter_dialogue::<Message, PendingCommandStorage, PendingCommandState>()
+                .branch(case![PendingCommandState::Start].endpoint(pending_show_expense::start)),
+        )
+        // DeleteTransfer without an inline number -> start dialogue.
+        .branch(
+            case![Command::DeleteTransfer { number }]
+                .filter(|number: CommandArg<i64>| number.is_missing())
+                .branch(any_dialogue_running_guard())
+                .enter_dialogue::<Message, PendingCommandStorage, PendingCommandState>()
+                .branch(case![PendingCommandState::Start].endpoint(pending_delete_transfer::start)),
+        )
+        // SetLanguage without an inline langid -> start dialogue.
+        .branch(
+            case![Command::SetLanguage { langid }]
+                .filter(|langid: CommandArg<LanguageIdentifier>| langid.is_missing())
+                .branch(any_dialogue_running_guard())
+                .enter_dialogue::<Message, PendingCommandStorage, PendingCommandState>()
+                .branch(case![PendingCommandState::Start].endpoint(pending_set_language::start)),
+        )
+        // SetCurrency without an inline currency -> start dialogue.
+        .branch(
+            case![Command::SetCurrency { currency }]
+                .filter(|currency: CommandArg<String>| currency.is_missing())
+                .branch(any_dialogue_running_guard())
+                .enter_dialogue::<Message, PendingCommandStorage, PendingCommandState>()
+                .branch(case![PendingCommandState::Start].endpoint(pending_set_currency::start)),
         )
         // Otherwise -> handle other commands
         .endpoint(commands_handler);
@@ -204,13 +265,39 @@ pub(crate) fn handler_tree() -> UpdateHandler<Box<dyn std::error::Error + Send +
 
     let add_expense_dialogue_branch = add_expense_dialogue::handler_branch();
 
-    Update::filter_message()
+    let message_branch = Update::filter_message()
         .filter(|msg: Message| filter_auth(msg))
         .map_async(update_chat_db) // Create chat record on db if it does not exist yet or update it
         .branch(command_branch)
         .branch(add_expense_dialogue_branch)
         .branch(pending_command_dialogue_branch)
-        .endpoint(unknown_command)
+        .endpoint(unknown_command);
+
+    // Inline-keyboard callback queries. Currently only `/setlanguage` uses
+    // them; the filter on the callback prefix keeps unrelated callbacks from
+    // tripping the dialogue handler.
+    let callback_branch = Update::filter_callback_query()
+        .filter(|q: CallbackQuery| {
+            q.data
+                .as_deref()
+                .is_some_and(|d| d.starts_with(pending_set_language::CALLBACK_PREFIX))
+        })
+        .filter(|q: CallbackQuery| {
+            q.regular_message()
+                .map(|m| is_chat_whitelisted(m.chat.id))
+                .unwrap_or(false)
+        })
+        .enter_dialogue::<CallbackQuery, PendingCommandStorage, PendingCommandState>()
+        .branch(
+            case![PendingCommandState::SetLanguage(state)].branch(
+                case![pending_set_language::SetLanguageState::AskLangid]
+                    .endpoint(pending_set_language::receive_callback),
+            ),
+        );
+
+    dptree::entry()
+        .branch(message_branch)
+        .branch(callback_branch)
 }
 
 fn filter_auth(msg: Message) -> bool {

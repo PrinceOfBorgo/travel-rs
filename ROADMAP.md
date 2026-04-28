@@ -29,6 +29,19 @@
 - [ ] Improve user experience:
   - [ ] Add inline keyboard support
   - [ ] Implement a Telegram Mini App
+  - [ ] Interactive prompts for commands invoked without their arguments:
+    - [ ] `Help`
+    - [x] `SetLanguage`
+    - [x] `SetCurrency`
+    - [x] `AddTraveler`
+    - [x] `DeleteTraveler`
+    - [x] `DeleteExpense`
+    - [ ] `ListExpenses`
+    - [x] `ShowExpense`
+    - [ ] `Transfer`
+    - [x] `DeleteTransfer`
+    - [ ] `ListTransfers`
+    - [ ] `ShowBalances`
 - [x] Add timestamps to expenses and transfers.
 - [x] Add `ShowStats` command.
 - [ ] Add `EditExpense` command.

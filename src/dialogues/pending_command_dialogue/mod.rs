@@ -9,8 +9,20 @@
 //! per-command states so that a single shared storage can drive any of them.
 
 pub mod add_traveler;
+pub mod delete_expense;
+pub mod delete_transfer;
+pub mod delete_traveler;
+pub mod set_currency;
+pub mod set_language;
+pub mod show_expense;
 
 use add_traveler::AddTravelerState;
+use delete_expense::DeleteExpenseState;
+use delete_transfer::DeleteTransferState;
+use delete_traveler::DeleteTravelerState;
+use set_currency::SetCurrencyState;
+use set_language::SetLanguageState;
+use show_expense::ShowExpenseState;
 use teloxide::{
     dispatching::{
         HandlerExt, UpdateHandler,
@@ -24,6 +36,12 @@ pub enum PendingCommandState {
     #[default]
     Start,
     AddTraveler(AddTravelerState),
+    DeleteTraveler(DeleteTravelerState),
+    DeleteExpense(DeleteExpenseState),
+    ShowExpense(ShowExpenseState),
+    DeleteTransfer(DeleteTransferState),
+    SetLanguage(SetLanguageState),
+    SetCurrency(SetCurrencyState),
 }
 
 pub type PendingCommandStorage = InMemStorage<PendingCommandState>;
@@ -32,7 +50,6 @@ pub type PendingCommandDialogue = Dialogue<PendingCommandState, PendingCommandSt
 /// Returns the dispatcher subtree that drives every pending-command dialogue.
 /// Composed into [`crate::handler_tree`] alongside other dialogues' branches.
 pub fn handler_branch() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'static>> {
-    use AddTravelerState::*;
     use PendingCommandState::*;
     use teloxide::dptree::{self, case};
 
@@ -41,6 +58,25 @@ pub fn handler_branch() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync
         .filter_async(crate::dialogues::storage::is_running::<PendingCommandState>)
         .enter_dialogue::<Message, PendingCommandStorage, PendingCommandState>()
         .branch(
-            case![AddTraveler(state)].branch(case![AskName].endpoint(add_traveler::receive_name)),
+            case![AddTraveler(state)]
+                .branch(case![AddTravelerState::AskName].endpoint(add_traveler::receive_name)),
         )
+        .branch(case![DeleteTraveler(state)].branch(
+            case![DeleteTravelerState::AskName].endpoint(delete_traveler::receive_name),
+        ))
+        .branch(case![DeleteExpense(state)].branch(
+            case![DeleteExpenseState::AskNumber].endpoint(delete_expense::receive_number),
+        ))
+        .branch(case![ShowExpense(state)].branch(
+            case![ShowExpenseState::AskNumber].endpoint(show_expense::receive_number),
+        ))
+        .branch(case![DeleteTransfer(state)].branch(
+            case![DeleteTransferState::AskNumber].endpoint(delete_transfer::receive_number),
+        ))
+        .branch(case![SetLanguage(state)].branch(
+            case![SetLanguageState::AskLangid].endpoint(set_language::receive_langid),
+        ))
+        .branch(case![SetCurrency(state)].branch(
+            case![SetCurrencyState::AskCurrency].endpoint(set_currency::receive_currency),
+        ))
 }

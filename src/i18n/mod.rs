@@ -4,12 +4,13 @@ pub mod dialogues;
 pub mod errors;
 pub mod format;
 pub mod help;
+pub mod labels;
 pub mod terms;
 mod to_fluent_datetime;
 mod translate;
 
 pub use to_fluent_datetime::ToFluentDateTime;
-pub use translate::{Translate, TranslateWithArgs};
+pub use translate::{Translate, TranslateWithArgs, TryTranslate, TryTranslateWithArgs};
 
 use crate::{commands::Command, consts::*, settings::SETTINGS};
 use commands::COMMAND_DESCRIPTIONS;
@@ -128,5 +129,7 @@ pub fn is_lang_available(langid: &LanguageIdentifier) -> bool {
 }
 
 pub fn available_langs() -> Box<dyn Iterator<Item = LanguageIdentifier>> {
-    Box::new(LOCALES.locales().cloned())
+    let mut langs: Vec<LanguageIdentifier> = LOCALES.locales().cloned().collect();
+    langs.sort_by_key(|a| a.to_string());
+    Box::new(langs.into_iter())
 }

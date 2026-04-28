@@ -3,14 +3,17 @@
 ## [0.2.6-SNAPSHOT] - Unreleased
 ### Added
 - Command descriptions shown by Telegram are now translated into the chat's selected language, and update automatically when the language is changed via `/setlanguage`.
+- `dialogues/pending_commands.ftl` and `labels.ftl` localization files.
+- `CommandArg` and `CommandOutcome` enums for structured command handling.
+- `/setlanguage`, `/setcurrency`, `/addtraveler`, `/deletetraveler`, `/deleteexpense`, `/showexpense`, `/deletetransfer` interactive dialogues for cases when commands are invoked without arguments.
 
 ### Changed
 - Added disk space cleanup step to `ci.yml` workflow.
 - Fixed descriptions for `dev-local` and `dev-local-docker` profiles settings files.
 - Replaced the batch script `start_docker_db.bat` with an enhanced PowerShell script. The new `start_docker_db.ps1` contains configurable variables for Docker parameters and retrieves the SurrealDB version from `Cargo.toml` to ensure a compatible Docker image is used.
 - Reworked `README.md` for clarity and updated structure.
-- `/addtraveler` now prompts for the traveler's name when invoked without one.
-- Heavily refactored dialogues a storages handling; `/cancel` works for any dialogue.
+- `/setlanguage`, `/setcurrency`, `/addtraveler`, `/deletetraveler`, `/deleteexpense`, `/showexpense`, `/deletetransfer` now prompt for their arguments when invoked without one.
+- Heavily refactored dialogues and storages handling; `/cancel` works for any dialogue.
 
 ### Fixed
 - N/A

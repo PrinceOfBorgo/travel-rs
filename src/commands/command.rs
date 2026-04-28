@@ -1,9 +1,9 @@
 use crate::{
     Context, HandlerResult,
     commands::{
-        HelpMessage, add_traveler, delete_expense, delete_transfer, delete_traveler, help,
-        list_expenses, list_transfers, list_travelers, set_currency, set_language, show_balances,
-        show_expense, show_stats, transfer,
+        CommandArg, CommandOutcome, HelpMessage, add_traveler, delete_expense, delete_transfer,
+        delete_traveler, help, list_expenses, list_transfers, list_travelers, set_currency,
+        set_language, show_balances, show_expense, show_stats, transfer,
     },
     consts::MIN_SIMILARITY_SCORE,
     i18n::{self, Translate, TranslateWithArgs, help::*},
@@ -12,8 +12,9 @@ use crate::{
 use maplit::hashmap;
 use rust_decimal::Decimal;
 use rust_fuzzy_search::fuzzy_search_best_n;
+use std::str::FromStr;
+use std::sync::LazyLock;
 use std::sync::{Arc, Mutex};
-use std::{str::FromStr, sync::LazyLock};
 use strum::{AsRefStr, EnumIter, EnumString, IntoEnumIterator};
 use surrealdb::{Surreal, engine::any::Any};
 use teloxide::{
@@ -36,23 +37,25 @@ pub enum Command {
     #[command(description = "{descr-help}")]
     Help { command: String },
     #[command(description = "{descr-set-language}")]
-    SetLanguage { langid: LanguageIdentifier },
+    SetLanguage {
+        langid: CommandArg<LanguageIdentifier>,
+    },
     #[command(description = "{descr-set-currency}")]
-    SetCurrency { currency: String },
+    SetCurrency { currency: CommandArg<String> },
     #[command(description = "{descr-add-traveler}")]
-    AddTraveler { name: Name },
+    AddTraveler { name: CommandArg<Name> },
     #[command(description = "{descr-delete-traveler}")]
-    DeleteTraveler { name: Name },
+    DeleteTraveler { name: CommandArg<Name> },
     #[command(description = "{descr-list-travelers}")]
     ListTravelers,
     #[command(description = "{descr-add-expense}")]
     AddExpense,
     #[command(description = "{descr-delete-expense}")]
-    DeleteExpense { number: i64 },
+    DeleteExpense { number: CommandArg<i64> },
     #[command(description = "{descr-list-expenses}")]
     ListExpenses { description: String },
     #[command(description = "{descr-show-expense}")]
-    ShowExpense { number: i64 },
+    ShowExpense { number: CommandArg<i64> },
     #[command(description = "{descr-transfer}", parse_with = "split")]
     Transfer {
         from: Name,
@@ -60,7 +63,7 @@ pub enum Command {
         amount: Decimal,
     },
     #[command(description = "{descr-delete-transfer}")]
-    DeleteTransfer { number: i64 },
+    DeleteTransfer { number: CommandArg<i64> },
     #[command(description = "{descr-list-transfers}")]
     ListTransfers { name: Name },
     #[command(description = "{descr-show-balances}")]
@@ -231,7 +234,9 @@ pub async fn commands_handler(
     cmd: Command,
     ctx: Arc<Mutex<Context>>,
 ) -> HandlerResult {
-    let reply = command_reply(db, &msg, &cmd, ctx.clone()).await;
+    let reply = command_reply(db, &msg, &cmd, ctx.clone())
+        .await
+        .into_message();
     bot.send_message(msg.chat.id, reply).await?;
 
     // After a successful /setlanguage, re-register the bot commands for this
@@ -260,35 +265,79 @@ pub async fn command_reply(
     msg: &Message,
     cmd: &Command,
     ctx: Arc<Mutex<Context>>,
-) -> String {
+) -> CommandOutcome {
     use Command::*;
 
-    let result = match cmd.clone() {
-        Help { command } => help(msg, &command, ctx.clone()),
-        SetLanguage { langid } => set_language(db, msg, langid, ctx.clone()).await,
-        SetCurrency { currency } => set_currency(db, msg, &currency, ctx.clone()).await,
-        AddTraveler { name } => add_traveler(db, msg, name, ctx.clone()).await,
-        DeleteTraveler { name } => delete_traveler(db, msg, name, ctx.clone()).await,
-        ListTravelers => list_travelers(db, msg, ctx.clone()).await,
-        DeleteExpense { number } => delete_expense(db, msg, number, ctx.clone()).await,
-        ListExpenses { description } => list_expenses(db, msg, &description, ctx.clone()).await,
-        ShowExpense { number } => show_expense(db, msg, number, ctx.clone()).await,
-        Transfer { from, to, amount } => transfer(db, msg, from, to, amount, ctx.clone()).await,
-        DeleteTransfer { number } => delete_transfer(db, msg, number, ctx.clone()).await,
-        ListTransfers { name } => list_transfers(db, msg, name, ctx.clone()).await,
-        ShowBalances { name } => show_balances(db, msg, name, ctx.clone()).await,
-        ShowStats => show_stats(db, msg, ctx.clone()).await,
+    let result: Result<CommandOutcome, _> = match cmd.clone() {
+        Help { command } => help(msg, &command, ctx.clone()).map(CommandOutcome::Success),
+        SetLanguage { langid } => {
+            set_language(db, msg, langid.expect_provided("setlanguage"), ctx.clone()).await
+        }
+        SetCurrency { currency } => {
+            set_currency(
+                db,
+                msg,
+                &currency.expect_provided("setcurrency"),
+                ctx.clone(),
+            )
+            .await
+        }
+        AddTraveler { name } => {
+            add_traveler(db, msg, name.expect_provided("addtraveler"), ctx.clone()).await
+        }
+        DeleteTraveler { name } => {
+            delete_traveler(db, msg, name.expect_provided("deletetraveler"), ctx.clone()).await
+        }
+        ListTravelers => list_travelers(db, msg, ctx.clone())
+            .await
+            .map(CommandOutcome::Success),
+        DeleteExpense { number } => {
+            delete_expense(
+                db,
+                msg,
+                number.expect_provided("deleteexpense"),
+                ctx.clone(),
+            )
+            .await
+        }
+        ListExpenses { description } => list_expenses(db, msg, &description, ctx.clone())
+            .await
+            .map(CommandOutcome::Success),
+        ShowExpense { number } => {
+            show_expense(db, msg, number.expect_provided("showexpense"), ctx.clone()).await
+        }
+        Transfer { from, to, amount } => transfer(db, msg, from, to, amount, ctx.clone())
+            .await
+            .map(CommandOutcome::Success),
+        DeleteTransfer { number } => {
+            delete_transfer(
+                db,
+                msg,
+                number.expect_provided("deletetransfer"),
+                ctx.clone(),
+            )
+            .await
+        }
+        ListTransfers { name } => list_transfers(db, msg, name, ctx.clone())
+            .await
+            .map(CommandOutcome::Success),
+        ShowBalances { name } => show_balances(db, msg, name, ctx.clone())
+            .await
+            .map(CommandOutcome::Success),
+        ShowStats => show_stats(db, msg, ctx.clone())
+            .await
+            .map(CommandOutcome::Success),
         Cancel | AddExpense => {
             unreachable!("This command is handled before calling this function.")
         }
     };
 
     result.unwrap_or_else(|err| {
-        format!(
+        CommandOutcome::Failure(format!(
             "{error_message}\n\n{help_message}",
             error_message = err.translate(ctx.clone()),
             help_message = cmd.help_message(ctx)
-        )
+        ))
     })
 }
 

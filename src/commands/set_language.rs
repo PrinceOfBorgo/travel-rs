@@ -1,9 +1,10 @@
 use crate::{
     Context,
     chat::Chat,
+    commands::CommandOutcome,
     consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     errors::CommandError,
-    i18n::{self, TranslateWithArgs},
+    i18n::{self, TranslateWithArgs, TryTranslate},
     trace_command_db,
 };
 use macro_rules_attribute::apply;
@@ -20,12 +21,12 @@ pub async fn set_language(
     msg: &Message,
     langid: LanguageIdentifier,
     ctx: Arc<Mutex<Context>>,
-) -> Result<String, CommandError> {
+) -> Result<CommandOutcome, CommandError> {
     tracing::debug!("{LOG_DEBUG_START}");
     // Check if language is available
     if !i18n::is_lang_available(&langid) {
         tracing::debug!("{LOG_DEBUG_SUCCESS}");
-        return Ok(
+        return Ok(CommandOutcome::Failure(
             i18n::commands::SET_LANGUAGE_NOT_AVAILABLE.translate_with_args(
                 ctx,
                 &hashmap! {
@@ -38,7 +39,7 @@ pub async fn set_language(
                         .into(),
                 },
             ),
-        );
+        ));
     }
 
     // Update chat language on db
@@ -51,9 +52,18 @@ pub async fn set_language(
                 ctx_guard.langid = langid.clone();
             }
 
-            Ok(i18n::commands::SET_LANGUAGE_OK.translate_with_args(
-                ctx.clone(),
-                &hashmap! {i18n::args::LANGID.into() => langid.to_string().into()},
+            Ok(CommandOutcome::Success(
+                i18n::commands::SET_LANGUAGE_OK.translate_with_args(
+                    ctx.clone(),
+                    &hashmap! {
+                        // Fall back to langid when the label is not defined
+                        i18n::args::LANGUAGE.into() =>
+                            format!("{}{langid}", i18n::labels::LANGUAGE_LABEL_PREFIX)
+                                .try_translate(ctx.clone())
+                                .unwrap_or_else(|| langid.to_string())
+                                .into(),
+                    },
+                ),
             ))
         }
         Err(err) => {
@@ -67,7 +77,7 @@ pub async fn set_language(
 mod tests {
     use crate::{
         db::db,
-        i18n::{self, TranslateWithArgs},
+        i18n::{self, Translate, TranslateWithArgs},
         tests::TestBot,
     };
     use maplit::hashmap;
@@ -78,9 +88,12 @@ mod tests {
         let mut bot = TestBot::new(db, "/setlanguage it-IT");
         let last_message = bot.dispatch_and_last_message().await.unwrap();
 
+        let ctx = bot.context();
+        let language = format!("{}it-IT", i18n::labels::LANGUAGE_LABEL_PREFIX)
+            .translate(ctx.clone());
         let response = i18n::commands::SET_LANGUAGE_OK.translate_with_args(
-            bot.context(),  // Use the new context to retrieve the updated language
-            &hashmap! {i18n::args::LANGID.into() => "it-IT".into()},
+            ctx,  // Use the new context to retrieve the updated language
+            &hashmap! {i18n::args::LANGUAGE.into() => language.into()},
         );
         // Check that the last message is the expected response
         assert_eq!(last_message, response);

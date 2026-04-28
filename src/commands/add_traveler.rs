@@ -1,5 +1,6 @@
 use crate::{
     Context,
+    commands::CommandOutcome,
     consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     errors::CommandError,
     i18n::{self, TranslateWithArgs},
@@ -19,7 +20,7 @@ pub async fn add_traveler(
     msg: &Message,
     name: Name,
     ctx: Arc<Mutex<Context>>,
-) -> Result<String, CommandError> {
+) -> Result<CommandOutcome, CommandError> {
     tracing::debug!("{LOG_DEBUG_START}");
 
     // Check if traveler exists on db
@@ -32,8 +33,10 @@ pub async fn add_traveler(
                     &hashmap! {i18n::args::NAME.into() => name.clone().into()},
                 )
             );
-            Ok(i18n::commands::ADD_TRAVELER_ALREADY_ADDED
-                .translate_with_args(ctx, &hashmap! {i18n::args::NAME.into() => name.into()}))
+            Ok(CommandOutcome::Failure(
+                i18n::commands::ADD_TRAVELER_ALREADY_ADDED
+                    .translate_with_args(ctx, &hashmap! {i18n::args::NAME.into() => name.into()}),
+            ))
         }
         Ok(_) => {
             // Create traveler on db
@@ -41,9 +44,11 @@ pub async fn add_traveler(
             match create_res {
                 Ok(_) => {
                     tracing::debug!("{LOG_DEBUG_SUCCESS}");
-                    Ok(i18n::commands::ADD_TRAVELER_OK.translate_with_args(
-                        ctx,
-                        &hashmap! {i18n::args::NAME.into() => name.into()},
+                    Ok(CommandOutcome::Success(
+                        i18n::commands::ADD_TRAVELER_OK.translate_with_args(
+                            ctx,
+                            &hashmap! {i18n::args::NAME.into() => name.into()},
+                        ),
                     ))
                 }
                 Err(err) => {
