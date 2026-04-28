@@ -1,6 +1,15 @@
 ## general
 
-process-already-running = Another process is already running, please cancel it first sending /{-cancel-command}.
+process-already-running = Another process ({$process}) is already running, please cancel it first sending /{-cancel-command}.
+running-process-unknown = unknown
+running-process-add-expense = /{-add-expense-command}
+running-process-add-traveler = /{-add-traveler-command}
+running-process-delete-traveler = /{-delete-traveler-command}
+running-process-delete-expense = /{-delete-expense-command}
+running-process-show-expense = /{-show-expense-command}
+running-process-delete-transfer = /{-delete-transfer-command}
+running-process-set-language = /{-set-language-command}
+running-process-set-currency = /{-set-currency-command}
 
 ## /setlanguage
 

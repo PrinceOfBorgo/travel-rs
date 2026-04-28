@@ -32,6 +32,7 @@ pub const NUMBER: &str = "number";
 pub const OLDEST: &str = "oldest";
 pub const OLDEST_TIMESTAMP: &str = "oldest-timestamp";
 pub const OTHER_TRAVELER_NAME: &str = "other-traveler-name";
+pub const PROCESS: &str = "process";
 pub const RECEIVER: &str = "receiver";
 pub const SENDER: &str = "sender";
 pub const SHARES: &str = "shares";

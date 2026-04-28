@@ -1,13 +1,16 @@
 //! Generic helpers shared across dialogue handlers.
 //!
-//! [`DialogueStorageDyn`] is a small type-erased view over any
-//! [`teloxide::dispatching::dialogue::Storage`], used by [`DialogueRegistry`]
-//! to treat all known dialogue storages uniformly when checking for or
-//! exiting an active dialogue.
+//! Every dialogue state implements [`DialogueState`], which exposes the
+//! Fluent message id describing the running process. [`DialogueStorageDyn`]
+//! is a small type-erased view over any
+//! [`teloxide::dispatching::dialogue::Storage`] of such a state, used by
+//! [`DialogueRegistry`] to treat all known dialogue storages uniformly
+//! when checking for, labelling, or exiting an active dialogue.
 //!
-//! Adding a new dialogue requires only registering its storage in
-//! [`DialogueRegistry`] (built in `deps()` in `main.rs`); nothing in this
-//! module needs to change.
+//! Adding a new dialogue requires (1) implementing [`DialogueState`] for
+//! its state enum and (2) registering its storage in [`DialogueRegistry`]
+//! (built in `deps()` in `main.rs`); nothing else in this module needs to
+//! change.
 
 use crate::{
     Context, HandlerResult,
@@ -15,10 +18,11 @@ use crate::{
         add_expense_dialogue::AddExpenseState,
         pending_command_dialogue::{PendingCommandState, PendingCommandStorage},
     },
-    i18n::{self, Translate},
+    i18n::{self, Translate, TranslateWithArgs, args},
     utils::trace_skip_all,
 };
 use macro_rules_attribute::apply;
+use maplit::hashmap;
 use std::{
     future::Future,
     marker::PhantomData,
@@ -34,11 +38,23 @@ use tracing::Level;
 
 type BoxFut<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
 
+/// Common interface every dialogue state implements. Centralises the
+/// per-state behaviour (currently: producing the Fluent message id used
+/// in the "another process is already running" notice) so the registry
+/// machinery never needs to name concrete state types.
+pub trait DialogueState: Default + Clone + Send + Sync + 'static {
+    /// Fluent message id describing this dialogue to the user.
+    fn running_label(&self) -> &'static str;
+}
+
 /// Type-erased view over a dialogue storage. Lets us hold heterogeneous
 /// storages in a single collection.
 pub trait DialogueStorageDyn: Send + Sync {
     /// `true` iff a dialogue exists in this storage for `chat_id`.
     fn is_running<'a>(&'a self, chat_id: ChatId) -> BoxFut<'a, bool>;
+    /// Returns the Fluent message id describing the dialogue currently
+    /// running for `chat_id` in this storage, or `None` if none is active.
+    fn running_label<'a>(&'a self, chat_id: ChatId) -> BoxFut<'a, Option<&'static str>>;
     /// Drops the dialogue stored for `chat_id`, if any.
     fn try_exit<'a>(&'a self, chat_id: ChatId) -> BoxFut<'a, HandlerResult>;
 }
@@ -57,11 +73,23 @@ impl<S, D> DialogueStorageDyn for StorageAdapter<S, D>
 where
     S: Storage<D> + ?Sized + Send + Sync + 'static,
     <S as Storage<D>>::Error: std::error::Error + Send + Sync,
-    D: Default + Send + Sync + 'static,
+    D: DialogueState,
 {
     fn is_running<'a>(&'a self, chat_id: ChatId) -> BoxFut<'a, bool> {
         let storage = Arc::clone(&self.storage);
         Box::pin(async move { storage.get_dialogue(chat_id).await.ok().flatten().is_some() })
+    }
+
+    fn running_label<'a>(&'a self, chat_id: ChatId) -> BoxFut<'a, Option<&'static str>> {
+        let storage = Arc::clone(&self.storage);
+        Box::pin(async move {
+            storage
+                .get_dialogue(chat_id)
+                .await
+                .ok()
+                .flatten()
+                .map(|state| state.running_label())
+        })
     }
 
     fn try_exit<'a>(&'a self, chat_id: ChatId) -> BoxFut<'a, HandlerResult> {
@@ -76,12 +104,13 @@ where
 }
 
 /// Wraps any concrete dialogue storage into a type-erased
-/// [`DialogueStorageDyn`] suitable for [`DialogueRegistry`].
+/// [`DialogueStorageDyn`] suitable for [`DialogueRegistry`]. The label is
+/// produced via the [`DialogueState`] impl on `D`.
 pub fn erase<S, D>(storage: Arc<S>) -> Arc<dyn DialogueStorageDyn>
 where
     S: Storage<D> + ?Sized + Send + Sync + 'static,
     <S as Storage<D>>::Error: std::error::Error + Send + Sync,
-    D: Default + Send + Sync + 'static,
+    D: DialogueState,
 {
     Arc::new(StorageAdapter::<S, D> {
         storage,
@@ -147,6 +176,17 @@ impl DialogueRegistry {
         false
     }
 
+    /// Returns the Fluent message id describing the first dialogue found to
+    /// be running for `chat_id`, or `None` if no dialogue is active.
+    pub async fn running_label(&self, chat_id: ChatId) -> Option<&'static str> {
+        for storage in self.storages.iter() {
+            if let Some(label) = storage.running_label(chat_id).await {
+                return Some(label);
+            }
+        }
+        None
+    }
+
     /// Exits every active dialogue for `chat_id`. Returns `true` if at least
     /// one dialogue was actually present and exited.
     pub async fn exit_all(
@@ -175,25 +215,33 @@ pub async fn any_running(registry: DialogueRegistry, msg: Message) -> bool {
 /// at the call site, e.g. `is_running::<AddExpenseState>`.
 pub async fn is_running<D>(storage: Arc<InMemStorage<D>>, msg: Message) -> bool
 where
-    D: Clone + Default + Send + Sync + 'static,
+    D: DialogueState,
 {
     erase::<_, D>(storage).is_running(msg.chat.id).await
 }
 
 /// Endpoint used as a dispatcher leaf when a new dialogue would collide with
 /// one that is already in progress. Sends the localized
-/// `process-already-running` message and stops dispatching.
+/// `process-already-running` message (interpolating the name of the
+/// dialogue that is currently running, when known) and stops dispatching.
 #[apply(trace_skip_all)]
 pub async fn process_already_running_endpoint(
     bot: Bot,
     msg: Message,
     ctx: Arc<Mutex<Context>>,
+    registry: DialogueRegistry,
 ) -> HandlerResult {
-    bot.send_message(
-        msg.chat.id,
-        i18n::commands::PROCESS_ALREADY_RUNNING.translate(ctx),
-    )
-    .await?;
+    let process_name = match registry.running_label(msg.chat.id).await {
+        Some(label) => label.translate(Arc::clone(&ctx)),
+        // Race: the offending dialogue exited between the filter and here.
+        // Fall back to a generic placeholder so the message still renders.
+        None => i18n::commands::RUNNING_PROCESS_UNKNOWN.translate(Arc::clone(&ctx)),
+    };
+    let text = i18n::commands::PROCESS_ALREADY_RUNNING.translate_with_args(
+        ctx,
+        &hashmap! { args::PROCESS.into() => process_name.into() },
+    );
+    bot.send_message(msg.chat.id, text).await?;
     Ok(())
 }
 

@@ -37,7 +37,12 @@ async fn assert_dialogues_are_mutually_exclusive(
 
     // Intruder command is refused.
     bot.update(intruder_command);
-    let refused = crate::i18n::commands::PROCESS_ALREADY_RUNNING.translate_default();
+    let process = host_command.trim_start_matches('/');
+    let refused = crate::i18n::commands::PROCESS_ALREADY_RUNNING.translate_with_args_default(
+        &maplit::hashmap! {
+            crate::i18n::args::PROCESS.into() => format!("/{process}").into(),
+        },
+    );
     bot.test_last_message(&refused).await;
 
     // Host dialogue is still alive and progresses on the next input.

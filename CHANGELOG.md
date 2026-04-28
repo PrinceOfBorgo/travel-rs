@@ -23,6 +23,7 @@
 - Reworked `README.md` for clarity and updated structure.
 - `/setlanguage`, `/setcurrency`, `/addtraveler`, `/deletetraveler`, `/deleteexpense`, `/showexpense`, `/deletetransfer` now prompt for their arguments when invoked without one.
 - Heavily refactored dialogues and storages handling; `/cancel` works for any dialogue.
+- The "another process is already running" notice now identifies which dialogue is in progress (e.g. `Another process (/addexpense) is already running, ...`). Each dialogue state implements a shared `DialogueState` trait that exposes its user-facing label.
 - `/listtransfers` and `/showbalances` now accept their `name` argument as optional via `CommandArg<Name>`.
 
 ### Fixed

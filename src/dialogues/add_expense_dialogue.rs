@@ -66,6 +66,15 @@ pub enum AddExpenseState {
         split_among: BTreeMap<Name, AmountEnum>,
     },
 }
+
+/// AddExpense has a single user-facing identity regardless of which step
+/// the dialogue is on, so the state is unused.
+impl crate::dialogues::storage::DialogueState for AddExpenseState {
+    fn running_label(&self) -> &'static str {
+        crate::i18n::commands::RUNNING_PROCESS_ADD_EXPENSE
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum SplitAmongEnum {
     List,

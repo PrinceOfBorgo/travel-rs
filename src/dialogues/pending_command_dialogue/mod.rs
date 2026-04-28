@@ -47,6 +47,26 @@ pub enum PendingCommandState {
 pub type PendingCommandStorage = InMemStorage<PendingCommandState>;
 pub type PendingCommandDialogue = Dialogue<PendingCommandState, PendingCommandStorage>;
 
+/// Maps a [`PendingCommandState`] to the Fluent message id describing the
+/// underlying command for user-facing messages (e.g. the "another process
+/// is already running" notice). `Start` reports a generic placeholder
+/// because no specific command has been picked yet.
+impl crate::dialogues::storage::DialogueState for PendingCommandState {
+    fn running_label(&self) -> &'static str {
+        use crate::i18n::commands::*;
+        match self {
+            PendingCommandState::Start => RUNNING_PROCESS_UNKNOWN,
+            PendingCommandState::AddTraveler(_) => RUNNING_PROCESS_ADD_TRAVELER,
+            PendingCommandState::DeleteTraveler(_) => RUNNING_PROCESS_DELETE_TRAVELER,
+            PendingCommandState::DeleteExpense(_) => RUNNING_PROCESS_DELETE_EXPENSE,
+            PendingCommandState::ShowExpense(_) => RUNNING_PROCESS_SHOW_EXPENSE,
+            PendingCommandState::DeleteTransfer(_) => RUNNING_PROCESS_DELETE_TRANSFER,
+            PendingCommandState::SetLanguage(_) => RUNNING_PROCESS_SET_LANGUAGE,
+            PendingCommandState::SetCurrency(_) => RUNNING_PROCESS_SET_CURRENCY,
+        }
+    }
+}
+
 /// Returns the dispatcher subtree that drives every pending-command dialogue.
 /// Composed into [`crate::handler_tree`] alongside other dialogues' branches.
 pub fn handler_branch() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'static>> {
@@ -61,22 +81,30 @@ pub fn handler_branch() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync
             case![AddTraveler(state)]
                 .branch(case![AddTravelerState::AskName].endpoint(add_traveler::receive_name)),
         )
-        .branch(case![DeleteTraveler(state)].branch(
-            case![DeleteTravelerState::AskName].endpoint(delete_traveler::receive_name),
-        ))
-        .branch(case![DeleteExpense(state)].branch(
-            case![DeleteExpenseState::AskNumber].endpoint(delete_expense::receive_number),
-        ))
-        .branch(case![ShowExpense(state)].branch(
-            case![ShowExpenseState::AskNumber].endpoint(show_expense::receive_number),
-        ))
+        .branch(
+            case![DeleteTraveler(state)].branch(
+                case![DeleteTravelerState::AskName].endpoint(delete_traveler::receive_name),
+            ),
+        )
+        .branch(
+            case![DeleteExpense(state)].branch(
+                case![DeleteExpenseState::AskNumber].endpoint(delete_expense::receive_number),
+            ),
+        )
+        .branch(
+            case![ShowExpense(state)]
+                .branch(case![ShowExpenseState::AskNumber].endpoint(show_expense::receive_number)),
+        )
         .branch(case![DeleteTransfer(state)].branch(
             case![DeleteTransferState::AskNumber].endpoint(delete_transfer::receive_number),
         ))
-        .branch(case![SetLanguage(state)].branch(
-            case![SetLanguageState::AskLangid].endpoint(set_language::receive_langid),
-        ))
-        .branch(case![SetCurrency(state)].branch(
-            case![SetCurrencyState::AskCurrency].endpoint(set_currency::receive_currency),
-        ))
+        .branch(
+            case![SetLanguage(state)]
+                .branch(case![SetLanguageState::AskLangid].endpoint(set_language::receive_langid)),
+        )
+        .branch(
+            case![SetCurrency(state)].branch(
+                case![SetCurrencyState::AskCurrency].endpoint(set_currency::receive_currency),
+            ),
+        )
 }

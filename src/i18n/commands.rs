@@ -2,6 +2,16 @@ pub const COMMAND_DESCRIPTIONS: &str = "command-descriptions";
 
 pub const PROCESS_ALREADY_RUNNING: &str = "process-already-running";
 
+pub const RUNNING_PROCESS_UNKNOWN: &str = "running-process-unknown";
+pub const RUNNING_PROCESS_ADD_EXPENSE: &str = "running-process-add-expense";
+pub const RUNNING_PROCESS_ADD_TRAVELER: &str = "running-process-add-traveler";
+pub const RUNNING_PROCESS_DELETE_TRAVELER: &str = "running-process-delete-traveler";
+pub const RUNNING_PROCESS_DELETE_EXPENSE: &str = "running-process-delete-expense";
+pub const RUNNING_PROCESS_SHOW_EXPENSE: &str = "running-process-show-expense";
+pub const RUNNING_PROCESS_DELETE_TRANSFER: &str = "running-process-delete-transfer";
+pub const RUNNING_PROCESS_SET_LANGUAGE: &str = "running-process-set-language";
+pub const RUNNING_PROCESS_SET_CURRENCY: &str = "running-process-set-currency";
+
 pub const SET_LANGUAGE_NOT_AVAILABLE: &str = "set-language-not-available";
 pub const SET_LANGUAGE_OK: &str = "set-language-ok";
 
