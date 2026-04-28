@@ -22,6 +22,8 @@ command-error-show-stats = Couldn't show statistics.
 name-validation-error-starts-with-slash = The name "{$name}" starts with a slash "/".
 name-validation-error-invalid-char = The name "{$name}" contains an invalid character: "{$char}".
 name-validation-error-reserved-keyword = "{$name}" is a reserved keyword.
+name-validation-error-empty = The name cannot be empty.
+name-validation-error-control-char = The name "{$name}" contains a control or invisible character.
 
 ## AddExpenseError
 

@@ -6,6 +6,7 @@ pub const ADD_EXPENSE_INVALID_DESCRIPTION: &str = "add-expense-invalid-descripti
 
 pub const ADD_EXPENSE_ASK_PAID_BY: &str = "add-expense-ask-paid-by";
 pub const ADD_EXPENSE_INVALID_AMOUNT: &str = "add-expense-invalid-amount";
+pub const ADD_EXPENSE_NON_POSITIVE_AMOUNT: &str = "add-expense-non-positive-amount";
 
 pub const ADD_EXPENSE_INVALID_PAID_BY: &str = "add-expense-invalid-paid-by";
 pub const ADD_EXPENSE_ASK_SHARES: &str = "add-expense-ask-shares";

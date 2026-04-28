@@ -93,7 +93,7 @@ DEFINE FUNCTION OVERWRITE fn::calc_debts($chat: record<chat>) {
 } COMMENT 'Calculate and simplify debts between users in a chat' PERMISSIONS FULL;
 DEFINE FUNCTION OVERWRITE fn::clear_debts($chat: record<chat>) { DELETE owes WHERE in.chat.id = $chat; } COMMENT 'Utility function to clear all debts' PERMISSIONS FULL;
 DEFINE FUNCTION OVERWRITE fn::delete_traveler($chat: record<chat>, $name: string) {
-    LET $traveler = (SELECT * FROM traveler WHERE chat = $chat AND name = $name)[0];
+    LET $traveler = (SELECT * FROM traveler WHERE chat = $chat AND name_lower = string::lowercase($name))[0];
     DELETE ($traveler->paid_for->expense).id;
     DELETE $traveler;
 } COMMENT 'Delete a traveler and all expenses paid by them' PERMISSIONS FULL;
@@ -274,7 +274,10 @@ DEFINE FUNCTION OVERWRITE fn::traveler_stats($chat: record<chat>) {
 
 DEFINE TABLE OVERWRITE chat TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;
 
-DEFINE FIELD OVERWRITE currency ON chat TYPE string PERMISSIONS FOR select, create, update WHERE FULL;
+DEFINE FIELD OVERWRITE currency ON chat TYPE string
+    ASSERT string::len($value) > 0
+        AND string::matches($value, "^[A-Z]+$")
+    PERMISSIONS FOR select, create, update WHERE FULL;
 DEFINE FIELD OVERWRITE lang ON chat TYPE string PERMISSIONS FOR select, create, update WHERE FULL;
 DEFINE FIELD OVERWRITE last_interaction_utc ON chat TYPE datetime PERMISSIONS FOR select, create, update WHERE FULL;
 
@@ -285,7 +288,9 @@ DEFINE FIELD OVERWRITE last_interaction_utc ON chat TYPE datetime PERMISSIONS FO
 
 DEFINE TABLE OVERWRITE expense TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;
 
-DEFINE FIELD OVERWRITE amount ON expense TYPE decimal PERMISSIONS FOR select, create, update WHERE FULL;
+DEFINE FIELD OVERWRITE amount ON expense TYPE decimal
+    ASSERT $value > 0dec
+    PERMISSIONS FOR select, create, update WHERE FULL;
 DEFINE FIELD OVERWRITE chat ON expense TYPE record<chat> PERMISSIONS FOR select, create, update WHERE FULL;
 DEFINE FIELD OVERWRITE description ON expense TYPE string PERMISSIONS FOR select, create, update WHERE FULL;
 DEFINE FIELD OVERWRITE number ON expense TYPE int PERMISSIONS FOR select, create, update WHERE FULL;
@@ -325,7 +330,9 @@ DEFINE INDEX OVERWRITE paid_for_unique_expense ON paid_for FIELDS out UNIQUE;
 
 DEFINE TABLE OVERWRITE split TYPE RELATION IN traveler OUT expense SCHEMAFULL PERMISSIONS NONE;
 
-DEFINE FIELD OVERWRITE amount ON split TYPE decimal PERMISSIONS FOR select, create, update WHERE FULL;
+DEFINE FIELD OVERWRITE amount ON split TYPE decimal
+    ASSERT $value > 0dec
+    PERMISSIONS FOR select, create, update WHERE FULL;
 DEFINE FIELD OVERWRITE in ON split TYPE record<traveler> PERMISSIONS FULL;
 DEFINE FIELD OVERWRITE out ON split TYPE record<expense> PERMISSIONS FULL;
 
@@ -338,10 +345,16 @@ DEFINE INDEX OVERWRITE split_unique_relationships ON split FIELDS in, out UNIQUE
 
 DEFINE TABLE OVERWRITE transferred_to TYPE RELATION IN traveler OUT traveler SCHEMAFULL PERMISSIONS NONE;
 
-DEFINE FIELD OVERWRITE amount ON transferred_to TYPE decimal PERMISSIONS FOR select, create, update WHERE FULL;
-DEFINE FIELD OVERWRITE in ON transferred_to TYPE record<traveler> PERMISSIONS FULL;
+DEFINE FIELD OVERWRITE amount ON transferred_to TYPE decimal
+    ASSERT $value > 0dec
+    PERMISSIONS FOR select, create, update WHERE FULL;
+DEFINE FIELD OVERWRITE in ON transferred_to TYPE record<traveler>
+    ASSERT $value != $this.out
+    PERMISSIONS FULL;
 DEFINE FIELD OVERWRITE number ON transferred_to TYPE int PERMISSIONS FULL;
-DEFINE FIELD OVERWRITE out ON transferred_to TYPE record<traveler> PERMISSIONS FULL;
+DEFINE FIELD OVERWRITE out ON transferred_to TYPE record<traveler>
+    ASSERT $value != $this.in
+    PERMISSIONS FULL;
 DEFINE FIELD OVERWRITE timestamp_utc ON transferred_to VALUE time::now() PERMISSIONS FOR select FULL, FOR create, update NONE;
 
 DEFINE INDEX OVERWRITE transferred_to_chat_number_index ON transferred_to FIELDS in.chat, number UNIQUE;
@@ -354,6 +367,14 @@ DEFINE INDEX OVERWRITE transferred_to_chat_number_index ON transferred_to FIELDS
 DEFINE TABLE OVERWRITE traveler TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;
 
 DEFINE FIELD OVERWRITE chat ON traveler TYPE record<chat> PERMISSIONS FOR select, create, update WHERE FULL;
-DEFINE FIELD OVERWRITE name ON traveler TYPE string ASSERT string::len($value) > 0 PERMISSIONS FOR select, create, update WHERE FULL;
+DEFINE FIELD OVERWRITE name ON traveler TYPE string
+    ASSERT string::len($value) > 0
+        AND !string::starts_with($value, "/")
+        AND !string::contains($value, ";")
+        AND !string::contains($value, ":")
+        AND !string::contains($value, ",")
+        AND !string::contains($value, '"')
+    PERMISSIONS FOR select, create, update WHERE FULL;
+DEFINE FIELD OVERWRITE name_lower ON traveler TYPE string PERMISSIONS FOR select, create, update WHERE FULL;
 
-DEFINE INDEX OVERWRITE traveler_chat_name_index ON traveler FIELDS chat, name UNIQUE;
+DEFINE INDEX OVERWRITE traveler_chat_name_lower_index ON traveler FIELDS chat, name_lower UNIQUE;

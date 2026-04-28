@@ -12,6 +12,7 @@ add-expense-invalid-description = Hai inviato un testo non valido, per favore ri
 
 add-expense-ask-paid-by = Chi ha pagato per questo?
 add-expense-invalid-amount = Hai inviato un importo non valido, per favore riprova.
+add-expense-non-positive-amount = L'importo deve essere maggiore di zero.
 
 ## receive_paid_by
 

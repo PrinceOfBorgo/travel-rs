@@ -22,32 +22,39 @@ use tracing::Level;
 pub async fn show_balances(
     db: Arc<Surreal<Any>>,
     msg: &Message,
-    name: Name,
+    name: Option<Name>,
     ctx: Arc<Mutex<Context>>,
 ) -> Result<String, CommandError> {
     tracing::debug!("{LOG_DEBUG_START}");
-    let res = if name.is_empty() {
-        show_balances_no_name(db, msg, ctx).await
-    } else {
-        // Check if traveler exists on db
-        let count_res = Traveler::db_count(db.clone(), msg.chat.id, &name).await;
-        match count_res {
-            Ok(Some(count)) if *count > 0 => {
-                show_balances_with_name(db, msg, name.clone(), ctx).await
-            }
-            Ok(_) => {
-                tracing::warn!(
-                    "{}",
-                    i18n::commands::SHOW_BALANCES_TRAVELER_NOT_FOUND.translate_with_args_default(
-                        &hashmap! {i18n::args::NAME.into() => name.clone().into()},
-                    )
-                );
-                return Ok(i18n::commands::SHOW_BALANCES_TRAVELER_NOT_FOUND
-                    .translate_with_args(ctx, &hashmap! {i18n::args::NAME.into() => name.into()}));
-            }
-            Err(err) => {
-                tracing::error!("{err}");
-                return Err(CommandError::ShowBalances { name });
+    let res = match &name {
+        None => show_balances_no_name(db, msg, ctx.clone()).await,
+        Some(name) => {
+            // Look up the traveler so we can use the canonical name (as
+            // stored in the database) in the response and in any further
+            // comparisons.
+            let select_res = Traveler::db_select_by_name(db.clone(), msg.chat.id, name).await;
+            match select_res {
+                Ok(Some(traveler)) => {
+                    show_balances_with_name(db, msg, traveler.name, ctx.clone()).await
+                }
+                Ok(_) => {
+                    tracing::warn!(
+                        "{}",
+                        i18n::commands::SHOW_BALANCES_TRAVELER_NOT_FOUND
+                            .translate_with_args_default(
+                                &hashmap! {i18n::args::NAME.into() => name.clone().into()},
+                            )
+                    );
+                    return Ok(i18n::commands::SHOW_BALANCES_TRAVELER_NOT_FOUND
+                        .translate_with_args(
+                            ctx,
+                            &hashmap! {i18n::args::NAME.into() => name.clone().into()},
+                        ));
+                }
+                Err(err) => {
+                    tracing::error!("{err}");
+                    return Err(CommandError::ShowBalances { name: name.clone() });
+                }
             }
         }
     };
@@ -59,7 +66,9 @@ pub async fn show_balances(
         }
         Err(err) => {
             tracing::error!("{err}");
-            Err(CommandError::ShowBalances { name })
+            Err(CommandError::ShowBalances {
+                name: name.unwrap_or_default(),
+            })
         }
     }
 }
@@ -421,7 +430,7 @@ mod tests {
 
         // Transfer money
         helpers::transfer(&mut bot, "David", "Alice", Decimal::from_str("100").unwrap()).await;
-        helpers::transfer(&mut bot, "David", "Charlie", Decimal::from_str("-50").unwrap()).await;
+        helpers::transfer(&mut bot, "Charlie", "David", Decimal::from_str("50").unwrap()).await;
         helpers::transfer(&mut bot, "David", "Bob", Decimal::from_str("75").unwrap()).await;
         helpers::transfer(&mut bot, "Alice", "Charlie", Decimal::from_str("50").unwrap()).await;
         helpers::transfer(&mut bot, "Alice", "Bob", Decimal::from_str("10").unwrap()).await;
@@ -539,10 +548,10 @@ mod tests {
 
         // Transfer money
         helpers::transfer(&mut bot, "David", "Alice", Decimal::from_str("100").unwrap()).await;
-        helpers::transfer(&mut bot, "David", "Charlie", Decimal::from_str("-50").unwrap()).await;
+        helpers::transfer(&mut bot, "Charlie", "David", Decimal::from_str("50").unwrap()).await;
         helpers::transfer(&mut bot, "David", "Bob", Decimal::from_str("75").unwrap()).await;
         helpers::transfer(&mut bot, "Alice", "Charlie", Decimal::from_str("50").unwrap()).await;
-        helpers::transfer(&mut bot, "Alice", "Bob", Decimal::from_str("-10").unwrap()).await;
+        helpers::transfer(&mut bot, "Bob", "Alice", Decimal::from_str("10").unwrap()).await;
         helpers::transfer(&mut bot, "Bob", "Charlie", Decimal::from_str("50").unwrap()).await;
 
         // Show balances
@@ -559,5 +568,36 @@ mod tests {
         let response = i18n::commands::SHOW_BALANCES_TRAVELER_NOT_FOUND.translate_with_args_default(&hashmap! {i18n::args::NAME.into() => "UnknownTraveler".into()},
         );
         bot.test_last_message(&response).await;
+    }
+
+    test! { show_balances_uses_canonical_name_case_insensitive,
+        let db = db().await;
+        let mut bot = TestBot::new(db.clone(), "");
+
+        // Add travelers "Alice" and "Bob"
+        helpers::add_traveler(&mut bot, "Alice").await;
+        helpers::add_traveler(&mut bot, "Bob").await;
+
+        // Bob owes Alice 50
+        helpers::add_expense(
+            &mut bot,
+            "Test expense",
+            100.into(),
+            "Alice",
+            &["Alice; Bob", "end"],
+        ).await;
+
+        // Query with mixed casing -> should display canonical "Alice"
+        // (not "ALICE") and find the balance with Bob.
+        bot.update("/showbalances ALICE");
+        let last = bot.dispatch_and_last_message().await.unwrap_or_default();
+        assert!(
+            last.contains("Alice") && !last.contains("ALICE"),
+            "Expected canonical name 'Alice' in response, got: {last}"
+        );
+        // Sanity-check: not the "settled up" message.
+        let settled = i18n::commands::SHOW_BALANCES_TRAVELER_SETTLED_UP
+            .translate_with_args_default(&hashmap! {i18n::args::NAME.into() => "Alice".into()});
+        assert_ne!(last, settled);
     }
 }

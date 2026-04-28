@@ -29,6 +29,9 @@ pub async fn delete_traveler(
     let select_res = Traveler::db_select_by_name(db.clone(), msg.chat.id, &name).await;
     match select_res {
         Ok(Some(traveler)) => {
+            // Use the traveler name as stored in the database (canonical
+            // casing) rather than the user input for response messages.
+            let canonical_name = traveler.name.clone();
             // Check if traveler has paid for expenses
             let list_res = Expense::db_select_by_payer(db.clone(), traveler).await;
             match list_res {
@@ -44,7 +47,7 @@ pub async fn delete_traveler(
                             Ok(CommandOutcome::Success(
                                 i18n::commands::DELETE_TRAVELER_OK.translate_with_args(
                                     ctx,
-                                    &hashmap! {i18n::args::NAME.into() => name.into()},
+                                    &hashmap! {i18n::args::NAME.into() => canonical_name.into()},
                                 ),
                             ))
                         }
@@ -62,13 +65,13 @@ pub async fn delete_traveler(
                         .join("\n");
 
                     tracing::warn!(
-                        "Unable to delete traveler '{name}' because they have associated expenses.",
+                        "Unable to delete traveler '{canonical_name}' because they have associated expenses.",
                     );
                     Ok(CommandOutcome::Failure(
                         i18n::commands::DELETE_TRAVELER_HAS_EXPENSES.translate_with_args(
                             ctx,
                             &hashmap! {
-                                i18n::args::NAME.into() => name.clone().into(),
+                                i18n::args::NAME.into() => canonical_name.into(),
                                 i18n::args::EXPENSES.into() => expenses_reply.into(),
                             },
                         ),
@@ -88,10 +91,8 @@ pub async fn delete_traveler(
                 )
             );
             Ok(CommandOutcome::Failure(
-                i18n::commands::DELETE_TRAVELER_NOT_FOUND.translate_with_args(
-                    ctx,
-                    &hashmap! {i18n::args::NAME.into() => name.into()},
-                ),
+                i18n::commands::DELETE_TRAVELER_NOT_FOUND
+                    .translate_with_args(ctx, &hashmap! {i18n::args::NAME.into() => name.into()}),
             ))
         }
         Err(err) => {
@@ -124,6 +125,21 @@ mod tests {
 
         // Delete traveler "Alice"
         bot.update("/deletetraveler Alice");
+        let response = i18n::commands::DELETE_TRAVELER_OK.translate_with_args_default(&hashmap! {i18n::args::NAME.into() => "Alice".into()},
+        );
+        bot.test_last_message(&response).await;
+    }
+
+    test! { delete_traveler_uses_canonical_name_in_response,
+        let db = db().await;
+
+        // Add traveler "Alice" (canonical casing)
+        let mut bot = TestBot::new(db, "/addtraveler Alice");
+        bot.dispatch().await;
+
+        // Delete traveler with different casing -> response should show
+        // the canonical name as stored in the database, not the input.
+        bot.update("/deletetraveler ALICE");
         let response = i18n::commands::DELETE_TRAVELER_OK.translate_with_args_default(&hashmap! {i18n::args::NAME.into() => "Alice".into()},
         );
         bot.test_last_message(&response).await;

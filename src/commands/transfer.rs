@@ -26,8 +26,14 @@ pub async fn transfer(
     ctx: Arc<Mutex<Context>>,
 ) -> Result<String, CommandError> {
     tracing::debug!("{LOG_DEBUG_START}");
-    if from.is_empty() || to.is_empty() {
-        return Err(CommandError::EmptyInput);
+    if amount <= Decimal::ZERO {
+        tracing::debug!("{LOG_DEBUG_SUCCESS}");
+        return Ok(i18n::commands::TRANSFER_NON_POSITIVE_AMOUNT.translate(ctx));
+    }
+    if from.to_lowercase() == to.to_lowercase() {
+        tracing::debug!("{LOG_DEBUG_SUCCESS}");
+        return Ok(i18n::commands::TRANSFER_SAME_SENDER_RECEIVER
+            .translate_with_args(ctx, &hashmap! {i18n::args::NAME.into() => from.into()}));
     }
     let chat_id = msg.chat.id;
 
@@ -114,7 +120,6 @@ pub async fn transfer(
 mod tests {
     use crate::{
         db::db,
-        errors::CommandError,
         i18n::{self, Translate, TranslateWithArgs},
         tests::{TestBot, helpers},
     };
@@ -167,11 +172,21 @@ mod tests {
 
         // Missing receiver
         let mut bot = TestBot::new(db, "/transfer Alice  100");
-        let err = CommandError::EmptyInput.translate_default();
+        let invalid_usage_prefix = i18n::commands::INVALID_COMMAND_USAGE
+            .translate_with_args_default(&hashmap! {
+                i18n::args::COMMAND.into() => "/transfer".into(),
+                i18n::args::HELP_MESSAGE.into() => "".into(),
+            });
+        // Compare only on the leading sentence (the help message body changes).
+        let prefix: String = invalid_usage_prefix
+            .lines()
+            .next()
+            .unwrap_or_default()
+            .to_owned();
         assert!(
             bot.dispatch_and_last_message()
                 .await
-                .is_some_and(|msg| msg.starts_with(&err))
+                .is_some_and(|msg| msg.starts_with(&prefix))
         );
 
         // Missing sender
@@ -179,7 +194,7 @@ mod tests {
         assert!(
             bot.dispatch_and_last_message()
                 .await
-                .is_some_and(|msg| msg.starts_with(&err))
+                .is_some_and(|msg| msg.starts_with(&prefix))
         );
 
         // Missing both
@@ -187,7 +202,21 @@ mod tests {
         assert!(
             bot.dispatch_and_last_message()
                 .await
-                .is_some_and(|msg| msg.starts_with(&err))
+                .is_some_and(|msg| msg.starts_with(&prefix))
         );
+    }
+
+    test! { transfer_same_sender_receiver_case_insensitive,
+        let db = db().await;
+        let mut bot = TestBot::new(db, "");
+
+        // Add traveler "Alice"
+        helpers::add_traveler(&mut bot, "Alice").await;
+
+        // /transfer Alice ALICE 100 -> rejected as same sender/receiver
+        bot.update("/transfer Alice ALICE 100");
+        let response = i18n::commands::TRANSFER_SAME_SENDER_RECEIVER
+            .translate_with_args_default(&hashmap! {i18n::args::NAME.into() => "Alice".into()});
+        bot.test_last_message(&response).await;
     }
 }

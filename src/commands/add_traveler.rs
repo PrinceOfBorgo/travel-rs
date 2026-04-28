@@ -99,6 +99,22 @@ mod tests {
         bot.test_last_message(&response).await;
     }
 
+    test! { add_traveler_already_added_case_insensitive,
+        let db = db().await;
+
+        // Add traveler "Alice"
+        let mut bot = TestBot::new(db, "/addtraveler Alice");
+        bot.dispatch().await;
+
+        // Try to add traveler "alice" — should be rejected as a duplicate
+        // because traveler-name uniqueness is case-insensitive within a chat.
+        bot.update("/addtraveler alice");
+        let response = i18n::commands::ADD_TRAVELER_ALREADY_ADDED.translate_with_args_default(
+            &hashmap! {i18n::args::NAME.into() => "alice".into()},
+        );
+        bot.test_last_message(&response).await;
+    }
+
     test! { add_traveler_empty_input,
         let db = db().await;
 

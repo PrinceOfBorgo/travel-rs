@@ -18,27 +18,26 @@ use tracing::Level;
 pub async fn list_transfers(
     db: Arc<Surreal<Any>>,
     msg: &Message,
-    name: Name,
+    name: Option<Name>,
     ctx: Arc<Mutex<Context>>,
 ) -> Result<String, CommandError> {
     tracing::debug!("{LOG_DEBUG_START}");
 
-    let list_res = if name.is_empty() {
-        Transfer::transfers(db, msg.chat.id).await
-    } else {
-        Transfer::transfers_by_name(db, msg.chat.id, name.clone()).await
+    let list_res = match &name {
+        None => Transfer::transfers(db, msg.chat.id).await,
+        Some(name) => Transfer::transfers_by_name(db, msg.chat.id, name.clone()).await,
     };
 
     match list_res {
         Ok(transfers) => {
             let reply = if transfers.is_empty() {
-                if name.is_empty() {
-                    i18n::commands::LIST_TRANSFERS_NOT_FOUND.translate(ctx)
-                } else {
-                    i18n::commands::LIST_TRANSFERS_NAME_NOT_FOUND.translate_with_args(
-                        ctx,
-                        &hashmap! {i18n::args::NAME.into() => name.into()},
-                    )
+                match &name {
+                    None => i18n::commands::LIST_TRANSFERS_NOT_FOUND.translate(ctx),
+                    Some(name) => i18n::commands::LIST_TRANSFERS_NAME_NOT_FOUND
+                        .translate_with_args(
+                            ctx,
+                            &hashmap! {i18n::args::NAME.into() => name.clone().into()},
+                        ),
                 }
             } else {
                 transfers
@@ -52,7 +51,9 @@ pub async fn list_transfers(
         }
         Err(err) => {
             tracing::error!("{err}");
-            Err(CommandError::ListTransfers { name })
+            Err(CommandError::ListTransfers {
+                name: name.unwrap_or_default(),
+            })
         }
     }
 }
@@ -158,6 +159,29 @@ mod tests {
         bot.update("/listtransfers Charlie");
         let response = i18n::commands::LIST_TRANSFERS_NAME_NOT_FOUND.translate_with_args_default(&hashmap! {i18n::args::NAME.into() => "Charlie".into()},
         );
+        bot.test_last_message(&response).await;
+    }
+
+    test! { list_transfers_by_name_case_insensitive,
+        let db = db().await;
+        let mut bot = TestBot::new(db.clone(), "");
+
+        // Add travelers "Alice" and "Bob"
+        helpers::add_traveler(&mut bot, "Alice").await;
+        helpers::add_traveler(&mut bot, "Bob").await;
+
+        // Transfer 100 from Alice to Bob
+        helpers::transfer(&mut bot, "Alice", "Bob", 100.into()).await;
+
+        // /listtransfers ALICE -> should match "Alice" case-insensitively
+        bot.update("/listtransfers ALICE");
+        let transfers = Transfer::transfers_by_name(db, bot.chat_id(), Name::from_str("Alice").unwrap()).await.unwrap();
+        assert_eq!(transfers.len(), 1);
+        let response = transfers
+            .into_iter()
+            .map(|transfer| transfer.translate_default())
+            .collect::<Vec<_>>()
+            .join("\n");
         bot.test_last_message(&response).await;
     }
 }

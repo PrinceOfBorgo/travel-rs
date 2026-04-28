@@ -1,5 +1,5 @@
 use crate::{
-    consts::{INVALID_CHARS, RESERVED_KWORDS},
+    consts::{NAME_INVALID_CHARS, RESERVED_KWORDS},
     db::Count,
     errors::NameValidationError,
 };
@@ -16,6 +16,7 @@ use teloxide::types::ChatId;
 use travel_rs_derive::Table;
 
 const FN_DELETE_TRAVELER: &str = "fn::delete_traveler";
+const NAME_LOWER: &str = "name_lower";
 
 #[derive(Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Name(String);
@@ -32,12 +33,16 @@ impl FromStr for Name {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let s = s.trim();
 
-        if RESERVED_KWORDS.contains(&s.to_lowercase().as_str()) {
-            Err(NameValidationError::ReservedKeyword(s.to_owned()))
-        } else if let Some(c) = s.to_lowercase().chars().find(|c| INVALID_CHARS.contains(c)) {
-            Err(NameValidationError::InvalidCharacter(s.to_owned(), c))
+        if s.is_empty() {
+            Err(NameValidationError::Empty)
         } else if s.starts_with('/') {
             Err(NameValidationError::StartsWithSlash(s.to_owned()))
+        } else if RESERVED_KWORDS.contains(&s.to_lowercase().as_str()) {
+            Err(NameValidationError::ReservedKeyword(s.to_owned()))
+        } else if let Some(c) = s.chars().find(|c| NAME_INVALID_CHARS.contains(c)) {
+            Err(NameValidationError::InvalidCharacter(s.to_owned(), c))
+        } else if s.chars().any(|c| c.is_control()) {
+            Err(NameValidationError::ControlCharacter(s.to_owned()))
         } else {
             Ok(Name(s.to_owned()))
         }
@@ -90,6 +95,7 @@ impl Traveler {
             CONTENT {{
                 {CHAT}: ${CHAT_ID}, 
                 {NAME}: ${NAME},
+                {NAME_LOWER}: string::lowercase(${NAME}),
             }}",
         ))
         .bind((CHAT_ID, RecordId::from_table_key(CHAT_TB, chat_id.0)))
@@ -110,7 +116,7 @@ impl Traveler {
             FROM {TABLE}
             WHERE 
                 {CHAT} = ${CHAT_ID}
-                && {NAME} = ${NAME}
+                && {NAME_LOWER} = string::lowercase(${NAME})
             GROUP BY count",
         ))
         .bind((CHAT_ID, RecordId::from_table_key(CHAT_TB, chat_id.0)))
@@ -162,7 +168,7 @@ impl Traveler {
             FROM {TABLE}
             WHERE
                 {CHAT} = ${CHAT_ID}
-                && {NAME} = ${NAME}",
+                && {NAME_LOWER} = string::lowercase(${NAME})",
         ))
         .bind((CHAT_ID, RecordId::from_table_key(CHAT_TB, chat_id.0)))
         .bind((NAME, name.clone()))

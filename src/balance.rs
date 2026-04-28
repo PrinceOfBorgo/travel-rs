@@ -47,7 +47,8 @@ impl Balance {
         db.query(format!(
             "SELECT *
             FROM {FN_GET_BALANCES}(${CHAT})
-            WHERE {DEBTOR_NAME} = ${NAME} || {CREDITOR_NAME} = ${NAME}
+            WHERE string::lowercase({DEBTOR_NAME}) = string::lowercase(${NAME})
+                || string::lowercase({CREDITOR_NAME}) = string::lowercase(${NAME})
             ORDER BY 
                 {DEBT} DESC, 
                 {DEBTOR_NAME} ASC, 

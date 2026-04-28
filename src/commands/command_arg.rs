@@ -34,6 +34,14 @@ impl<T> CommandArg<T> {
             ),
         }
     }
+
+    /// Converts `CommandArg::Provided(value)` to `Some(value)`, and `Missing` to `None`.
+    pub fn provided(self) -> Option<T> {
+        match self {
+            Self::Provided(value) => Some(value),
+            Self::Missing => None,
+        }
+    }
 }
 
 impl<T> From<T> for CommandArg<T> {

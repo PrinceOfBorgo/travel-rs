@@ -14,6 +14,7 @@ set-language-ok = Chat language correctly set to {$language}.
 ## /setcurrency
 
 set-currency-ok = Chat default currency correctly set to {$currency}.
+set-currency-not-available = "{$currency}" is not a recognized currency code. Please use a valid ISO 4217 code (e.g. `USD`, `EUR`) or a known crypto code (e.g. `BTC`, `ETH`).
 
 ## /addtraveler
 
@@ -54,6 +55,8 @@ show-expense-not-found = Couldn't find expense #{$number} to show the details.
 transfer-ok = Transfer recorded successfully.
 transfer-receiver-not-found = Couldn't find traveler "{$name}" to transfer money to.
 transfer-sender-not-found = Couldn't find traveler "{$name}" to transfer money from.
+transfer-same-sender-receiver = Sender and receiver cannot be the same traveler ("{$name}").
+transfer-non-positive-amount = The transfer amount must be greater than zero.
 
 ## /deletetransfer
 

@@ -65,9 +65,9 @@ pub enum Command {
     #[command(description = "{descr-delete-transfer}")]
     DeleteTransfer { number: CommandArg<i64> },
     #[command(description = "{descr-list-transfers}")]
-    ListTransfers { name: Name },
+    ListTransfers { name: CommandArg<Name> },
     #[command(description = "{descr-show-balances}")]
-    ShowBalances { name: Name },
+    ShowBalances { name: CommandArg<Name> },
     #[command(description = "{descr-show-stats}")]
     ShowStats,
     #[command(description = "{descr-cancel}")]
@@ -318,12 +318,18 @@ pub async fn command_reply(
             )
             .await
         }
-        ListTransfers { name } => list_transfers(db, msg, name, ctx.clone())
-            .await
-            .map(CommandOutcome::Success),
-        ShowBalances { name } => show_balances(db, msg, name, ctx.clone())
-            .await
-            .map(CommandOutcome::Success),
+        ListTransfers { name } => {
+            let name = name.provided();
+            list_transfers(db, msg, name, ctx.clone())
+                .await
+                .map(CommandOutcome::Success)
+        }
+        ShowBalances { name } => {
+            let name = name.provided();
+            show_balances(db, msg, name, ctx.clone())
+                .await
+                .map(CommandOutcome::Success)
+        }
         ShowStats => show_stats(db, msg, ctx.clone())
             .await
             .map(CommandOutcome::Success),

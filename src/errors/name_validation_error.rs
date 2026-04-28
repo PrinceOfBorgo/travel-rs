@@ -6,9 +6,11 @@ use crate::i18n::{self, Translate, TranslateWithArgs};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum NameValidationError {
+    Empty,
     StartsWithSlash(String),
     InvalidCharacter(String, char),
     ReservedKeyword(String),
+    ControlCharacter(String),
 }
 
 impl Translate for NameValidationError {
@@ -18,6 +20,9 @@ impl Translate for NameValidationError {
         indent_lvl: usize,
     ) -> String {
         match self {
+            NameValidationError::Empty => {
+                i18n::errors::NAME_VALIDATION_ERROR_EMPTY.translate_with_indent(ctx, indent_lvl)
+            }
             NameValidationError::StartsWithSlash(name) => {
                 i18n::errors::NAME_VALIDATION_ERROR_STARTS_WITH_SLASH.translate_with_args_indent(
                     ctx,
@@ -37,6 +42,13 @@ impl Translate for NameValidationError {
             }
             NameValidationError::ReservedKeyword(name) => {
                 i18n::errors::NAME_VALIDATION_ERROR_RESERVED_KEYWORD.translate_with_args_indent(
+                    ctx,
+                    &hashmap! {i18n::args::NAME.into() => name.into()},
+                    indent_lvl,
+                )
+            }
+            NameValidationError::ControlCharacter(name) => {
+                i18n::errors::NAME_VALIDATION_ERROR_CONTROL_CHAR.translate_with_args_indent(
                     ctx,
                     &hashmap! {i18n::args::NAME.into() => name.into()},
                     indent_lvl,

@@ -12,6 +12,7 @@ add-expense-invalid-description = You sent an invalid text, please retry.
 
 add-expense-ask-paid-by = Who paid for this?
 add-expense-invalid-amount = You sent an invalid amount, please retry.
+add-expense-non-positive-amount = The amount must be greater than zero.
 
 ## receive_paid_by
 

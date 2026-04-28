@@ -121,19 +121,35 @@ pub async fn receive_description(
     tracing::debug!("{LOG_DEBUG_START}");
     match msg.text() {
         Some(text) => {
-            bot.send_message(msg.chat.id, i18n::dialogues::ADD_EXPENSE_ASK_AMOUNT.translate(ctx))
+            let trimmed = text.trim();
+            if trimmed.is_empty() {
+                tracing::warn!("Invalid description: empty after trim.");
+                bot.send_message(
+                    msg.chat.id,
+                    i18n::dialogues::ADD_EXPENSE_INVALID_DESCRIPTION.translate(ctx),
+                )
                 .await?;
+                return Ok(());
+            }
+            bot.send_message(
+                msg.chat.id,
+                i18n::dialogues::ADD_EXPENSE_ASK_AMOUNT.translate(ctx),
+            )
+            .await?;
             dialogue
                 .update(AddExpenseState::ReceiveAmount {
-                    description: text.to_owned(),
+                    description: trimmed.to_owned(),
                 })
                 .await?;
             tracing::debug!("{LOG_DEBUG_SUCCESS}");
         }
         None => {
             tracing::warn!("Invalid description: received `None`.");
-            bot.send_message(msg.chat.id, i18n::dialogues::ADD_EXPENSE_INVALID_DESCRIPTION.translate(ctx))
-                .await?;
+            bot.send_message(
+                msg.chat.id,
+                i18n::dialogues::ADD_EXPENSE_INVALID_DESCRIPTION.translate(ctx),
+            )
+            .await?;
         }
     }
 
@@ -152,8 +168,20 @@ pub async fn receive_amount(
     let parsed_text = msg.text().map(|text| text.parse::<Decimal>());
     match parsed_text {
         Some(Ok(amount)) => {
-            bot.send_message(msg.chat.id, i18n::dialogues::ADD_EXPENSE_ASK_PAID_BY.translate(ctx))
+            if amount <= Decimal::ZERO {
+                tracing::warn!("Invalid amount: non-positive value `{amount}`.");
+                bot.send_message(
+                    msg.chat.id,
+                    i18n::dialogues::ADD_EXPENSE_NON_POSITIVE_AMOUNT.translate(ctx),
+                )
                 .await?;
+                return Ok(());
+            }
+            bot.send_message(
+                msg.chat.id,
+                i18n::dialogues::ADD_EXPENSE_ASK_PAID_BY.translate(ctx),
+            )
+            .await?;
             dialogue
                 .update(AddExpenseState::ReceivePaidBy {
                     description,
@@ -164,8 +192,11 @@ pub async fn receive_amount(
         }
         _ => {
             tracing::warn!("Invalid amount: received `{parsed_text:?}`.");
-            bot.send_message(msg.chat.id, i18n::dialogues::ADD_EXPENSE_INVALID_AMOUNT.translate(ctx))
-                .await?;
+            bot.send_message(
+                msg.chat.id,
+                i18n::dialogues::ADD_EXPENSE_INVALID_AMOUNT.translate(ctx),
+            )
+            .await?;
         }
     }
 
@@ -190,7 +221,8 @@ pub async fn receive_paid_by(
                 tracing::warn!("{err}");
                 let reply = format!(
                     "{invalid_paid_by}\n\n{reason}",
-                    invalid_paid_by = i18n::dialogues::ADD_EXPENSE_INVALID_PAID_BY.translate(ctx.clone()),
+                    invalid_paid_by =
+                        i18n::dialogues::ADD_EXPENSE_INVALID_PAID_BY.translate(ctx.clone()),
                     reason = err.translate(ctx)
                 );
                 bot.send_message(msg.chat.id, reply).await?;
@@ -199,8 +231,11 @@ pub async fn receive_paid_by(
         },
         None => {
             tracing::warn!("Invalid name: received `{text:?}`.");
-            bot.send_message(msg.chat.id, i18n::dialogues::ADD_EXPENSE_INVALID_PAID_BY.translate(ctx))
-                .await?;
+            bot.send_message(
+                msg.chat.id,
+                i18n::dialogues::ADD_EXPENSE_INVALID_PAID_BY.translate(ctx),
+            )
+            .await?;
             return Ok(());
         }
     };
@@ -209,8 +244,11 @@ pub async fn receive_paid_by(
     let select_res = Traveler::db_select_by_name(db, msg.chat.id, &name).await;
     match select_res {
         Ok(Some(traveler)) => {
-            bot.send_message(msg.chat.id, i18n::dialogues::ADD_EXPENSE_ASK_SHARES.translate(ctx))
-                .await?;
+            bot.send_message(
+                msg.chat.id,
+                i18n::dialogues::ADD_EXPENSE_ASK_SHARES.translate(ctx),
+            )
+            .await?;
             dialogue
                 .update(AddExpenseState::StartSplitAmong {
                     description,
@@ -312,8 +350,11 @@ async fn handle_split_among_input(input: SplitAmongInput) -> HandlerResult {
             tracing::debug!("Received text: `{text}`.");
             match parse_split_among(db.clone(), text, msg.chat.id, &mut split_among).await {
                 Ok(SplitAmongEnum::List) => {
-                    bot.send_message(msg.chat.id, i18n::dialogues::ADD_EXPENSE_CONTINUE_SPLIT.translate(ctx))
-                        .await?;
+                    bot.send_message(
+                        msg.chat.id,
+                        i18n::dialogues::ADD_EXPENSE_CONTINUE_SPLIT.translate(ctx),
+                    )
+                    .await?;
                     dialogue
                         .update(AddExpenseState::ReceiveSplitAmong {
                             description,
@@ -337,7 +378,8 @@ async fn handle_split_among_input(input: SplitAmongInput) -> HandlerResult {
                         Ok(expense) => {
                             let reply = format!(
                                 "{expense_added}\n\n{format_expense}",
-                                expense_added = i18n::dialogues::ADD_EXPENSE_OK.translate(ctx.clone()),
+                                expense_added =
+                                    i18n::dialogues::ADD_EXPENSE_OK.translate(ctx.clone()),
                                 format_expense = expense.translate(ctx)
                             );
                             bot.send_message(msg.chat.id, reply).await?;
@@ -348,7 +390,8 @@ async fn handle_split_among_input(input: SplitAmongInput) -> HandlerResult {
                             }
                             EndError::AddExpense(err) => {
                                 let mut reply =
-                                    i18n::dialogues::ADD_EXPENSE_ERROR_ON_COMPUTING_SHARES.translate(ctx.clone());
+                                    i18n::dialogues::ADD_EXPENSE_ERROR_ON_COMPUTING_SHARES
+                                        .translate(ctx.clone());
                                 let expense_is_too_high =
                                     matches!(err, AddExpenseError::ExpenseTooHigh { .. });
                                 if !matches!(err, AddExpenseError::Generic(_)) {
@@ -356,7 +399,8 @@ async fn handle_split_among_input(input: SplitAmongInput) -> HandlerResult {
                                     reply += &err.translate(ctx.clone());
                                     if expense_is_too_high {
                                         reply += "\n";
-                                        reply += &i18n::dialogues::ADD_EXPENSE_SHARES_CLEARED.translate(ctx);
+                                        reply += &i18n::dialogues::ADD_EXPENSE_SHARES_CLEARED
+                                            .translate(ctx);
                                     }
                                 }
                                 bot.send_message(msg.chat.id, reply).await?;
@@ -374,7 +418,8 @@ async fn handle_split_among_input(input: SplitAmongInput) -> HandlerResult {
                             EndError::Generic(_) => {
                                 bot.send_message(
                                     msg.chat.id,
-                                    i18n::dialogues::ADD_EXPENSE_CREATING_EXPENSE_GENERIC_ERROR.translate(ctx),
+                                    i18n::dialogues::ADD_EXPENSE_CREATING_EXPENSE_GENERIC_ERROR
+                                        .translate(ctx),
                                 )
                                 .await?;
                             }
@@ -383,7 +428,8 @@ async fn handle_split_among_input(input: SplitAmongInput) -> HandlerResult {
                 }
                 Err(err) => {
                     tracing::error!("{err}");
-                    let mut reply = i18n::dialogues::ADD_EXPENSE_SHARES_PARSING_ERROR.translate(ctx.clone());
+                    let mut reply =
+                        i18n::dialogues::ADD_EXPENSE_SHARES_PARSING_ERROR.translate(ctx.clone());
                     let expense_is_too_high = matches!(err, AddExpenseError::ExpenseTooHigh { .. });
                     if !matches!(err, AddExpenseError::Generic(_)) {
                         reply += "\n";
@@ -409,8 +455,11 @@ async fn handle_split_among_input(input: SplitAmongInput) -> HandlerResult {
         }
         None => {
             tracing::warn!("Invalid text: received `None`.");
-            bot.send_message(msg.chat.id, i18n::dialogues::ADD_EXPENSE_INVALID_SHARES.translate(ctx))
-                .await?;
+            bot.send_message(
+                msg.chat.id,
+                i18n::dialogues::ADD_EXPENSE_INVALID_SHARES.translate(ctx),
+            )
+            .await?;
         }
     }
     Ok(())
@@ -505,10 +554,14 @@ async fn parse_split_among(
             .await
             .map_err(|err| AddExpenseError::Generic(Box::new(err)))?;
 
+        let already_added: std::collections::HashSet<String> = split_among
+            .keys()
+            .map(|n| n.to_lowercase())
+            .collect();
         split_among.append(
             &mut travelers
                 .into_iter()
-                .filter(|traveler| !split_among.contains_key(&traveler.name))
+                .filter(|traveler| !already_added.contains(&traveler.name.to_lowercase()))
                 .map(|traveler| (traveler.name, AmountEnum::Dynamic))
                 .collect(),
         );
@@ -529,7 +582,8 @@ async fn parse_split_among(
                 })?;
             let name = Name::from_str(&caps[SPLIT_AMONG_REGEX_NAME_GRP])
                 .map_err(AddExpenseError::NameValidation)?;
-            if split_among.contains_key(&name) {
+            let name_lower = name.to_lowercase();
+            if split_among.keys().any(|n| n.to_lowercase() == name_lower) {
                 return Err(AddExpenseError::RepeatedTravelerName { name });
             }
 
@@ -557,16 +611,18 @@ async fn parse_split_among(
             };
             const NAMES: &str = "names";
 
+            let lowercased_names: Vec<String> =
+                split_among.keys().map(|n| n.to_lowercase()).collect();
             let select_res = db
                 .query(format!(
                     "SELECT *
                     FROM {TRAVELER_TB}
                     WHERE
                         {CHAT} = ${CHAT_ID}
-                        && {NAME} IN ${NAMES}",
+                        && string::lowercase({NAME}) IN ${NAMES}",
                 ))
                 .bind((CHAT_ID, RecordId::from_table_key(CHAT_TB, chat_id.0)))
-                .bind((NAMES, split_among.keys().cloned().collect::<Vec<Name>>()))
+                .bind((NAMES, lowercased_names))
                 .await
                 .and_then(|mut response| response.take::<Vec<Traveler>>(0));
 
@@ -577,7 +633,12 @@ async fn parse_split_among(
                     } else {
                         let not_found = split_among
                             .keys()
-                            .find(|name| !travelers.iter().any(|traveler| traveler.name == **name))
+                            .find(|name| {
+                                let name_lower = name.to_lowercase();
+                                !travelers
+                                    .iter()
+                                    .any(|traveler| traveler.name.to_lowercase() == name_lower)
+                            })
                             .expect(
                                 "There must be at least one traveler that has not been found on db",
                             );
@@ -1012,6 +1073,32 @@ mod tests {
                 AddExpenseError::RepeatedTravelerName { name: Name::from_str("Alice").unwrap() }.translate_default(),
             );
             // Check that the last message is the expected response
+            assert_eq!(last_message, response);
+        }
+
+        test! { add_expense_repeated_traveler_name_case_insensitive,
+            let db = db().await;
+            let mut bot = TestBot::new(db.clone(), "");
+
+            // Add travelers "Alice" and "Bob"
+            helpers::add_traveler(&mut bot, "Alice").await;
+            helpers::add_traveler(&mut bot, "Bob").await;
+
+            // Same traveler with different casing must be rejected as a repeat.
+            helpers::add_expense(
+                &mut bot,
+                "Test expense",
+                100.into(),
+                "Alice",
+                &["Alice:50;Bob:30;ALICE:20"],
+            ).await;
+            let last_message = bot.last_message().unwrap();
+
+            let response = format!(
+                "{}\n{}",
+                i18n::dialogues::ADD_EXPENSE_SHARES_PARSING_ERROR.translate_default(),
+                AddExpenseError::RepeatedTravelerName { name: Name::from_str("ALICE").unwrap() }.translate_default(),
+            );
             assert_eq!(last_message, response);
         }
 

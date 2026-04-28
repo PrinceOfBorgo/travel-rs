@@ -17,6 +17,8 @@ pub const COMMAND_ERROR_SHOW_STATS: &str = "command-error-show-stats";
 pub const NAME_VALIDATION_ERROR_STARTS_WITH_SLASH: &str = "name-validation-error-starts-with-slash";
 pub const NAME_VALIDATION_ERROR_INVALID_CHAR: &str = "name-validation-error-invalid-char";
 pub const NAME_VALIDATION_ERROR_RESERVED_KEYWORD: &str = "name-validation-error-reserved-keyword";
+pub const NAME_VALIDATION_ERROR_EMPTY: &str = "name-validation-error-empty";
+pub const NAME_VALIDATION_ERROR_CONTROL_CHAR: &str = "name-validation-error-control-char";
 
 pub const ADD_EXPENSE_ERROR_REPEATED_TRAVELER_NAME: &str =
     "add-expense-error-repeated-traveler-name";

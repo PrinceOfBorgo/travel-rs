@@ -175,7 +175,7 @@ async fn test_i18n_and_currency() {
     let last_message = bot.dispatch_and_last_message().await.unwrap();
     let response = i18n::commands::SET_LANGUAGE_OK.translate_with_args(
         bot.context(), // Use the new context to retrieve the updated language
-        &hashmap! {i18n::args::LANGID.into() => "it-IT".into()},
+        &hashmap! {i18n::args::LANGUAGE.into() => "\u{1F1EE}\u{1F1F9} Italiano (Italia)".into()},
     );
     // Check that the last message is the expected response
     assert_eq!(last_message, response);

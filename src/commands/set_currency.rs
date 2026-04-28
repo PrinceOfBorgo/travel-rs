@@ -9,6 +9,7 @@ use crate::{
 };
 use macro_rules_attribute::apply;
 use maplit::hashmap;
+use rusty_money::{crypto, iso};
 use std::sync::{Arc, Mutex};
 use surrealdb::{Surreal, engine::any::Any};
 use teloxide::prelude::*;
@@ -22,7 +23,19 @@ pub async fn set_currency(
     ctx: Arc<Mutex<Context>>,
 ) -> Result<CommandOutcome, CommandError> {
     tracing::debug!("{LOG_DEBUG_START}");
-    let currency = currency.to_uppercase();
+    let currency = currency.trim().to_uppercase();
+
+    // Reject codes that are neither a known ISO 4217 currency nor a known crypto currency
+    if iso::find(&currency).is_none() && crypto::find(&currency).is_none() {
+        tracing::debug!("{LOG_DEBUG_SUCCESS}");
+        return Ok(CommandOutcome::Failure(
+            i18n::commands::SET_CURRENCY_NOT_AVAILABLE.translate_with_args(
+                ctx,
+                &hashmap! {i18n::args::CURRENCY.into() => currency.into()},
+            ),
+        ));
+    }
+
     // Update chat currency on db
     let update_res = Chat::db_update_currency(db, msg.chat.id, &currency).await;
     match update_res {
@@ -64,8 +77,18 @@ mod tests {
     test! { set_currency_ok,
         let db = db().await;
 
-        let mut bot = TestBot::new(db, "/setcurrency TEST");
-        let response = i18n::commands::SET_CURRENCY_OK.translate_with_args_default(&hashmap! {i18n::args::CURRENCY.into() => "TEST".into()},
+        let mut bot = TestBot::new(db, "/setcurrency USD");
+        let response = i18n::commands::SET_CURRENCY_OK.translate_with_args_default(&hashmap! {i18n::args::CURRENCY.into() => "USD".into()},
+        );
+        bot.test_last_message(&response).await;
+    }
+
+    test! { set_currency_not_available,
+        let db = db().await;
+
+        let mut bot = TestBot::new(db, "/setcurrency XYZ");
+        let response = i18n::commands::SET_CURRENCY_NOT_AVAILABLE.translate_with_args_default(
+            &hashmap! {i18n::args::CURRENCY.into() => "XYZ".into()},
         );
         bot.test_last_message(&response).await;
     }
@@ -101,15 +124,6 @@ mod tests {
                 .unwrap();
         let expenses = Expense::db_select_by_payer(db, traveler).await.unwrap();
         let expense = expenses.first().unwrap();
-
-        // Set TEST currency
-        bot.update("/setcurrency TEST");
-        bot.dispatch().await;
-
-        // Check output
-        bot.update("/listexpenses");
-        let response = expense.translate(bot.context());
-        bot.test_last_message(&response).await;
 
         // Set USD currency
         bot.update("/setcurrency USD");

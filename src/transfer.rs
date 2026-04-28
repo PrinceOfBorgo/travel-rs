@@ -57,7 +57,8 @@ impl Transfer {
         db.query(format!(
             "SELECT *
             FROM {FN_GET_TRANSFERS}(${CHAT})
-            WHERE {SENDER_NAME} = ${NAME} || {RECEIVER_NAME} = ${NAME}
+            WHERE string::lowercase({SENDER_NAME}) = string::lowercase(${NAME})
+                || string::lowercase({RECEIVER_NAME}) = string::lowercase(${NAME})
             ORDER BY {NUMBER} ASC",
         ))
         .bind((CHAT, RecordId::from_table_key(CHAT_TB, chat_id.0)))

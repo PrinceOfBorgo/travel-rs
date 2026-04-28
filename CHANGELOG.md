@@ -6,6 +6,15 @@
 - `dialogues/pending_commands.ftl` and `labels.ftl` localization files.
 - `CommandArg` and `CommandOutcome` enums for structured command handling.
 - `/setlanguage`, `/setcurrency`, `/addtraveler`, `/deletetraveler`, `/deleteexpense`, `/showexpense`, `/deletetransfer` interactive dialogues for cases when commands are invoked without arguments.
+- Input validations:
+  - `/setcurrency` rejects unknown codes (must be a known ISO 4217 or crypto code).
+  - `/transfer` rejects non-positive amounts and self-transfers (sender == receiver).
+  - `/addexpense` dialogue rejects non-positive amounts and trims/rejects empty descriptions.
+  - Traveler names: rejected if empty (after trim) or if they contain control/invisible characters (in addition to the existing slash/reserved-keyword/invalid-character checks).
+  - Traveler names are now compared case-insensitively within a chat, so `Alice` and `alice` are treated as the same name (preventing duplicates that differ only in letter case).
+- Defense-in-depth schema constraints mirroring the application-level validations. This functionality requires [database](database) schema updates. Run the following scripts to migrate:
+  - [`006_add_validation_constraints.surql`](database/migrations/006_add_validation_constraints.surql)
+  - [`007_case_insensitive_traveler_names.surql`](database/migrations/007_case_insensitive_traveler_names.surql)
 
 ### Changed
 - Added disk space cleanup step to `ci.yml` workflow.
@@ -14,6 +23,7 @@
 - Reworked `README.md` for clarity and updated structure.
 - `/setlanguage`, `/setcurrency`, `/addtraveler`, `/deletetraveler`, `/deleteexpense`, `/showexpense`, `/deletetransfer` now prompt for their arguments when invoked without one.
 - Heavily refactored dialogues and storages handling; `/cancel` works for any dialogue.
+- `/listtransfers` and `/showbalances` now accept their `name` argument as optional via `CommandArg<Name>`.
 
 ### Fixed
 - N/A

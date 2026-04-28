@@ -6,6 +6,7 @@ pub const SET_LANGUAGE_NOT_AVAILABLE: &str = "set-language-not-available";
 pub const SET_LANGUAGE_OK: &str = "set-language-ok";
 
 pub const SET_CURRENCY_OK: &str = "set-currency-ok";
+pub const SET_CURRENCY_NOT_AVAILABLE: &str = "set-currency-not-available";
 
 pub const ADD_TRAVELER_ALREADY_ADDED: &str = "add-traveler-already-added";
 pub const ADD_TRAVELER_OK: &str = "add-traveler-ok";
@@ -33,6 +34,8 @@ pub const SHOW_BALANCES_TRAVELER_SETTLED_UP: &str = "show-balances-traveler-sett
 pub const TRANSFER_OK: &str = "transfer-ok";
 pub const TRANSFER_RECEIVER_NOT_FOUND: &str = "transfer-receiver-not-found";
 pub const TRANSFER_SENDER_NOT_FOUND: &str = "transfer-sender-not-found";
+pub const TRANSFER_SAME_SENDER_RECEIVER: &str = "transfer-same-sender-receiver";
+pub const TRANSFER_NON_POSITIVE_AMOUNT: &str = "transfer-non-positive-amount";
 
 pub const DELETE_TRANSFER_NOT_FOUND: &str = "delete-transfer-not-found";
 pub const DELETE_TRANSFER_OK: &str = "delete-transfer-ok";
