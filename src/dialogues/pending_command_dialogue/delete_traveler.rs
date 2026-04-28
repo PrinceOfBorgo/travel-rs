@@ -74,8 +74,7 @@ pub async fn receive_name(
             tracing::warn!("{err}");
             let reply = format!(
                 "{invalid}\n\n{reason}",
-                invalid = i18n::dialogues::DELETE_TRAVELER_INVALID_NAME
-                    .translate(ctx.clone()),
+                invalid = i18n::dialogues::DELETE_TRAVELER_INVALID_NAME.translate(ctx.clone()),
                 reason = err.translate(ctx),
             );
             bot.send_message(msg.chat.id, reply).await?;
@@ -83,11 +82,19 @@ pub async fn receive_name(
         }
     };
 
-    let cmd = Command::DeleteTraveler { name: CommandArg::Provided(name) };
-    let outcome = command_reply(db, &msg, &cmd, ctx).await;
+    let cmd = Command::DeleteTraveler {
+        name: CommandArg::Provided(name),
+    };
+    let outcome = command_reply(db, &msg, &cmd, ctx.clone()).await;
     bot.send_message(msg.chat.id, outcome.message()).await?;
     if outcome.is_success() {
         dialogue.exit().await?;
+    } else {
+        bot.send_message(
+            msg.chat.id,
+            i18n::dialogues::DELETE_TRAVELER_ASK_NAME.translate(ctx),
+        )
+        .await?;
     }
     tracing::debug!("{LOG_DEBUG_SUCCESS}");
     Ok(())
@@ -155,12 +162,10 @@ mod tests {
         let response = i18n::dialogues::DELETE_TRAVELER_INVALID_NAME.translate_default();
         bot.test_last_message(&response).await;
 
-        // Dialogue is still active: a follow-up "not found" target works
-        // and the dialogue exits afterwards.
+        // Dialogue is still active: a follow-up "not found" target is
+        // reported and the dialogue re-prompts the user.
         bot.update("Alice");
-        let response = i18n::commands::DELETE_TRAVELER_NOT_FOUND.translate_with_args_default(
-            &hashmap! {i18n::args::NAME.into() => "Alice".into()},
-        );
+        let response = i18n::dialogues::DELETE_TRAVELER_ASK_NAME.translate_default();
         bot.test_last_message(&response).await;
     }
 

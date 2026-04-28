@@ -69,10 +69,16 @@ pub async fn receive_number(
     let cmd = Command::DeleteExpense {
         number: CommandArg::Provided(number),
     };
-    let outcome = command_reply(db, &msg, &cmd, ctx).await;
+    let outcome = command_reply(db, &msg, &cmd, ctx.clone()).await;
     bot.send_message(msg.chat.id, outcome.message()).await?;
     if outcome.is_success() {
         dialogue.exit().await?;
+    } else {
+        bot.send_message(
+            msg.chat.id,
+            i18n::dialogues::DELETE_EXPENSE_ASK_NUMBER.translate(ctx),
+        )
+        .await?;
     }
     tracing::debug!("{LOG_DEBUG_SUCCESS}");
     Ok(())
@@ -82,10 +88,9 @@ pub async fn receive_number(
 mod tests {
     use crate::{
         db::db,
-        i18n::{self, Translate, TranslateWithArgs},
+        i18n::{self, Translate},
         tests::TestBot,
     };
-    use maplit::hashmap;
 
     test! { ask_number_on_empty_invocation,
         let db = db().await;
@@ -112,10 +117,9 @@ mod tests {
         let mut bot = TestBot::new(db, "/deleteexpense");
         bot.dispatch().await;
 
+        // After a not-found reply, the dialogue re-prompts so the user can retry.
         bot.update("999");
-        let response = i18n::commands::DELETE_EXPENSE_NOT_FOUND.translate_with_args_default(
-            &hashmap! {i18n::args::NUMBER.into() => 999.into()},
-        );
+        let response = i18n::dialogues::DELETE_EXPENSE_ASK_NUMBER.translate_default();
         bot.test_last_message(&response).await;
     }
 

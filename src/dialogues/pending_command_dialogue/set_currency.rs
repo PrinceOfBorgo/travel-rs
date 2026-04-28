@@ -66,10 +66,16 @@ pub async fn receive_currency(
     let cmd = Command::SetCurrency {
         currency: CommandArg::Provided(text.to_owned()),
     };
-    let outcome = command_reply(db, &msg, &cmd, ctx).await;
+    let outcome = command_reply(db, &msg, &cmd, ctx.clone()).await;
     bot.send_message(msg.chat.id, outcome.message()).await?;
     if outcome.is_success() {
         dialogue.exit().await?;
+    } else {
+        bot.send_message(
+            msg.chat.id,
+            i18n::dialogues::SET_CURRENCY_ASK_CURRENCY.translate(ctx),
+        )
+        .await?;
     }
     tracing::debug!("{LOG_DEBUG_SUCCESS}");
     Ok(())

@@ -119,10 +119,17 @@ pub async fn receive_langid(
     let cmd = Command::SetLanguage {
         langid: CommandArg::Provided(langid),
     };
-    let outcome = command_reply(db, &msg, &cmd, ctx).await;
+    let outcome = command_reply(db, &msg, &cmd, ctx.clone()).await;
     bot.send_message(msg.chat.id, outcome.message()).await?;
     if outcome.is_success() {
         dialogue.exit().await?;
+    } else {
+        bot.send_message(
+            msg.chat.id,
+            i18n::dialogues::SET_LANGUAGE_ASK_LANGID.translate(ctx.clone()),
+        )
+        .reply_markup(available_langs_keyboard(ctx))
+        .await?;
     }
     tracing::debug!("{LOG_DEBUG_SUCCESS}");
     Ok(())
@@ -178,7 +185,7 @@ pub async fn receive_callback(
     let cmd = Command::SetLanguage {
         langid: CommandArg::Provided(langid),
     };
-    let outcome = command_reply(db, &msg, &cmd, ctx).await;
+    let outcome = command_reply(db, &msg, &cmd, ctx.clone()).await;
 
     // Remove the inline keyboard from the original prompt so the user
     // can no longer interact with it. Best-effort: ignore errors (e.g. if
@@ -188,6 +195,15 @@ pub async fn receive_callback(
     bot.send_message(msg.chat.id, outcome.message()).await?;
     if outcome.is_success() {
         dialogue.exit().await?;
+    } else {
+        // Dialogue stays alive: re-send the prompt with a fresh keyboard
+        // so the user knows they can retry.
+        bot.send_message(
+            msg.chat.id,
+            i18n::dialogues::SET_LANGUAGE_ASK_LANGID.translate(ctx.clone()),
+        )
+        .reply_markup(available_langs_keyboard(ctx))
+        .await?;
     }
     tracing::debug!("{LOG_DEBUG_SUCCESS}");
     Ok(())
@@ -197,10 +213,9 @@ pub async fn receive_callback(
 mod tests {
     use crate::{
         db::db,
-        i18n::{self, Translate, TranslateWithArgs},
+        i18n::{self, Translate},
         tests::TestBot,
     };
-    use maplit::hashmap;
 
     test! { ask_langid_on_empty_invocation,
         let db = db().await;
@@ -231,17 +246,8 @@ mod tests {
         bot.dispatch().await;
 
         bot.update(unavailable);
-        let response = i18n::commands::SET_LANGUAGE_NOT_AVAILABLE.translate_with_args_default(
-            &hashmap! {
-                i18n::args::LANGID.into() => unavailable.into(),
-                i18n::args::AVAILABLE_LANGS.into() =>
-                    i18n::available_langs()
-                    .map(|lang| format!("- {lang}"))
-                    .collect::<Vec<_>>()
-                    .join("\n")
-                    .into(),
-            },
-        );
+        // After the not-available reply, the dialogue re-prompts the user.
+        let response = i18n::dialogues::SET_LANGUAGE_ASK_LANGID.translate_default();
         bot.test_last_message(&response).await;
 
         // Dialogue is still alive: /cancel acknowledges instead of going

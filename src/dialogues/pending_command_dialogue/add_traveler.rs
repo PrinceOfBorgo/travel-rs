@@ -72,8 +72,7 @@ pub async fn receive_name(
             tracing::warn!("{err}");
             let reply = format!(
                 "{invalid}\n\n{reason}",
-                invalid = i18n::dialogues::ADD_TRAVELER_INVALID_NAME
-                    .translate(ctx.clone()),
+                invalid = i18n::dialogues::ADD_TRAVELER_INVALID_NAME.translate(ctx.clone()),
                 reason = err.translate(ctx),
             );
             bot.send_message(msg.chat.id, reply).await?;
@@ -81,11 +80,19 @@ pub async fn receive_name(
         }
     };
 
-    let cmd = Command::AddTraveler { name: CommandArg::Provided(name) };
-    let outcome = command_reply(db, &msg, &cmd, ctx).await;
+    let cmd = Command::AddTraveler {
+        name: CommandArg::Provided(name),
+    };
+    let outcome = command_reply(db, &msg, &cmd, ctx.clone()).await;
     bot.send_message(msg.chat.id, outcome.message()).await?;
     if outcome.is_success() {
         dialogue.exit().await?;
+    } else {
+        bot.send_message(
+            msg.chat.id,
+            i18n::dialogues::ADD_TRAVELER_ASK_NAME.translate(ctx),
+        )
+        .await?;
     }
     tracing::debug!("{LOG_DEBUG_SUCCESS}");
     Ok(())
@@ -221,11 +228,10 @@ mod tests {
         bot.update("/addtraveler");
         bot.dispatch().await;
 
-        // Provide the name as a follow-up message -> the bot replies that Alice is already added
+        // Provide the name as a follow-up message -> the bot replies that
+        // Alice is already added and re-prompts so the user can retry.
         bot.update("Alice");
-        let response = i18n::commands::ADD_TRAVELER_ALREADY_ADDED.translate_with_args_default(
-            &hashmap! {i18n::args::NAME.into() => "Alice".into()},
-        );
+        let response = i18n::dialogues::ADD_TRAVELER_ASK_NAME.translate_default();
         bot.test_last_message(&response).await;
     }
 }

@@ -27,7 +27,7 @@
 - `/listtransfers` and `/showbalances` now accept their `name` argument as optional via `CommandArg<Name>`.
 
 ### Fixed
-- N/A
+- Pending-command dialogues now re-prompt the user when the underlying command fails, instead of silently leaving the dialogue alive with no indication that retrying is possible.
 
 ## [0.2.5] - 2026-04-03
 ### 🔧 Patch Release
