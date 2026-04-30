@@ -89,7 +89,7 @@ mod tests {
     use crate::{
         db::db,
         i18n::{self, Translate},
-        tests::TestBot,
+        tests::{TestBot, helpers::cancel_ok_for},
     };
 
     test! { ask_number_on_empty_invocation,
@@ -135,7 +135,7 @@ mod tests {
 
         // /cancel acknowledges the still-running dialogue.
         bot.update("/cancel");
-        let response = i18n::commands::CANCEL_OK.translate_default();
+        let response = cancel_ok_for(i18n::commands::RUNNING_PROCESS_DELETE_EXPENSE);
         bot.test_last_message(&response).await;
     }
 
@@ -146,7 +146,7 @@ mod tests {
         bot.dispatch().await;
 
         bot.update("/cancel");
-        let response = i18n::commands::CANCEL_OK.translate_default();
+        let response = cancel_ok_for(i18n::commands::RUNNING_PROCESS_DELETE_EXPENSE);
         bot.test_last_message(&response).await;
     }
 }

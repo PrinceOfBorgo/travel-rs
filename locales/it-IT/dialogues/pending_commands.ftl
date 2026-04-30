@@ -25,10 +25,10 @@ delete-transfer-invalid-number = Hai inviato un numero non valido, per favore ri
 
 ## /set_language
 
-set-language-ask-langid = Quale lingua vuoi impostare? Il processo può essere interrotto in qualsiasi momento inviando `/{-cancel-command}`.
+set-language-ask-langid = Quale lingua vuoi impostare?
 set-language-invalid-langid = Hai inviato un identificatore di lingua non valido, per favore riprova.
 
 ## /set_currency
 
-set-currency-ask-currency = Quale valuta vuoi impostare? Invia il codice valuta (es. `USD`, `EUR`). Il processo può essere interrotto in qualsiasi momento inviando `/{-cancel-command}`.
+set-currency-ask-currency = Quale valuta vuoi impostare? Selezionane una dalla lista sottostante o invia il codice valuta se non presente.
 set-currency-invalid-currency = Hai inviato un codice valuta non valido, per favore riprova.

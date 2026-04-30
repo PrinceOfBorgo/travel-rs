@@ -213,7 +213,9 @@ mod tests {
 
         // Cancel before sending the name
         bot.update("/cancel");
-        let response = i18n::commands::CANCEL_OK.translate_default();
+        let response = crate::tests::helpers::cancel_ok_for(
+            i18n::commands::RUNNING_PROCESS_ADD_TRAVELER,
+        );
         bot.test_last_message(&response).await;
     }
 

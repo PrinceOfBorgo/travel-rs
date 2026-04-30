@@ -1,5 +1,5 @@
-mod integration_tests;
 mod cross_dialogue;
+mod integration_tests;
 
 use crate::{Context, deps, handler_tree};
 use std::sync::{Arc, Mutex};
@@ -90,6 +90,18 @@ pub mod helpers {
     use rust_decimal::Decimal;
 
     use super::*;
+    use crate::i18n::{self, Translate, TranslateWithArgs};
+    use maplit::hashmap;
+
+    /// Returns the localized `cancel-ok` message for the dialogue identified
+    /// by `process_label_key` (one of the `i18n::commands::RUNNING_PROCESS_*`
+    /// constants), translated with the default locale. Use in tests that
+    /// assert the cancel confirmation.
+    pub fn cancel_ok_for(process_label_key: &str) -> String {
+        i18n::commands::CANCEL_OK.translate_with_args_default(&hashmap! {
+            i18n::args::PROCESS.into() => process_label_key.translate_default().into(),
+        })
+    }
 
     #[inline]
     pub async fn add_traveler(bot: &mut TestBot, name: &str) {

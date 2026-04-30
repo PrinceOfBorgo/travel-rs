@@ -6,7 +6,7 @@ use crate::{
     commands::{Command, CommandArg, command_reply},
     consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     dialogues::pending_command_dialogue::{PendingCommandDialogue, PendingCommandState},
-    i18n::{self, Translate, TryTranslate},
+    i18n::{self, Translate, TranslateWithArgs, TryTranslate},
     trace_state, trace_state_db,
 };
 use macro_rules_attribute::apply;
@@ -169,8 +169,13 @@ pub async fn receive_callback(
     if data == CANCEL_CALLBACK_DATA {
         // Remove the inline keyboard from the original prompt (best-effort).
         let _ = bot.edit_message_reply_markup(msg.chat.id, msg.id).await;
-        bot.send_message(msg.chat.id, i18n::commands::CANCEL_OK.translate(ctx))
-            .await?;
+        let process_name =
+            i18n::commands::RUNNING_PROCESS_SET_LANGUAGE.translate(Arc::clone(&ctx));
+        let cancel_msg = i18n::commands::CANCEL_OK.translate_with_args(
+            ctx,
+            &maplit::hashmap! { i18n::args::PROCESS.into() => process_name.into() },
+        );
+        bot.send_message(msg.chat.id, cancel_msg).await?;
         dialogue.exit().await?;
         tracing::debug!("{LOG_DEBUG_SUCCESS}");
         return Ok(());
@@ -214,7 +219,7 @@ mod tests {
     use crate::{
         db::db,
         i18n::{self, Translate},
-        tests::TestBot,
+        tests::{TestBot, helpers::cancel_ok_for},
     };
 
     test! { ask_langid_on_empty_invocation,
@@ -253,7 +258,7 @@ mod tests {
         // Dialogue is still alive: /cancel acknowledges instead of going
         // through the unknown-command path.
         bot.update("/cancel");
-        let cancel = i18n::commands::CANCEL_OK.translate_default();
+        let cancel = cancel_ok_for(i18n::commands::RUNNING_PROCESS_SET_LANGUAGE);
         bot.test_last_message(&cancel).await;
     }
 
@@ -264,7 +269,7 @@ mod tests {
         bot.dispatch().await;
 
         bot.update("/cancel");
-        let response = i18n::commands::CANCEL_OK.translate_default();
+        let response = cancel_ok_for(i18n::commands::RUNNING_PROCESS_SET_LANGUAGE);
         bot.test_last_message(&response).await;
     }
 }

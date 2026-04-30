@@ -92,7 +92,7 @@ show-balances-traveler-not-found = Impossibile trovare il viaggiatore "{$name}" 
 ## /cancel
 
 cancel-no-process-to-cancel = Non c'è nessun processo da annullare.
-cancel-ok = Il processo è stato annullato.
+cancel-ok = Il processo ({$process}) è stato annullato.
 
 ## unknown command
 

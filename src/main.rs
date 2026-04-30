@@ -273,14 +273,16 @@ pub(crate) fn handler_tree() -> UpdateHandler<Box<dyn std::error::Error + Send +
         .branch(pending_command_dialogue_branch)
         .endpoint(unknown_command);
 
-    // Inline-keyboard callback queries. Currently only `/setlanguage` uses
-    // them; the filter on the callback prefix keeps unrelated callbacks from
-    // tripping the dialogue handler.
+    // Inline-keyboard callback queries. The filter on the callback prefix
+    // keeps unrelated callbacks from tripping the dialogue handler. Each
+    // dialogue that exposes a keyboard contributes one prefix and one
+    // `case![PendingCommandState::X(...)]` arm.
     let callback_branch = Update::filter_callback_query()
         .filter(|q: CallbackQuery| {
-            q.data
-                .as_deref()
-                .is_some_and(|d| d.starts_with(pending_set_language::CALLBACK_PREFIX))
+            q.data.as_deref().is_some_and(|d| {
+                d.starts_with(pending_set_language::CALLBACK_PREFIX)
+                    || d.starts_with(pending_set_currency::CALLBACK_PREFIX)
+            })
         })
         .filter(|q: CallbackQuery| {
             q.regular_message()
@@ -292,6 +294,12 @@ pub(crate) fn handler_tree() -> UpdateHandler<Box<dyn std::error::Error + Send +
             case![PendingCommandState::SetLanguage(state)].branch(
                 case![pending_set_language::SetLanguageState::AskLangid]
                     .endpoint(pending_set_language::receive_callback),
+            ),
+        )
+        .branch(
+            case![PendingCommandState::SetCurrency(state)].branch(
+                case![pending_set_currency::SetCurrencyState::AskCurrency]
+                    .endpoint(pending_set_currency::receive_callback),
             ),
         );
 

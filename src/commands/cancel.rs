@@ -1,10 +1,11 @@
 use crate::{
     Context, HandlerResult,
     dialogues::storage::DialogueRegistry,
-    i18n::{self, Translate},
+    i18n::{self, Translate, TranslateWithArgs, args},
     utils::trace_skip_all,
 };
 use macro_rules_attribute::apply;
+use maplit::hashmap;
 use std::sync::{Arc, Mutex};
 use teloxide::prelude::*;
 use tracing::Level;
@@ -17,14 +18,26 @@ pub async fn cancel(
     ctx: Arc<Mutex<Context>>,
 ) -> HandlerResult {
     let chat_id = msg.chat.id;
+
+    // Capture the running dialogue's label *before* exiting so the cancel
+    // confirmation can name the process that was just cancelled.
+    let running_label = registry.running_label(chat_id).await;
     let cancelled_any = registry.exit_all(chat_id).await?;
 
-    let key = if cancelled_any {
-        i18n::commands::CANCEL_OK
+    let text = if cancelled_any {
+        let process_name = match running_label {
+            Some(label) => label.translate(Arc::clone(&ctx)),
+            // Race: the dialogue exited between `running_label` and `exit_all`.
+            None => i18n::commands::RUNNING_PROCESS_UNKNOWN.translate(Arc::clone(&ctx)),
+        };
+        i18n::commands::CANCEL_OK.translate_with_args(
+            ctx,
+            &hashmap! { args::PROCESS.into() => process_name.into() },
+        )
     } else {
-        i18n::commands::CANCEL_NO_PROCESS_TO_CANCEL
+        i18n::commands::CANCEL_NO_PROCESS_TO_CANCEL.translate(ctx)
     };
-    bot.send_message(chat_id, key.translate(ctx)).await?;
+    bot.send_message(chat_id, text).await?;
     Ok(())
 }
 
@@ -33,7 +46,7 @@ mod tests {
     use crate::{
         db::db,
         i18n::{self, Translate},
-        tests::TestBot,
+        tests::{TestBot, helpers::cancel_ok_for},
     };
 
     test! { cancel_ok,
@@ -45,7 +58,7 @@ mod tests {
 
         // Cancel process
         bot.update("/cancel");
-        let response = i18n::commands::CANCEL_OK.translate_default();
+        let response = cancel_ok_for(i18n::commands::RUNNING_PROCESS_ADD_EXPENSE);
         bot.test_last_message(&response).await;
     }
 
@@ -66,7 +79,7 @@ mod tests {
 
         // Cancel process -> ok
         bot.update("/cancel");
-        let response = i18n::commands::CANCEL_OK.translate_default();
+        let response = cancel_ok_for(i18n::commands::RUNNING_PROCESS_ADD_EXPENSE);
         bot.test_last_message(&response).await;
 
         // Cancel again -> no process to cancel
@@ -83,7 +96,7 @@ mod tests {
 
         // Cancel it
         bot.update("/cancel");
-        let response = i18n::commands::CANCEL_OK.translate_default();
+        let response = cancel_ok_for(i18n::commands::RUNNING_PROCESS_ADD_TRAVELER);
         bot.test_last_message(&response).await;
 
         // After cancel the chat is back to a clean state

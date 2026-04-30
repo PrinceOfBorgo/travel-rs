@@ -21,9 +21,10 @@
 - Fixed descriptions for `dev-local` and `dev-local-docker` profiles settings files.
 - Replaced the batch script `start_docker_db.bat` with an enhanced PowerShell script. The new `start_docker_db.ps1` contains configurable variables for Docker parameters and retrieves the SurrealDB version from `Cargo.toml` to ensure a compatible Docker image is used.
 - Reworked `README.md` for clarity and updated structure.
+- `/setlanguage` and `/setcurrency` interactive dialogues now offer an inline keyboard for quick selection (curated short list for `/setcurrency`); free-text input is still accepted as a fallback.
 - `/setlanguage`, `/setcurrency`, `/addtraveler`, `/deletetraveler`, `/deleteexpense`, `/showexpense`, `/deletetransfer` now prompt for their arguments when invoked without one.
 - Heavily refactored dialogues and storages handling; `/cancel` works for any dialogue.
-- The "another process is already running" notice now identifies which dialogue is in progress (e.g. `Another process (/addexpense) is already running, ...`). Each dialogue state implements a shared `DialogueState` trait that exposes its user-facing label.
+- The "another process is already running" notice and the `/cancel` confirmation now identify the dialogue in question (e.g. `Another process (/addexpense) is already running, ...`, `The process (/addtraveler) was cancelled.`). Each dialogue state implements a shared `DialogueState` trait that exposes its user-facing label.
 - `/listtransfers` and `/showbalances` now accept their `name` argument as optional via `CommandArg<Name>`.
 
 ### Fixed

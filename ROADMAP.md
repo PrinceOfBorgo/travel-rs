@@ -27,7 +27,16 @@
 - [x] Handle `unknown_command` when command name is right but arguments are incomplete.
 - [x] Add dedicated help messages for all commands.
 - [ ] Improve user experience:
-  - [ ] Add inline keyboard support
+  - [ ] Add inline keyboard support:
+    - [ ] `Help`
+    - [x] `SetLanguage`
+    - [x] `SetCurrency`
+    - [ ] `DeleteTraveler`
+    - [ ] `ShowExpense`
+    - [ ] `ListExpenses`
+    - [ ] `Transfer`
+    - [ ] `ListTransfers`
+    - [ ] `ShowBalances`
   - [ ] Implement a Telegram Mini App
   - [ ] Interactive prompts for commands invoked without their arguments:
     - [ ] `Help`

@@ -208,7 +208,9 @@ mod tests {
         bot.dispatch().await;
 
         bot.update("/cancel");
-        let response = i18n::commands::CANCEL_OK.translate_default();
+        let response = crate::tests::helpers::cancel_ok_for(
+            i18n::commands::RUNNING_PROCESS_DELETE_TRAVELER,
+        );
         bot.test_last_message(&response).await;
     }
 }
