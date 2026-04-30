@@ -5,6 +5,7 @@ use crate::{
     consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     errors::CommandError,
     i18n::{self, TranslateWithArgs},
+    money_wrapper::currency_label,
     trace_command_db,
 };
 use macro_rules_attribute::apply;
@@ -49,7 +50,7 @@ pub async fn set_currency(
             Ok(CommandOutcome::Success(
                 i18n::commands::SET_CURRENCY_OK.translate_with_args(
                     ctx.clone(),
-                    &hashmap! {i18n::args::CURRENCY.into() => currency.into()},
+                    &hashmap! {i18n::args::CURRENCY.into() => currency_label(&currency).into()},
                 ),
             ))
         }
@@ -68,6 +69,7 @@ mod tests {
         db::db,
         expense::Expense,
         i18n::{self, Translate, TranslateWithArgs},
+        money_wrapper::currency_label,
         tests::TestBot,
         traveler::{Name, Traveler},
     };
@@ -78,7 +80,7 @@ mod tests {
         let db = db().await;
 
         let mut bot = TestBot::new(db, "/setcurrency USD");
-        let response = i18n::commands::SET_CURRENCY_OK.translate_with_args_default(&hashmap! {i18n::args::CURRENCY.into() => "USD".into()},
+        let response = i18n::commands::SET_CURRENCY_OK.translate_with_args_default(&hashmap! {i18n::args::CURRENCY.into() => currency_label("USD").into()},
         );
         bot.test_last_message(&response).await;
     }

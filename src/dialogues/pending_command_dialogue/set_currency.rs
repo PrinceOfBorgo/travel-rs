@@ -6,7 +6,8 @@ use crate::{
     commands::{Command, CommandArg, command_reply},
     consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     dialogues::pending_command_dialogue::{PendingCommandDialogue, PendingCommandState},
-    i18n::{self, Translate, TranslateWithArgs, TryTranslate},
+    i18n::{self, Translate, TranslateWithArgs},
+    money_wrapper::{POPULAR_CURRENCIES, currency_label},
     trace_state, trace_state_db,
 };
 use macro_rules_attribute::apply;
@@ -29,11 +30,6 @@ pub const CALLBACK_PREFIX: &str = "setcur:";
 /// keyboard.
 pub const CANCEL_CALLBACK_DATA: &str = "setcur:__cancel__";
 
-/// Curated short list of widely-used currencies surfaced as quick-pick
-/// buttons. Users can still type any ISO 4217 or supported crypto code as a
-/// free-text fallback.
-const POPULAR_CURRENCIES: &[&str] = &["USD", "EUR", "GBP", "JPY", "CHF", "CAD", "AUD", "CNY"];
-
 /// Number of currency buttons per row in the inline keyboard.
 const CURRENCIES_PER_ROW: usize = 2;
 
@@ -48,11 +44,7 @@ fn popular_currencies_keyboard(ctx: Arc<Mutex<Context>>) -> InlineKeyboardMarkup
     let buttons: Vec<InlineKeyboardButton> = POPULAR_CURRENCIES
         .iter()
         .map(|code| {
-            // Fall back to the bare code when no localized label is defined.
-            let label = format!("{}{code}", i18n::labels::CURRENCY_LABEL_PREFIX)
-                .try_translate(ctx.clone())
-                .unwrap_or_else(|| (*code).to_owned());
-            InlineKeyboardButton::callback(label, format!("{CALLBACK_PREFIX}{code}"))
+            InlineKeyboardButton::callback(currency_label(code), format!("{CALLBACK_PREFIX}{code}"))
         })
         .collect();
 
@@ -166,8 +158,7 @@ pub async fn receive_callback(
     if data == CANCEL_CALLBACK_DATA {
         // Remove the inline keyboard from the original prompt (best-effort).
         let _ = bot.edit_message_reply_markup(msg.chat.id, msg.id).await;
-        let process_name =
-            i18n::commands::RUNNING_PROCESS_SET_CURRENCY.translate(Arc::clone(&ctx));
+        let process_name = i18n::commands::RUNNING_PROCESS_SET_CURRENCY.translate(Arc::clone(&ctx));
         let cancel_msg = i18n::commands::CANCEL_OK.translate_with_args(
             ctx,
             &maplit::hashmap! { i18n::args::PROCESS.into() => process_name.into() },

@@ -184,7 +184,7 @@ async fn test_i18n_and_currency() {
     bot.update("/setcurrency EUR");
     let response = i18n::commands::SET_CURRENCY_OK.translate_with_args(
         bot.context(),
-        &hashmap! {i18n::args::CURRENCY.into() => "EUR".into()},
+        &hashmap! {i18n::args::CURRENCY.into() => crate::money_wrapper::currency_label("EUR").into()},
     );
     bot.test_last_message(&response).await;
 
