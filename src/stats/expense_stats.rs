@@ -3,7 +3,7 @@ use crate::{
     expense::Expense,
     i18n::{self, Translate, TranslateWithArgs},
     money_wrapper::MoneyWrapper,
-    utils::indent_multiline,
+    i18n::indent_multiline,
 };
 use maplit::hashmap;
 use rust_decimal::Decimal;

@@ -49,3 +49,6 @@ database = "<YOUR_DEV_DATABASE>"
 default_locale = "en-US"
 locales_path = "locales"
 default_currency = "USD"
+# popular_currencies: list of currency codes shown as quick-pick buttons in the /setcurrency inline keyboard.
+# If omitted, defaults to: ["USD", "EUR", "GBP", "JPY", "CHF", "CAD", "AUD", "CNY"]
+popular_currencies = ["USD", "EUR", "GBP", "JPY", "CHF", "CAD", "AUD", "CNY"]

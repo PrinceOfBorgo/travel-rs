@@ -1,9 +1,9 @@
 use super::AveragePerDay;
 use crate::{
+    i18n::indent_multiline,
     i18n::{self, Translate, TranslateWithArgs},
     money_wrapper::MoneyWrapper,
     transfer::Transfer,
-    utils::indent_multiline,
 };
 use maplit::hashmap;
 use rust_decimal::Decimal;

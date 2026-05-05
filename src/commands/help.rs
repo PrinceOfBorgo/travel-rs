@@ -4,7 +4,6 @@ use crate::{
     consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     errors::CommandError,
     i18n::{Translate, commands::COMMAND_DESCRIPTIONS},
-    trace_command,
 };
 use macro_rules_attribute::apply;
 use std::sync::{Arc, Mutex};

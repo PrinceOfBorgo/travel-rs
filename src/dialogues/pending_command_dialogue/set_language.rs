@@ -5,9 +5,11 @@ use crate::{
     Context, HandlerResult,
     commands::{Command, CommandArg, command_reply},
     consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
-    dialogues::pending_command_dialogue::{PendingCommandDialogue, PendingCommandState},
-    i18n::{self, Translate, TranslateWithArgs, TryTranslate},
-    trace_state, trace_state_db,
+    dialogues::{
+        keyboard,
+        pending_command_dialogue::{PendingCommandDialogue, PendingCommandState},
+    },
+    i18n::{self, Translate, TryTranslate},
 };
 use macro_rules_attribute::apply;
 use std::{
@@ -33,16 +35,18 @@ pub const CALLBACK_PREFIX: &str = "setlang:";
 /// keyboard.
 pub const CANCEL_CALLBACK_DATA: &str = "setlang:__cancel__";
 
+/// Callback data for blank spacer buttons in the `/setlanguage` keyboard.
+const NOOP_CALLBACK_DATA: &str = "setlang:__noop__";
+
 /// Number of language buttons per row in the inline keyboard.
-const LANGS_PER_ROW: usize = 3;
+const LANGS_PER_ROW: usize = 2;
 
 #[derive(Debug, Clone)]
 pub enum SetLanguageState {
     AskLangid,
 }
 
-/// Builds an inline keyboard with the available languages laid out in a
-/// compact grid plus a localized cancel button on its own row.
+/// Builds an inline keyboard with the available languages in a uniform grid.
 fn available_langs_keyboard(ctx: Arc<Mutex<Context>>) -> InlineKeyboardMarkup {
     let mut lang_buttons: Vec<InlineKeyboardButton> = i18n::available_langs()
         .map(|langid| {
@@ -56,17 +60,17 @@ fn available_langs_keyboard(ctx: Arc<Mutex<Context>>) -> InlineKeyboardMarkup {
         .collect();
     lang_buttons.sort_by(|a, b| a.text.cmp(&b.text));
 
-    let mut rows: Vec<Vec<InlineKeyboardButton>> = lang_buttons
-        .chunks(LANGS_PER_ROW)
-        .map(<[InlineKeyboardButton]>::to_vec)
-        .collect();
-
-    rows.push(vec![InlineKeyboardButton::callback(
+    let cancel_button = InlineKeyboardButton::callback(
         i18n::labels::CANCEL_BUTTON.translate(ctx),
         CANCEL_CALLBACK_DATA,
-    )]);
+    );
 
-    InlineKeyboardMarkup::new(rows)
+    keyboard::grid_keyboard(
+        lang_buttons,
+        cancel_button,
+        LANGS_PER_ROW,
+        NOOP_CALLBACK_DATA,
+    )
 }
 
 #[apply(trace_state)]
@@ -135,12 +139,7 @@ pub async fn receive_langid(
     Ok(())
 }
 
-#[tracing::instrument(
-    err(level = Level::ERROR),
-    ret(level = Level::DEBUG),
-    skip_all,
-    fields(chat_id = ?q.regular_message().map(|m| m.chat.id), sender_id = %q.from.id),
-)]
+#[apply(trace_callback)]
 pub async fn receive_callback(
     db: Arc<Surreal<Any>>,
     bot: Bot,
@@ -150,39 +149,26 @@ pub async fn receive_callback(
 ) -> HandlerResult {
     tracing::debug!("{LOG_DEBUG_START}");
 
-    // Always answer the callback query so Telegram dismisses the loading
-    // spinner on the user's client, regardless of what happens next.
-    let _ = bot.answer_callback_query(q.id.clone()).await;
+    let action = keyboard::handle_callback_prelude(
+        &bot,
+        &dialogue,
+        &q,
+        &ctx,
+        &keyboard::CallbackConfig {
+            cancel_callback: CANCEL_CALLBACK_DATA,
+            noop_callback: NOOP_CALLBACK_DATA,
+            prefix: CALLBACK_PREFIX,
+            running_process_key: i18n::commands::RUNNING_PROCESS_SET_LANGUAGE,
+        },
+    )
+    .await?;
 
-    // Extract the original message (needed by `command_reply` and to remove
-    // the inline keyboard). If the message is inaccessible (deleted or older
-    // than 48h), there's nothing meaningful we can do — just bail.
-    let Some(msg) = q.regular_message().cloned() else {
-        tracing::warn!("Callback query without an accessible message; ignoring");
+    let keyboard::CallbackAction::Selection { value: raw, msg } = action else {
+        tracing::debug!("{LOG_DEBUG_SUCCESS}");
         return Ok(());
     };
 
-    // Parse the callback data: it's either the cancel sentinel or a langid
-    // prefixed with `CALLBACK_PREFIX`.
-    let data = q.data.as_deref().unwrap_or("");
-
-    if data == CANCEL_CALLBACK_DATA {
-        // Remove the inline keyboard from the original prompt (best-effort).
-        let _ = bot.edit_message_reply_markup(msg.chat.id, msg.id).await;
-        let process_name =
-            i18n::commands::RUNNING_PROCESS_SET_LANGUAGE.translate(Arc::clone(&ctx));
-        let cancel_msg = i18n::commands::CANCEL_OK.translate_with_args(
-            ctx,
-            &maplit::hashmap! { i18n::args::PROCESS.into() => process_name.into() },
-        );
-        bot.send_message(msg.chat.id, cancel_msg).await?;
-        dialogue.exit().await?;
-        tracing::debug!("{LOG_DEBUG_SUCCESS}");
-        return Ok(());
-    }
-
-    let raw = data.strip_prefix(CALLBACK_PREFIX).unwrap_or("");
-    let Ok(langid) = LanguageIdentifier::from_str(raw) else {
+    let Ok(langid) = LanguageIdentifier::from_str(&raw) else {
         tracing::warn!("Invalid langid in callback data: {raw:?}");
         return Ok(());
     };

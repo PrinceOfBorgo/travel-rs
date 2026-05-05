@@ -4,7 +4,6 @@ use crate::{
     consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     errors::CommandError,
     i18n::{self, TranslateWithArgs},
-    trace_command_db,
     traveler::{Name, Traveler},
 };
 use macro_rules_attribute::apply;

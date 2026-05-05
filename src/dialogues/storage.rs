@@ -19,7 +19,6 @@ use crate::{
         pending_command_dialogue::{PendingCommandState, PendingCommandStorage},
     },
     i18n::{self, Translate, TranslateWithArgs, args},
-    utils::trace_skip_all,
 };
 use macro_rules_attribute::apply;
 use maplit::hashmap;

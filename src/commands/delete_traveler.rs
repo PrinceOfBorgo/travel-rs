@@ -2,12 +2,11 @@ use crate::{
     Context,
     commands::CommandOutcome,
     consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
+    debt::update_debts,
     errors::CommandError,
     expense::Expense,
     i18n::{self, Translate, TranslateWithArgs},
-    trace_command_db,
     traveler::{Name, Traveler},
-    utils::update_debts,
 };
 use macro_rules_attribute::apply;
 use maplit::hashmap;

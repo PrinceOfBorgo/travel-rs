@@ -2,7 +2,6 @@ use crate::{
     Context, HandlerResult,
     dialogues::storage::DialogueRegistry,
     i18n::{self, Translate, TranslateWithArgs, args},
-    utils::trace_skip_all,
 };
 use macro_rules_attribute::apply;
 use maplit::hashmap;

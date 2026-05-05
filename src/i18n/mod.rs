@@ -18,7 +18,7 @@ use fluent::FluentResource;
 use fluent_datetime::BundleExt;
 use fluent_templates::{ArcLoader, Loader};
 use indoc::formatdoc;
-use std::sync::{Arc, LazyLock};
+use std::sync::{Arc, LazyLock, Mutex};
 use teloxide::utils::command::BotCommands;
 use terms::*;
 use unic_langid::LanguageIdentifier;
@@ -132,4 +132,24 @@ pub fn available_langs() -> Box<dyn Iterator<Item = LanguageIdentifier>> {
     let mut langs: Vec<LanguageIdentifier> = LOCALES.locales().cloned().collect();
     langs.sort_by_key(|a| a.to_string());
     Box::new(langs.into_iter())
+}
+
+/// Formats a list of items into a multiline string with indentation.
+/// Each item is translated using the provided context and indentation level.
+/// A newline is added before the first item.
+pub fn indent_multiline(
+    items: &[impl Translate],
+    ctx: Arc<Mutex<crate::Context>>,
+    indent_lvl: usize,
+) -> String {
+    if items.is_empty() {
+        String::new()
+    } else {
+        String::from("\n")
+            + &items
+                .iter()
+                .map(|t| t.translate_with_indent(ctx.clone(), indent_lvl + 1))
+                .collect::<Vec<_>>()
+                .join("\n")
+    }
 }

@@ -6,7 +6,6 @@ use crate::{
     expense::Expense,
     expense_details::ExpenseDetails,
     i18n::{self, Translate, TranslateWithArgs},
-    trace_command_db,
 };
 use macro_rules_attribute::apply;
 use maplit::hashmap;

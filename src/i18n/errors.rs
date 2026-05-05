@@ -1,4 +1,3 @@
-pub const COMMAND_ERROR_EMPTY_INPUT: &str = "command-error-empty-input";
 pub const COMMAND_ERROR_HELP: &str = "command-error-help";
 pub const COMMAND_ERROR_SET_LANGUAGE: &str = "command-error-set-language";
 pub const COMMAND_ERROR_SET_CURRENCY: &str = "command-error-set-currency";

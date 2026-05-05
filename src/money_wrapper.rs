@@ -8,11 +8,6 @@ use rusty_money::{Money, Round, crypto, iso};
 
 use crate::Context;
 
-/// Curated short list of widely-used currencies surfaced as quick-pick
-/// buttons in the `/setcurrency` keyboard. Any other ISO 4217 or supported
-/// crypto code can still be entered as free text.
-pub const POPULAR_CURRENCIES: &[&str] = &["USD", "EUR", "GBP", "JPY", "CHF", "CAD", "AUD", "CNY"];
-
 /// Derives a flag emoji from a currency code by interpreting its first two
 /// characters as an ISO 3166 country code and converting them into the
 /// matching pair of Unicode regional indicator symbols.

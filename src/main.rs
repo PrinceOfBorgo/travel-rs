@@ -25,7 +25,6 @@ mod settings;
 mod stats;
 mod tables;
 mod transfer;
-mod utils;
 
 use chat::Chat;
 use clap::Parser;
@@ -59,7 +58,8 @@ use tracing_subscriber::{
     EnvFilter, fmt::time::UtcTime, layer::SubscriberExt, util::SubscriberInitExt,
 };
 use unic_langid::LanguageIdentifier;
-use utils::*;
+
+use debt::update_debts;
 
 pub(crate) use relationships::*;
 pub(crate) use tables::*;

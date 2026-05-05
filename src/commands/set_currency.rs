@@ -6,7 +6,6 @@ use crate::{
     errors::CommandError,
     i18n::{self, TranslateWithArgs},
     money_wrapper::currency_label,
-    trace_command_db,
 };
 use macro_rules_attribute::apply;
 use maplit::hashmap;

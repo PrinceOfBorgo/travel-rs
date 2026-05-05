@@ -3,7 +3,6 @@ use crate::{
     Context, HandlerResult,
     commands::{Command, HelpMessage},
     i18n::{self, TranslateWithArgs},
-    utils::trace_skip_all,
 };
 use macro_rules_attribute::apply;
 use maplit::hashmap;

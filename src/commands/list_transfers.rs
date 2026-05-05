@@ -3,7 +3,6 @@ use crate::{
     consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     errors::CommandError,
     i18n::{self, Translate, TranslateWithArgs},
-    trace_command_db,
     transfer::Transfer,
     traveler::Name,
 };

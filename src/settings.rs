@@ -118,6 +118,17 @@ pub struct I18n {
     pub default_locale: LanguageIdentifier,
     pub locales_path: PathBuf,
     pub default_currency: String,
+    #[serde(default = "I18n::default_popular_currencies")]
+    pub popular_currencies: Vec<String>,
+}
+
+impl I18n {
+    fn default_popular_currencies() -> Vec<String> {
+        ["USD", "EUR", "GBP", "JPY", "CHF", "CAD", "AUD", "CNY"]
+            .into_iter()
+            .map(String::from)
+            .collect()
+    }
 }
 
 #[derive(Debug, Deserialize)]

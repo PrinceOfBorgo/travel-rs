@@ -4,7 +4,6 @@ use crate::{
     errors::CommandError,
     expense::Expense,
     i18n::{self, Translate, TranslateWithArgs},
-    trace_command_db,
 };
 use macro_rules_attribute::apply;
 use maplit::hashmap;

@@ -4,7 +4,6 @@ use crate::{
     errors::CommandError,
     i18n::Translate,
     stats::Stats,
-    trace_command_db,
 };
 use macro_rules_attribute::apply;
 use std::sync::{Arc, Mutex};

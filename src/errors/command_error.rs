@@ -13,7 +13,6 @@ use unic_langid::LanguageIdentifier;
 
 #[derive(Debug, Clone)]
 pub enum CommandError {
-    EmptyInput,
     Help {
         command: String,
         best_match: Option<String>,
@@ -61,9 +60,6 @@ impl Translate for CommandError {
     fn translate_with_indent(&self, ctx: Arc<Mutex<Context>>, indent_lvl: usize) -> String {
         use CommandError::*;
         match self {
-            EmptyInput => {
-                i18n::errors::COMMAND_ERROR_EMPTY_INPUT.translate_with_indent(ctx, indent_lvl)
-            }
             Help {
                 command,
                 best_match,

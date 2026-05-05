@@ -8,7 +8,6 @@ use crate::{
         args::{TRAVELER_IS_CASE_CREDITOR, TRAVELER_IS_CASE_DEBTOR},
     },
     money_wrapper::MoneyWrapper,
-    trace_command_db,
     traveler::{Name, Traveler},
 };
 use macro_rules_attribute::apply;

@@ -4,7 +4,6 @@ use crate::{
     errors::{AddExpenseError, EndError},
     expense::Expense,
     i18n::{self, Translate, TranslateWithArgs},
-    trace_state, trace_state_db,
     traveler::{Name, Traveler},
     update_debts,
 };
@@ -563,10 +562,8 @@ async fn parse_split_among(
             .await
             .map_err(|err| AddExpenseError::Generic(Box::new(err)))?;
 
-        let already_added: std::collections::HashSet<String> = split_among
-            .keys()
-            .map(|n| n.to_lowercase())
-            .collect();
+        let already_added: std::collections::HashSet<String> =
+            split_among.keys().map(|n| n.to_lowercase()).collect();
         split_among.append(
             &mut travelers
                 .into_iter()

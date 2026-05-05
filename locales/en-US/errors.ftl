@@ -1,6 +1,5 @@
 ## CommandError
 
-command-error-empty-input = No input provided.
 command-error-help = No help available for command /{$command}.
 command-error-set-language = Couldn't set language "{$langid}".
 command-error-set-currency = Couldn't set currency "{$currency}".

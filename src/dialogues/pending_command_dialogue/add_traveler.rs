@@ -8,7 +8,6 @@ use crate::{
     consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     dialogues::pending_command_dialogue::{PendingCommandDialogue, PendingCommandState},
     i18n::{self, Translate},
-    trace_state, trace_state_db,
     traveler::Name,
 };
 use macro_rules_attribute::apply;
