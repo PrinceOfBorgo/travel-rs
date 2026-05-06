@@ -10,6 +10,7 @@ running-process-show-expense = /{-show-expense-command}
 running-process-delete-transfer = /{-delete-transfer-command}
 running-process-set-language = /{-set-language-command}
 running-process-set-currency = /{-set-currency-command}
+running-process-list-expenses = /{-list-expenses-command}
 
 ## /setlanguage
 
@@ -70,7 +71,7 @@ transfer-non-positive-amount = L'importo del trasferimento deve essere maggiore 
 ## /deletetransfer
 
 delete-transfer-not-found = Impossibile trovare il trasferimento #{$number} da eliminare.
-delete-transfer-ok = Trasferimento #{$number} eliminata con successo.
+delete-transfer-ok = Trasferimento #{$number} eliminato con successo.
 
 ## /listtransfers
 
@@ -84,7 +85,7 @@ show-balances-settled-up = Tutti i viaggiatori sono in pari con tutti.
 show-balances-traveler-ok = 
     {$traveler-name} { $traveler-is -> 
         *[debtor] deve {$debt} a
-        [creditor] deve riceve {$debt} da
+        [creditor] deve ricevere {$debt} da
     } {$other-traveler-name}.
 show-balances-traveler-settled-up = Il viaggiatore {$name} è in pari con tutti.
 show-balances-traveler-not-found = Impossibile trovare il viaggiatore "{$name}" per mostrare il saldo.

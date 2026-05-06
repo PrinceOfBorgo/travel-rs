@@ -36,6 +36,7 @@ use dialogues::pending_command_dialogue::{
     delete_expense::{self as pending_delete_expense},
     delete_transfer::{self as pending_delete_transfer},
     delete_traveler::{self as pending_delete_traveler},
+    list_expenses::{self as pending_list_expenses},
     set_currency::{self as pending_set_currency},
     set_language::{self as pending_set_language},
     show_expense::{self as pending_show_expense},
@@ -277,7 +278,7 @@ pub(crate) fn handler_tree() -> UpdateHandler<Box<dyn std::error::Error + Send +
     // keeps unrelated callbacks from tripping the dialogue handler. Each
     // dialogue that exposes a keyboard contributes one prefix and one
     // `case![PendingCommandState::X(...)]` arm.
-    let callback_branch = Update::filter_callback_query()
+    let dialogue_callback_branch = Update::filter_callback_query()
         .filter(|q: CallbackQuery| {
             q.data.as_deref().is_some_and(|d| {
                 d.starts_with(pending_set_language::CALLBACK_PREFIX)
@@ -303,9 +304,37 @@ pub(crate) fn handler_tree() -> UpdateHandler<Box<dyn std::error::Error + Send +
             ),
         );
 
+    // Stateless command-keyboard callbacks.
+    // These don't require a dialogue — the callback data is self-contained.
+    let stateless_callback_branch = Update::filter_callback_query()
+        .filter(|q: CallbackQuery| q.data.as_deref().is_some_and(is_stateless_callback))
+        .filter(|q: CallbackQuery| {
+            q.regular_message()
+                .map(|m| is_chat_whitelisted(m.chat.id))
+                .unwrap_or(false)
+        })
+        .endpoint(stateless_callback_endpoint);
+
+    // `/listexpenses` "Filter…" callback: starts a pending-command dialogue
+    // to ask for the description.
+    let list_expenses_filter_callback_branch = Update::filter_callback_query()
+        .filter(|q: CallbackQuery| {
+            q.data
+                .as_deref()
+                .is_some_and(|d| d == LIST_EXPENSES_FILTER_CALLBACK)
+        })
+        .filter(|q: CallbackQuery| {
+            q.regular_message()
+                .map(|m| is_chat_whitelisted(m.chat.id))
+                .unwrap_or(false)
+        })
+        .endpoint(pending_list_expenses::receive_filter_callback);
+
     dptree::entry()
         .branch(message_branch)
-        .branch(callback_branch)
+        .branch(dialogue_callback_branch)
+        .branch(stateless_callback_branch)
+        .branch(list_expenses_filter_callback_branch)
 }
 
 fn filter_auth(msg: Message) -> bool {

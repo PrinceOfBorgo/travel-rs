@@ -10,6 +10,7 @@ running-process-show-expense = /{-show-expense-command}
 running-process-delete-transfer = /{-delete-transfer-command}
 running-process-set-language = /{-set-language-command}
 running-process-set-currency = /{-set-currency-command}
+running-process-list-expenses = /{-list-expenses-command}
 
 ## /setlanguage
 

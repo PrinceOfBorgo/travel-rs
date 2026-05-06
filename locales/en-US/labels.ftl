@@ -1,6 +1,8 @@
 ## Generic UI labels (buttons, inline keyboards, etc.)
 
 cancel-button = Cancel
+filter-button = Filter…
+show-all-button = Show all
 
 ## Language labels: <flag emoji> <long name>
 

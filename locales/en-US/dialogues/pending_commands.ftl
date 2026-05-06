@@ -32,3 +32,7 @@ set-language-invalid-langid = You sent an invalid language identifier, please re
 
 set-currency-ask-currency = Which currency do you want to set? Select one from the list below or send the currency code if not present.
 set-currency-invalid-currency = You sent an invalid currency code, please retry.
+
+## /list_expenses
+
+list-expenses-ask-description = Send a description (or part of it) to filter expenses by.

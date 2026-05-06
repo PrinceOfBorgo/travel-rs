@@ -32,3 +32,7 @@ set-language-invalid-langid = Hai inviato un identificatore di lingua non valido
 
 set-currency-ask-currency = Quale valuta vuoi impostare? Selezionane una dalla lista sottostante o invia il codice valuta se non presente.
 set-currency-invalid-currency = Hai inviato un codice valuta non valido, per favore riprova.
+
+## /list_expenses
+
+list-expenses-ask-description = Invia una descrizione (o parte di essa) per filtrare le spese.

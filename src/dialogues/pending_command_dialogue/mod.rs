@@ -12,6 +12,7 @@ pub mod add_traveler;
 pub mod delete_expense;
 pub mod delete_transfer;
 pub mod delete_traveler;
+pub mod list_expenses;
 pub mod set_currency;
 pub mod set_language;
 pub mod show_expense;
@@ -20,6 +21,7 @@ use add_traveler::AddTravelerState;
 use delete_expense::DeleteExpenseState;
 use delete_transfer::DeleteTransferState;
 use delete_traveler::DeleteTravelerState;
+use list_expenses::ListExpensesState;
 use set_currency::SetCurrencyState;
 use set_language::SetLanguageState;
 use show_expense::ShowExpenseState;
@@ -42,6 +44,7 @@ pub enum PendingCommandState {
     DeleteTransfer(DeleteTransferState),
     SetLanguage(SetLanguageState),
     SetCurrency(SetCurrencyState),
+    ListExpenses(ListExpensesState),
 }
 
 pub type PendingCommandStorage = InMemStorage<PendingCommandState>;
@@ -63,6 +66,7 @@ impl crate::dialogues::storage::DialogueState for PendingCommandState {
             PendingCommandState::DeleteTransfer(_) => RUNNING_PROCESS_DELETE_TRANSFER,
             PendingCommandState::SetLanguage(_) => RUNNING_PROCESS_SET_LANGUAGE,
             PendingCommandState::SetCurrency(_) => RUNNING_PROCESS_SET_CURRENCY,
+            PendingCommandState::ListExpenses(_) => RUNNING_PROCESS_LIST_EXPENSES,
         }
     }
 }
@@ -107,4 +111,7 @@ pub fn handler_branch() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync
                 case![SetCurrencyState::AskCurrency].endpoint(set_currency::receive_currency),
             ),
         )
+        .branch(case![ListExpenses(state)].branch(
+            case![ListExpensesState::AskDescription].endpoint(list_expenses::receive_description),
+        ))
 }

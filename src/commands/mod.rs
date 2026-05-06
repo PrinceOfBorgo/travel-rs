@@ -8,6 +8,7 @@ mod delete_transfer;
 mod delete_traveler;
 mod help;
 mod help_message;
+pub(crate) mod inline_keyboards;
 mod list_expenses;
 mod list_transfers;
 mod list_travelers;

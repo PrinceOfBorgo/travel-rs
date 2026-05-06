@@ -28,15 +28,15 @@
 - [x] Add dedicated help messages for all commands.
 - [ ] Improve user experience:
   - [ ] Add inline keyboard support:
-    - [ ] `Help`
+    - [x] `Help`
     - [x] `SetLanguage`
     - [x] `SetCurrency`
     - [ ] `DeleteTraveler`
     - [ ] `ShowExpense`
-    - [ ] `ListExpenses`
+    - [x] `ListExpenses`
     - [ ] `Transfer`
-    - [ ] `ListTransfers`
-    - [ ] `ShowBalances`
+    - [x] `ListTransfers`
+    - [x] `ShowBalances`
   - [ ] Implement a Telegram Mini App
   - [ ] Interactive prompts for commands invoked without their arguments:
     - [ ] `Help`
@@ -45,12 +45,12 @@
     - [x] `AddTraveler`
     - [x] `DeleteTraveler`
     - [x] `DeleteExpense`
-    - [ ] `ListExpenses`
+    - [x] `ListExpenses`
     - [x] `ShowExpense`
     - [ ] `Transfer`
     - [x] `DeleteTransfer`
-    - [ ] `ListTransfers`
-    - [ ] `ShowBalances`
+    - [x] `ListTransfers`
+    - [x] `ShowBalances`
 - [x] Add timestamps to expenses and transfers.
 - [x] Add `ShowStats` command.
 - [ ] Add `EditExpense` command.

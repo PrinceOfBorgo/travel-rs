@@ -231,4 +231,50 @@ mod collisions {
             db, "/addexpense", "/setcurrency", host_followup, &host_next_prompt,
         ).await;
     }
+
+    // ------------------------------------------------------------------
+    // ListExpenses (callback-initiated)  <->  AddExpense
+    // Since list_expenses dialogue is started from a callback (not a
+    // command), we seed the state manually and verify mutual exclusion.
+    // ------------------------------------------------------------------
+
+    test! { add_expense_blocked_while_list_expenses_dialogue_running,
+        let db = db().await;
+        let mut bot = TestBot::new(db, "/addtraveler Alice");
+        bot.dispatch().await;
+
+        // Seed the ListExpenses dialogue as if the "Filter…" button was tapped.
+        use crate::dialogues::pending_command_dialogue::PendingCommandState;
+        use crate::dialogues::pending_command_dialogue::list_expenses::ListExpensesState;
+        use teloxide::dispatching::dialogue::Storage;
+
+        let storage = bot.pending_command_storage();
+        storage
+            .update_dialogue(
+                bot.chat_id(),
+                PendingCommandState::ListExpenses(ListExpensesState::AskDescription),
+            )
+            .await
+            .unwrap();
+
+        // Attempting to start /addexpense should be refused.
+        bot.update("/addexpense");
+        let refused = i18n::commands::PROCESS_ALREADY_RUNNING.translate_with_args_default(
+            &maplit::hashmap! {
+                crate::i18n::args::PROCESS.into() =>
+                    i18n::commands::RUNNING_PROCESS_LIST_EXPENSES.translate_default().into(),
+            },
+        );
+        bot.test_last_message(&refused).await;
+
+        // Host (list_expenses) dialogue is still alive: feeding a
+        // description completes it.
+        bot.update("Toll");
+        bot.dispatch().await;
+
+        // After completion, /cancel reports nothing running.
+        bot.update("/cancel");
+        let response = i18n::commands::CANCEL_NO_PROCESS_TO_CANCEL.translate_default();
+        bot.test_last_message(&response).await;
+    }
 }

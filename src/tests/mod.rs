@@ -1,7 +1,9 @@
 mod cross_dialogue;
 mod integration_tests;
 
-use crate::{Context, deps, handler_tree};
+use crate::{
+    Context, deps, dialogues::pending_command_dialogue::PendingCommandStorage, handler_tree,
+};
 use std::sync::{Arc, Mutex};
 use surrealdb::{Surreal, engine::any::Any};
 use teloxide::types::{Chat, ChatId};
@@ -73,6 +75,14 @@ impl TestBot {
 
     pub fn context(&self) -> Arc<Mutex<Context>> {
         let arc: Arc<Arc<Mutex<Context>>> = self.bot.dependencies.get();
+        Arc::clone(&arc)
+    }
+
+    /// Returns the pending-command storage from the dependency map.
+    /// Useful for tests that need to manually seed a dialogue state
+    /// (e.g. dialogues started from callback queries).
+    pub fn pending_command_storage(&self) -> Arc<PendingCommandStorage> {
+        let arc: Arc<Arc<PendingCommandStorage>> = self.bot.dependencies.get();
         Arc::clone(&arc)
     }
 }

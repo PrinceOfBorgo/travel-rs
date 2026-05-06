@@ -6,6 +6,8 @@
 - `dialogues/pending_commands.ftl` and `labels.ftl` localization files.
 - `CommandArg` and `CommandOutcome` enums for structured command handling.
 - `/setlanguage`, `/setcurrency`, `/addtraveler`, `/deletetraveler`, `/deleteexpense`, `/showexpense`, `/deletetransfer` interactive dialogues for cases when commands are invoked without arguments.
+- `/listexpenses` now shows a "Filter…" inline keyboard button when invoked without a description. Tapping it starts an interactive dialogue that asks for search criteria (or `/cancel` to abort).
+- `/help`, `/listtransfers`, and `/showbalances` display inline keyboards for quick selection when invoked without arguments.
 - Input validations:
   - `/setcurrency` rejects unknown codes (must be a known ISO 4217 or crypto code).
   - `/transfer` rejects non-positive amounts and self-transfers (sender == receiver).

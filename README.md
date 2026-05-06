@@ -81,9 +81,10 @@ Travel-RS Bot was created to avoid the use of third-party applications for manag
 
 The following commands are supported by Travel-RS Bot:
 
-* **`/help`** — Displays a help message for the specified command. If no command is specified, it shows descriptions for all commands.
+* **`/help`** — Displays a help message for the specified command. If no command is specified, it shows descriptions for all commands along with an inline keyboard for quick access to each command's help.
 
   * Example: `/help addexpense`
+  * Example: `/help` (shows all commands with tap-to-view buttons)
 * **`/setlanguage`** — Sets the default language for the bot in the chat. If invoked without a language code, the bot prompts for one interactively.
 
   * Example: `/setlanguage it-IT`
@@ -110,7 +111,7 @@ The following commands are supported by Travel-RS Bot:
 
   * Example: `/deleteexpense 3`
   * Example: `/deleteexpense` (the bot will ask for the identifier)
-* **`/listexpenses`** — Displays the expenses in the travel plan. If a description is specified, it shows only the expenses matching the provided description. Supports fuzzy search for flexible matching.
+* **`/listexpenses`** — Displays the expenses in the travel plan. If a description is specified, it shows only the expenses matching the provided description. Supports fuzzy search for flexible matching. When invoked without a description, a "Filter…" button is shown to interactively search by description.
 
   * Example: `/listexpenses`
   * Example: `/listexpenses Toll`
@@ -125,11 +126,11 @@ The following commands are supported by Travel-RS Bot:
 
   * Example: `/deletetransfer 7`
   * Example: `/deletetransfer` (the bot will ask for the identifier)
-* **`/listtransfers`** — Displays the transfers in the travel plan. If a name is specified, it shows only the transfers involving that traveler.
+* **`/listtransfers`** — Displays the transfers in the travel plan. If a name is specified, it shows only the transfers involving that traveler. When invoked without a name, an inline keyboard with the available travelers is shown for quick selection.
 
   * Example: `/listtransfers`
   * Example: `/listtransfers Alice`
-* **`/showbalances`** — Displays simplified balances for all travelers, minimizing the total number of transfers needed to settle debts. If a name is specified, it shows the balance for the specified traveler.
+* **`/showbalances`** — Displays simplified balances for all travelers, minimizing the total number of transfers needed to settle debts. If a name is specified, it shows the balance for the specified traveler. When invoked without a name, an inline keyboard with the available travelers is shown for quick selection.
 
   * Example: `/showbalances`
   * Example: `/showbalances Alice`
