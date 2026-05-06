@@ -1,12 +1,16 @@
 //! `/deletetraveler` dialogue: asks the user for the traveler's name when
 //! the command is invoked without an inline argument, then delegates to the
-//! regular command handler.
+//! regular command handler. Shows an inline keyboard with the chat's
+//! travelers for quick selection; free-text input is still accepted.
 
 use crate::{
     Context, HandlerResult,
     commands::{Command, CommandArg, command_reply},
     consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
-    dialogues::pending_command_dialogue::{PendingCommandDialogue, PendingCommandState},
+    dialogues::{
+        keyboard,
+        pending_command_dialogue::{PendingCommandDialogue, PendingCommandState},
+    },
     i18n::{self, Translate},
     traveler::Name,
 };
@@ -16,27 +20,54 @@ use std::{
     sync::{Arc, Mutex},
 };
 use surrealdb::{Surreal, engine::any::Any};
-use teloxide::{Bot, requests::Requester, types::Message};
+use teloxide::{
+    Bot,
+    payloads::SendMessageSetters,
+    requests::Requester,
+    types::{CallbackQuery, Message},
+};
 use tracing::Level;
+
+/// Prefix used to identify callback queries originating from the
+/// `/deletetraveler` inline keyboard. The remainder of the callback data is
+/// the selected traveler name (e.g. `deltrav:Alice`).
+pub const CALLBACK_PREFIX: &str = "deltrav:";
+
+/// Callback data used by the cancel button.
+pub const CANCEL_CALLBACK_DATA: &str = "deltrav:__cancel__";
+
+/// Callback data for blank spacer buttons.
+const NOOP_CALLBACK_DATA: &str = "deltrav:__noop__";
 
 #[derive(Debug, Clone)]
 pub enum DeleteTravelerState {
     AskName,
 }
 
-#[apply(trace_state)]
+#[apply(trace_state_db)]
 pub async fn start(
+    db: Arc<Surreal<Any>>,
     bot: Bot,
     dialogue: PendingCommandDialogue,
     msg: Message,
     ctx: Arc<Mutex<Context>>,
 ) -> HandlerResult {
     tracing::debug!("{LOG_DEBUG_START}");
-    bot.send_message(
+    let prompt = i18n::dialogues::DELETE_TRAVELER_ASK_NAME.translate(ctx.clone());
+    let mut request = bot.send_message(msg.chat.id, prompt);
+    if let Some(kb) = keyboard::travelers_keyboard(
+        db,
         msg.chat.id,
-        i18n::dialogues::DELETE_TRAVELER_ASK_NAME.translate(ctx),
+        CALLBACK_PREFIX,
+        CANCEL_CALLBACK_DATA,
+        NOOP_CALLBACK_DATA,
+        ctx,
     )
-    .await?;
+    .await
+    {
+        request = request.reply_markup(kb);
+    }
+    request.await?;
     dialogue
         .update(PendingCommandState::DeleteTraveler(
             DeleteTravelerState::AskName,
@@ -94,6 +125,73 @@ pub async fn receive_name(
             i18n::dialogues::DELETE_TRAVELER_ASK_NAME.translate(ctx),
         )
         .await?;
+    }
+    tracing::debug!("{LOG_DEBUG_SUCCESS}");
+    Ok(())
+}
+
+#[apply(trace_callback)]
+pub async fn receive_callback(
+    db: Arc<Surreal<Any>>,
+    bot: Bot,
+    dialogue: PendingCommandDialogue,
+    q: CallbackQuery,
+    ctx: Arc<Mutex<Context>>,
+) -> HandlerResult {
+    tracing::debug!("{LOG_DEBUG_START}");
+
+    let action = keyboard::handle_callback_prelude(
+        &bot,
+        &dialogue,
+        &q,
+        &ctx,
+        &keyboard::CallbackConfig {
+            cancel_callback: CANCEL_CALLBACK_DATA,
+            noop_callback: NOOP_CALLBACK_DATA,
+            prefix: CALLBACK_PREFIX,
+            running_process_key: i18n::commands::RUNNING_PROCESS_DELETE_TRAVELER,
+        },
+    )
+    .await?;
+
+    let keyboard::CallbackAction::Selection { value: raw, msg } = action else {
+        tracing::debug!("{LOG_DEBUG_SUCCESS}");
+        return Ok(());
+    };
+
+    let Ok(name) = Name::from_str(&raw) else {
+        tracing::warn!("Invalid name in callback data: {raw:?}");
+        return Ok(());
+    };
+
+    let cmd = Command::DeleteTraveler {
+        name: CommandArg::Provided(name),
+    };
+    let outcome = command_reply(db.clone(), &msg, &cmd, ctx.clone()).await;
+
+    // Remove the inline keyboard.
+    let _ = bot.edit_message_reply_markup(msg.chat.id, msg.id).await;
+
+    bot.send_message(msg.chat.id, outcome.message()).await?;
+    if outcome.is_success() {
+        dialogue.exit().await?;
+    } else {
+        // Dialogue stays alive: re-send the prompt with a fresh keyboard.
+        let prompt = i18n::dialogues::DELETE_TRAVELER_ASK_NAME.translate(ctx.clone());
+        let mut request = bot.send_message(msg.chat.id, prompt);
+        if let Some(kb) = keyboard::travelers_keyboard(
+            db,
+            msg.chat.id,
+            CALLBACK_PREFIX,
+            CANCEL_CALLBACK_DATA,
+            NOOP_CALLBACK_DATA,
+            ctx,
+        )
+        .await
+        {
+            request = request.reply_markup(kb);
+        }
+        request.await?;
     }
     tracing::debug!("{LOG_DEBUG_SUCCESS}");
     Ok(())

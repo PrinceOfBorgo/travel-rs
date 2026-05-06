@@ -5,10 +5,12 @@ use crate::{
     Context,
     dialogues::pending_command_dialogue::PendingCommandDialogue,
     i18n::{self, Translate, TranslateWithArgs},
+    traveler::Traveler,
 };
 use std::sync::{Arc, Mutex};
+use surrealdb::{Surreal, engine::any::Any};
 use teloxide::Bot;
-use teloxide::types::{InlineKeyboardButton, InlineKeyboardMarkup, Message};
+use teloxide::types::{ChatId, InlineKeyboardButton, InlineKeyboardMarkup, Message};
 use teloxide::{requests::Requester, types::CallbackQuery};
 
 /// Builds an [`InlineKeyboardMarkup`] laid out with `per_row` columns.
@@ -150,4 +152,46 @@ pub async fn handle_callback_prelude(
         value,
         msg: Box::new(msg),
     })
+}
+
+// ─── Traveler-picker keyboard ────────────────────────────────────────────────
+
+/// Number of traveler buttons per row in the inline keyboard.
+const TRAVELERS_PER_ROW: usize = 2;
+
+/// Loads the chat's travelers and builds a [`grid_keyboard`] with one button
+/// per name (using `prefix` as the callback-data prefix) plus a cancel row.
+///
+/// Returns `None` if no travelers exist or if the DB query fails.
+pub async fn travelers_keyboard(
+    db: Arc<Surreal<Any>>,
+    chat_id: ChatId,
+    prefix: &str,
+    cancel_callback: &str,
+    noop_callback: &str,
+    ctx: Arc<Mutex<Context>>,
+) -> Option<InlineKeyboardMarkup> {
+    let travelers = Traveler::db_select(db, chat_id).await.ok()?;
+    if travelers.is_empty() {
+        return None;
+    }
+    let buttons: Vec<InlineKeyboardButton> = travelers
+        .into_iter()
+        .map(|t| {
+            let name = t.name.to_string();
+            InlineKeyboardButton::callback(name.clone(), format!("{prefix}{name}"))
+        })
+        .collect();
+
+    let cancel_button = InlineKeyboardButton::callback(
+        i18n::labels::CANCEL_BUTTON.translate(ctx),
+        cancel_callback.to_owned(),
+    );
+
+    Some(grid_keyboard(
+        buttons,
+        cancel_button,
+        TRAVELERS_PER_ROW,
+        noop_callback,
+    ))
 }

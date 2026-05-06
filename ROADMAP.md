@@ -31,7 +31,7 @@
     - [x] `Help`
     - [x] `SetLanguage`
     - [x] `SetCurrency`
-    - [ ] `DeleteTraveler`
+    - [x] `DeleteTraveler`
     - [ ] `ShowExpense`
     - [x] `ListExpenses`
     - [ ] `Transfer`
@@ -55,3 +55,4 @@
 - [x] Add `ShowStats` command.
 - [ ] Add `EditExpense` command.
 - [ ] Change `ListExpenses` command so that the filter matches the string representation of the expense.
+- [ ] Refactor callback prefix to derive them from commands instead of hardcoding them.

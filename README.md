@@ -97,7 +97,7 @@ The following commands are supported by Travel-RS Bot:
 
   * Example: `/addtraveler Alice`
   * Example: `/addtraveler` (the bot will ask for the name)
-* **`/deletetraveler`** — Removes the traveler with the specified name from the travel plan. If invoked without a name, the bot prompts for one interactively.
+* **`/deletetraveler`** — Removes the traveler with the specified name from the travel plan. If invoked without a name, the bot shows an inline keyboard with the available travelers for quick selection; free-text input is also accepted.
 
   * Example: `/deletetraveler Alice`
   * Example: `/deletetraveler` (the bot will ask for the name)

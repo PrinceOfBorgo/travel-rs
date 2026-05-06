@@ -283,6 +283,7 @@ pub(crate) fn handler_tree() -> UpdateHandler<Box<dyn std::error::Error + Send +
             q.data.as_deref().is_some_and(|d| {
                 d.starts_with(pending_set_language::CALLBACK_PREFIX)
                     || d.starts_with(pending_set_currency::CALLBACK_PREFIX)
+                    || d.starts_with(pending_delete_traveler::CALLBACK_PREFIX)
             })
         })
         .filter(|q: CallbackQuery| {
@@ -301,6 +302,12 @@ pub(crate) fn handler_tree() -> UpdateHandler<Box<dyn std::error::Error + Send +
             case![PendingCommandState::SetCurrency(state)].branch(
                 case![pending_set_currency::SetCurrencyState::AskCurrency]
                     .endpoint(pending_set_currency::receive_callback),
+            ),
+        )
+        .branch(
+            case![PendingCommandState::DeleteTraveler(state)].branch(
+                case![pending_delete_traveler::DeleteTravelerState::AskName]
+                    .endpoint(pending_delete_traveler::receive_callback),
             ),
         );
 
