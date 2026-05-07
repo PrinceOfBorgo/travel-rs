@@ -36,6 +36,7 @@
 - `/listtransfers` and `/showbalances` now accept their `name` argument as optional via `CommandArg<Name>`.
 - Removed `utils.rs`: tracing attribute aliases moved to `macros.rs`, debt logic (`update_debts`, `simplify_balances`) moved to `debt.rs`, and `indent_multiline` moved to `i18n/mod.rs`.
 - Refactored inline-keyboard utilities from a single `keyboard.rs` file into a dedicated `keyboard` module with submodules (`callback`, `travelers`, `paginated`) for better maintainability.
+- Factored inline callback-dispatch branches out of `main.rs` into `pending_command_dialogue::callback_branch()` and `add_expense_dialogue::callback_branch()`, each with a corresponding `is_*_callback()` filter function.
 - Removed the `CommandError::EmptyInput` variant and its associated localization key (`command-error-empty-input`). Commands that previously returned this error now start an interactive dialogue instead.
 
 ### Fixed

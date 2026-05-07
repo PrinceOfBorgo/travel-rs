@@ -305,76 +305,19 @@ pub(crate) fn handler_tree() -> UpdateHandler<Box<dyn std::error::Error + Send +
         .branch(pending_command_dialogue_branch)
         .endpoint(unknown_command);
 
-    // Inline-keyboard callback queries. The filter on the callback prefix
-    // keeps unrelated callbacks from tripping the dialogue handler. Each
-    // dialogue that exposes a keyboard contributes one prefix and one
-    // `case![PendingCommandState::X(...)]` arm.
+    // Inline-keyboard callback queries for pending-command dialogues.
     let dialogue_callback_branch = Update::filter_callback_query()
         .filter(|q: CallbackQuery| {
-            q.data.as_deref().is_some_and(|d| {
-                d.starts_with(pending_set_language::CALLBACK_PREFIX)
-                    || d.starts_with(pending_set_currency::CALLBACK_PREFIX)
-                    || d.starts_with(pending_delete_traveler::CALLBACK_PREFIX)
-                    || d.starts_with(pending_transfer::CALLBACK_PREFIX_FROM)
-                    || d.starts_with(pending_transfer::CALLBACK_PREFIX_TO)
-                    || d.starts_with(pending_delete_expense::CALLBACK_PREFIX)
-                    || d.starts_with(pending_show_expense::CALLBACK_PREFIX)
-                    || d.starts_with(pending_delete_transfer::CALLBACK_PREFIX)
-            })
+            q.data
+                .as_deref()
+                .is_some_and(pending_command_dialogue::is_pending_callback)
         })
         .filter(|q: CallbackQuery| {
             q.regular_message()
                 .map(|m| is_chat_whitelisted(m.chat.id))
                 .unwrap_or(false)
         })
-        .enter_dialogue::<CallbackQuery, PendingCommandStorage, PendingCommandState>()
-        .branch(
-            case![PendingCommandState::SetLanguage(state)].branch(
-                case![pending_set_language::SetLanguageState::AskLangid]
-                    .endpoint(pending_set_language::receive_callback),
-            ),
-        )
-        .branch(
-            case![PendingCommandState::SetCurrency(state)].branch(
-                case![pending_set_currency::SetCurrencyState::AskCurrency]
-                    .endpoint(pending_set_currency::receive_callback),
-            ),
-        )
-        .branch(
-            case![PendingCommandState::DeleteTraveler(state)].branch(
-                case![pending_delete_traveler::DeleteTravelerState::AskName]
-                    .endpoint(pending_delete_traveler::receive_callback),
-            ),
-        )
-        .branch(
-            case![PendingCommandState::Transfer(state)]
-                .branch(
-                    case![pending_transfer::TransferState::AskFrom]
-                        .endpoint(pending_transfer::receive_from_callback),
-                )
-                .branch(
-                    case![pending_transfer::TransferState::AskTo(from)]
-                        .endpoint(pending_transfer::receive_to_callback),
-                ),
-        )
-        .branch(
-            case![PendingCommandState::DeleteExpense(state)].branch(
-                case![pending_delete_expense::DeleteExpenseState::AskNumber]
-                    .endpoint(pending_delete_expense::receive_callback),
-            ),
-        )
-        .branch(
-            case![PendingCommandState::ShowExpense(state)].branch(
-                case![pending_show_expense::ShowExpenseState::AskNumber]
-                    .endpoint(pending_show_expense::receive_callback),
-            ),
-        )
-        .branch(
-            case![PendingCommandState::DeleteTransfer(state)].branch(
-                case![pending_delete_transfer::DeleteTransferState::AskNumber]
-                    .endpoint(pending_delete_transfer::receive_callback),
-            ),
-        );
+        .branch(pending_command_dialogue::callback_branch());
 
     // Stateless command-keyboard callbacks.
     // These don't require a dialogue — the callback data is self-contained.
@@ -406,41 +349,16 @@ pub(crate) fn handler_tree() -> UpdateHandler<Box<dyn std::error::Error + Send +
     // dialogue storage (InMemStorage<AddExpenseState>) so it needs a separate branch.
     let add_expense_callback_branch = Update::filter_callback_query()
         .filter(|q: CallbackQuery| {
-            q.data.as_deref().is_some_and(|d| {
-                d.starts_with(add_expense_dialogue::CALLBACK_PREFIX)
-                    || d.starts_with(add_expense_dialogue::CALLBACK_PREFIX_SPLIT)
-            })
+            q.data
+                .as_deref()
+                .is_some_and(add_expense_dialogue::is_add_expense_callback)
         })
         .filter(|q: CallbackQuery| {
             q.regular_message()
                 .map(|m| is_chat_whitelisted(m.chat.id))
                 .unwrap_or(false)
         })
-        .enter_dialogue::<CallbackQuery, InMemStorage<AddExpenseState>, AddExpenseState>()
-        .branch(
-            case![AddExpenseState::ReceivePaidBy {
-                description,
-                amount
-            }]
-            .endpoint(add_expense_dialogue::receive_paid_by_callback),
-        )
-        .branch(
-            case![AddExpenseState::StartSplitAmong {
-                description,
-                amount,
-                paid_by
-            }]
-            .endpoint(add_expense_dialogue::receive_split_callback),
-        )
-        .branch(
-            case![AddExpenseState::ReceiveSplitAmong {
-                description,
-                amount,
-                paid_by,
-                split_among
-            }]
-            .endpoint(add_expense_dialogue::receive_split_continue_callback),
-        );
+        .branch(add_expense_dialogue::callback_branch());
 
     dptree::entry()
         .branch(message_branch)

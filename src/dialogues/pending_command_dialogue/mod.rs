@@ -31,7 +31,7 @@ use teloxide::{
         HandlerExt, UpdateHandler,
         dialogue::{Dialogue, InMemStorage},
     },
-    types::Message,
+    types::{CallbackQuery, Message},
 };
 use transfer::TransferState;
 
@@ -126,4 +126,62 @@ pub fn handler_branch() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync
                     case![TransferState::AskAmount(from, to)].endpoint(transfer::receive_amount),
                 ),
         )
+}
+
+/// All callback-data prefixes used by pending-command dialogue keyboards.
+const CALLBACK_PREFIXES: &[&str] = &[
+    set_language::CALLBACK_PREFIX,
+    set_currency::CALLBACK_PREFIX,
+    delete_traveler::CALLBACK_PREFIX,
+    transfer::CALLBACK_PREFIX_FROM,
+    transfer::CALLBACK_PREFIX_TO,
+    delete_expense::CALLBACK_PREFIX,
+    show_expense::CALLBACK_PREFIX,
+    delete_transfer::CALLBACK_PREFIX,
+];
+
+/// Returns `true` if the callback data matches any pending-command dialogue
+/// prefix.
+pub fn is_pending_callback(data: &str) -> bool {
+    CALLBACK_PREFIXES.iter().any(|p| data.starts_with(p))
+}
+
+/// Returns the dispatcher subtree that handles inline-keyboard callbacks for
+/// pending-command dialogues. Composed into [`crate::handler_tree`] alongside
+/// other callback branches.
+pub fn callback_branch() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'static>> {
+    use PendingCommandState::*;
+    use teloxide::dptree::{self, case};
+
+    dptree::entry()
+        .enter_dialogue::<CallbackQuery, PendingCommandStorage, PendingCommandState>()
+        .branch(
+            case![SetLanguage(state)].branch(
+                case![SetLanguageState::AskLangid].endpoint(set_language::receive_callback),
+            ),
+        )
+        .branch(
+            case![SetCurrency(state)].branch(
+                case![SetCurrencyState::AskCurrency].endpoint(set_currency::receive_callback),
+            ),
+        )
+        .branch(case![DeleteTraveler(state)].branch(
+            case![DeleteTravelerState::AskName].endpoint(delete_traveler::receive_callback),
+        ))
+        .branch(
+            case![Transfer(state)]
+                .branch(case![TransferState::AskFrom].endpoint(transfer::receive_from_callback))
+                .branch(case![TransferState::AskTo(from)].endpoint(transfer::receive_to_callback)),
+        )
+        .branch(case![DeleteExpense(state)].branch(
+            case![DeleteExpenseState::AskNumber].endpoint(delete_expense::receive_callback),
+        ))
+        .branch(
+            case![ShowExpense(state)].branch(
+                case![ShowExpenseState::AskNumber].endpoint(show_expense::receive_callback),
+            ),
+        )
+        .branch(case![DeleteTransfer(state)].branch(
+            case![DeleteTransferState::AskNumber].endpoint(delete_transfer::receive_callback),
+        ))
 }

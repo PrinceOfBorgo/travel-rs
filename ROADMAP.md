@@ -15,7 +15,7 @@
 - [ ] Formatting of bot responses (bold, italic, etc.). https://docs.rs/teloxide/latest/teloxide/types/enum.ParseMode.html
 - [ ] Improve error handling: distinguish errors resulting from DB queries.
   - [x] Delete from DB always returns OK even if the entry doesn't exist. Should return WARN with a dedicated message.
-- [ ] Refactor code to make it more readable and maintainable.
+- [ ] Refactor code to make it more readable and maintainable (constantly on-going).
 - [x] Add tests:
   - [x] Unit tests:
     - [x] DB connection.
@@ -35,4 +35,5 @@
 - [ ] Add `EditExpense` command.
 - [ ] Change `ListExpenses` command so that the filter matches the string representation of the expense.
 - [ ] Refactor callback prefix to derive them from commands instead of hardcoding them.
+- [x] Factor callback dispatch branches out of `main.rs` into their dialogue modules.
 - [ ] Add confirmation step to delete commands before executing the deletion.

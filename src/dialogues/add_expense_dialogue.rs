@@ -1220,6 +1220,47 @@ pub fn handler_branch() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync
         )
 }
 
+/// Returns `true` if the callback data matches either of the AddExpense
+/// keyboard prefixes (payer picker or split picker).
+pub fn is_add_expense_callback(data: &str) -> bool {
+    data.starts_with(CALLBACK_PREFIX) || data.starts_with(CALLBACK_PREFIX_SPLIT)
+}
+
+/// Returns the dispatcher subtree that handles inline-keyboard callbacks for
+/// the AddExpense dialogue. Composed into [`crate::handler_tree`] alongside
+/// other callback branches.
+pub fn callback_branch() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'static>> {
+    use AddExpenseState::*;
+    use teloxide::dptree::{self, case};
+
+    dptree::entry()
+        .enter_dialogue::<CallbackQuery, InMemStorage<AddExpenseState>, AddExpenseState>()
+        .branch(
+            case![ReceivePaidBy {
+                description,
+                amount
+            }]
+            .endpoint(receive_paid_by_callback),
+        )
+        .branch(
+            case![StartSplitAmong {
+                description,
+                amount,
+                paid_by
+            }]
+            .endpoint(receive_split_callback),
+        )
+        .branch(
+            case![ReceiveSplitAmong {
+                description,
+                amount,
+                paid_by,
+                split_among
+            }]
+            .endpoint(receive_split_continue_callback),
+        )
+}
+
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
