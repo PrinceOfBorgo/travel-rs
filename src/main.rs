@@ -40,6 +40,7 @@ use dialogues::pending_command_dialogue::{
     set_currency::{self as pending_set_currency},
     set_language::{self as pending_set_language},
     show_expense::{self as pending_show_expense},
+    transfer::{self as pending_transfer},
 };
 use dialogues::storage::{self as dialogue_storage, DialogueRegistry, DialogueStorages};
 use dptree::{case, deps};
@@ -259,6 +260,35 @@ pub(crate) fn handler_tree() -> UpdateHandler<Box<dyn std::error::Error + Send +
                 .enter_dialogue::<Message, PendingCommandStorage, PendingCommandState>()
                 .branch(case![PendingCommandState::Start].endpoint(pending_set_currency::start)),
         )
+        // Transfer without inline args -> start multi-step dialogue.
+        .branch(
+            case![Command::Transfer { args }]
+                .filter(|args: String| args.is_empty())
+                .branch(any_dialogue_running_guard())
+                .enter_dialogue::<Message, PendingCommandStorage, PendingCommandState>()
+                .branch(case![PendingCommandState::Start].endpoint(pending_transfer::start)),
+        )
+        // Transfer with 1 arg (from only) -> start dialogue at AskTo.
+        .branch(
+            case![Command::Transfer { args }]
+                .filter(|args: String| args.split_whitespace().count() == 1)
+                .branch(any_dialogue_running_guard())
+                .enter_dialogue::<Message, PendingCommandStorage, PendingCommandState>()
+                .branch(
+                    case![PendingCommandState::Start].endpoint(pending_transfer::start_with_from),
+                ),
+        )
+        // Transfer with 2 args (from + to) -> start dialogue at AskAmount.
+        .branch(
+            case![Command::Transfer { args }]
+                .filter(|args: String| args.split_whitespace().count() == 2)
+                .branch(any_dialogue_running_guard())
+                .enter_dialogue::<Message, PendingCommandStorage, PendingCommandState>()
+                .branch(
+                    case![PendingCommandState::Start]
+                        .endpoint(pending_transfer::start_with_from_to),
+                ),
+        )
         // Otherwise -> handle other commands
         .endpoint(commands_handler);
 
@@ -284,6 +314,8 @@ pub(crate) fn handler_tree() -> UpdateHandler<Box<dyn std::error::Error + Send +
                 d.starts_with(pending_set_language::CALLBACK_PREFIX)
                     || d.starts_with(pending_set_currency::CALLBACK_PREFIX)
                     || d.starts_with(pending_delete_traveler::CALLBACK_PREFIX)
+                    || d.starts_with(pending_transfer::CALLBACK_PREFIX_FROM)
+                    || d.starts_with(pending_transfer::CALLBACK_PREFIX_TO)
             })
         })
         .filter(|q: CallbackQuery| {
@@ -309,6 +341,17 @@ pub(crate) fn handler_tree() -> UpdateHandler<Box<dyn std::error::Error + Send +
                 case![pending_delete_traveler::DeleteTravelerState::AskName]
                     .endpoint(pending_delete_traveler::receive_callback),
             ),
+        )
+        .branch(
+            case![PendingCommandState::Transfer(state)]
+                .branch(
+                    case![pending_transfer::TransferState::AskFrom]
+                        .endpoint(pending_transfer::receive_from_callback),
+                )
+                .branch(
+                    case![pending_transfer::TransferState::AskTo(from)]
+                        .endpoint(pending_transfer::receive_to_callback),
+                ),
         );
 
     // Stateless command-keyboard callbacks.

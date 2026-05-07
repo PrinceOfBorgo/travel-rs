@@ -34,25 +34,14 @@
     - [x] `DeleteTraveler`
     - [ ] `ShowExpense`
     - [x] `ListExpenses`
-    - [ ] `Transfer`
+    - [x] `Transfer`
     - [x] `ListTransfers`
     - [x] `ShowBalances`
   - [ ] Implement a Telegram Mini App
-  - [ ] Interactive prompts for commands invoked without their arguments:
-    - [ ] `Help`
-    - [x] `SetLanguage`
-    - [x] `SetCurrency`
-    - [x] `AddTraveler`
-    - [x] `DeleteTraveler`
-    - [x] `DeleteExpense`
-    - [x] `ListExpenses`
-    - [x] `ShowExpense`
-    - [ ] `Transfer`
-    - [x] `DeleteTransfer`
-    - [x] `ListTransfers`
-    - [x] `ShowBalances`
+  - [x] Interactive prompts for commands invoked without their arguments.
 - [x] Add timestamps to expenses and transfers.
 - [x] Add `ShowStats` command.
 - [ ] Add `EditExpense` command.
 - [ ] Change `ListExpenses` command so that the filter matches the string representation of the expense.
 - [ ] Refactor callback prefix to derive them from commands instead of hardcoding them.
+- [ ] Add confirmation step to delete commands before executing the deletion.

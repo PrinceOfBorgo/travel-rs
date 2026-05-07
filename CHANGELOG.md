@@ -6,6 +6,7 @@
 - `dialogues/pending_commands.ftl` and `labels.ftl` localization files.
 - `CommandArg` and `CommandOutcome` enums for structured command handling.
 - `/setlanguage`, `/setcurrency`, `/addtraveler`, `/deletetraveler`, `/deleteexpense`, `/showexpense`, `/deletetransfer` interactive dialogues for cases when commands are invoked without arguments.
+- `/transfer` interactive dialogue: when invoked without arguments (or with partial arguments), guides the user through selecting a sender, receiver, and amount via a multi-step conversation with traveler-picker inline keyboards. Partial invocations (`/transfer Alice`, `/transfer Alice Bob`) skip already-provided steps. Invalid or non-existent traveler names are re-prompted with the keyboard.
 - `/listexpenses` now shows a "Filter…" inline keyboard button when invoked without a description. Tapping it starts an interactive dialogue that asks for search criteria (or `/cancel` to abort).
 - `/help`, `/listtransfers`, and `/showbalances` display inline keyboards for quick selection when invoked without arguments.
 - Input validations:
@@ -24,6 +25,7 @@
 - Replaced the batch script `start_docker_db.bat` with an enhanced PowerShell script. The new `start_docker_db.ps1` contains configurable variables for Docker parameters and retrieves the SurrealDB version from `Cargo.toml` to ensure a compatible Docker image is used.
 - Reworked `README.md` for clarity and updated structure.
 - `/setlanguage`, `/setcurrency`, `/addtraveler`, `/deletetraveler`, `/deleteexpense`, `/showexpense`, `/deletetransfer` now prompt for their arguments when invoked without one.
+- `/transfer` now prompts for sender, receiver, and amount when invoked without (or with partial) arguments. Each step shows a traveler-picker inline keyboard; free-text input is accepted as a fallback. Non-existent travelers are caught early and re-prompted instead of failing at the final step.
 - `/setlanguage` and `/setcurrency` interactive dialogues now offer an inline keyboard for quick selection (configurable short list for `/setcurrency`); free-text input is still accepted as a fallback.
 - `/deletetraveler` interactive dialogue now shows an inline keyboard with the chat's travelers for quick selection; free-text input is still accepted as a fallback.
 - Heavily refactored dialogues and storages handling; `/cancel` works for any dialogue.

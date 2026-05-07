@@ -166,43 +166,32 @@ mod tests {
         bot.test_last_message(&response).await;
     }
 
-    test! { transfer_empty_input,
+    test! { transfer_partial_args_start_dialogue,
         let db = db().await;
+        let mut bot = TestBot::new(db, "");
 
-        // Missing receiver
-        let mut bot = TestBot::new(db, "/transfer Alice  100");
-        let invalid_usage_prefix = i18n::commands::INVALID_COMMAND_USAGE
+        helpers::add_traveler(&mut bot, "Alice").await;
+        helpers::add_traveler(&mut bot, "Bob").await;
+
+        // 1 arg: /transfer Alice -> skips AskFrom, asks for receiver.
+        bot.update("/transfer Alice");
+        let ask_to = i18n::dialogues::TRANSFER_ASK_TO
             .translate_with_args_default(&hashmap! {
-                i18n::args::COMMAND.into() => "/transfer".into(),
-                i18n::args::HELP_MESSAGE.into() => "".into(),
+                i18n::args::NAME.into() => "Alice".into(),
             });
-        // Compare only on the leading sentence (the help message body changes).
-        let prefix: String = invalid_usage_prefix
-            .lines()
-            .next()
-            .unwrap_or_default()
-            .to_owned();
-        assert!(
-            bot.dispatch_and_last_message()
-                .await
-                .is_some_and(|msg| msg.starts_with(&prefix))
-        );
+        bot.test_last_message(&ask_to).await;
 
-        // Missing sender
-        bot.update("/transfer  Bob 100");
-        assert!(
-            bot.dispatch_and_last_message()
-                .await
-                .is_some_and(|msg| msg.starts_with(&prefix))
-        );
+        // Reset: cancel the ongoing dialogue.
+        bot.update("/cancel");
+        bot.dispatch().await;
 
-        // Missing both
-        bot.update("/transfer   100");
-        assert!(
-            bot.dispatch_and_last_message()
-                .await
-                .is_some_and(|msg| msg.starts_with(&prefix))
-        );
+        // 2 args: /transfer Alice Bob -> skips AskFrom and AskTo, asks for amount.
+        bot.update("/transfer Alice Bob");
+        let ask_amount = i18n::dialogues::TRANSFER_ASK_AMOUNT
+            .translate_with_args_default(&hashmap! {
+                i18n::args::NAME.into() => "Alice".into(),
+            });
+        bot.test_last_message(&ask_amount).await;
     }
 
     test! { transfer_same_sender_receiver_case_insensitive,

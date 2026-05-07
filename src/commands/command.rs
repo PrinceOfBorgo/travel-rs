@@ -57,12 +57,8 @@ pub enum Command {
     ListExpenses { description: String },
     #[command(description = "{descr-show-expense}")]
     ShowExpense { number: CommandArg<i64> },
-    #[command(description = "{descr-transfer}", parse_with = "split")]
-    Transfer {
-        from: Name,
-        to: Name,
-        amount: Decimal,
-    },
+    #[command(description = "{descr-transfer}")]
+    Transfer { args: String },
     #[command(description = "{descr-delete-transfer}")]
     DeleteTransfer { number: CommandArg<i64> },
     #[command(description = "{descr-list-transfers}")]
@@ -214,11 +210,7 @@ impl HelpMessage for Command {
             DeleteExpense { number: _ } => HELP_DELETE_EXPENSE.translate(ctx),
             ListExpenses { description: _ } => HELP_LIST_EXPENSES.translate(ctx),
             ShowExpense { number: _ } => HELP_SHOW_EXPENSE.translate(ctx),
-            Transfer {
-                from: _,
-                to: _,
-                amount: _,
-            } => HELP_TRANSFER.translate(ctx),
+            Transfer { args: _ } => HELP_TRANSFER.translate(ctx),
             DeleteTransfer { number: _ } => HELP_DELETE_TRANSFER.translate(ctx),
             ListTransfers { name: _ } => HELP_LIST_TRANSFERS.translate(ctx),
             ShowBalances { name: _ } => HELP_SHOW_BALANCES.translate(ctx),
@@ -437,9 +429,33 @@ pub async fn command_reply(
         ShowExpense { number } => {
             show_expense(db, msg, number.expect_provided("showexpense"), ctx.clone()).await
         }
-        Transfer { from, to, amount } => transfer(db, msg, from, to, amount, ctx.clone())
-            .await
-            .map(CommandOutcome::Success),
+        Transfer { ref args } => {
+            let parts: Vec<&str> = args.splitn(3, ' ').collect();
+            if parts.len() != 3 {
+                return invalid_transfer_usage(cmd, ctx);
+            }
+            let from = match Name::from_str(parts[0]) {
+                Ok(n) => n,
+                Err(_) => {
+                    return invalid_transfer_usage(cmd, ctx);
+                }
+            };
+            let to = match Name::from_str(parts[1]) {
+                Ok(n) => n,
+                Err(_) => {
+                    return invalid_transfer_usage(cmd, ctx);
+                }
+            };
+            let amount = match Decimal::from_str(parts[2]) {
+                Ok(d) => d,
+                Err(_) => {
+                    return invalid_transfer_usage(cmd, ctx);
+                }
+            };
+            transfer(db, msg, from, to, amount, ctx.clone())
+                .await
+                .map(CommandOutcome::Success)
+        }
         DeleteTransfer { number } => {
             delete_transfer(
                 db,
@@ -476,6 +492,17 @@ pub async fn command_reply(
             help_message = cmd.help_message(ctx)
         ))
     })
+}
+
+fn invalid_transfer_usage(cmd: &Command, ctx: Arc<Mutex<Context>>) -> CommandOutcome {
+    let help_message = cmd.help_message(ctx.clone());
+    CommandOutcome::Failure(i18n::commands::INVALID_COMMAND_USAGE.translate_with_args(
+        ctx,
+        &hashmap! {
+            i18n::args::COMMAND.into() => "/transfer".into(),
+            i18n::args::HELP_MESSAGE.into() => help_message.into(),
+        },
+    ))
 }
 
 #[cfg(test)]

@@ -7,6 +7,7 @@ pub mod list_expenses;
 pub mod set_currency;
 pub mod set_language;
 pub mod show_expense;
+pub mod transfer;
 
 pub use add_expense::*;
 pub use add_traveler::*;
@@ -17,3 +18,4 @@ pub use list_expenses::*;
 pub use set_currency::*;
 pub use set_language::*;
 pub use show_expense::*;
+pub use transfer::*;

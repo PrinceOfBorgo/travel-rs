@@ -119,9 +119,11 @@ The following commands are supported by Travel-RS Bot:
 
   * Example: `/showexpense 3`
   * Example: `/showexpense` (the bot will ask for the identifier)
-* **`/transfer`** — Transfers the specified amount from one traveler to another.
+* **`/transfer`** — Transfers the specified amount from one traveler to another. If invoked without arguments (or with partial arguments), the bot guides through an interactive multi-step dialogue with traveler-picker inline keyboards. Non-existent travelers are caught and re-prompted.
 
   * Example: `/transfer Alice Bob 25.00`
+  * Example: `/transfer Alice` (the bot will ask for the receiver and amount)
+  * Example: `/transfer` (the bot will ask for sender, receiver, and amount)
 * **`/deletetransfer`** — Deletes the transfer with the specified identifier from the travel plan. If invoked without an identifier, the bot prompts for one interactively.
 
   * Example: `/deletetransfer 7`

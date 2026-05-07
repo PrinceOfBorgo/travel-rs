@@ -36,3 +36,14 @@ set-currency-invalid-currency = Hai inviato un codice valuta non valido, per fav
 ## /list_expenses
 
 list-expenses-ask-description = Invia una descrizione (o parte di essa) per filtrare le spese.
+
+## /transfer
+
+transfer-ask-from = Chi è il mittente? Il processo può essere interrotto in qualsiasi momento inviando `/{-cancel-command}`.
+transfer-ask-from-reprompt = Hai inviato un nome non valido, per favore riprova. Chi è il mittente?
+transfer-from-not-found = Viaggiatore "{$name}" non trovato. Chi è il mittente?
+transfer-ask-to = Chi è il destinatario del trasferimento da {$name}?
+transfer-ask-to-reprompt = Hai inviato un nome non valido, per favore riprova. Chi è il destinatario?
+transfer-to-not-found = Viaggiatore "{$name}" non trovato. Chi è il destinatario?
+transfer-ask-amount = Quanto ha trasferito {$name}?
+transfer-invalid-amount = Hai inviato un importo non valido, per favore riprova.

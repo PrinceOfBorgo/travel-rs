@@ -12,6 +12,7 @@ pub const RUNNING_PROCESS_DELETE_TRANSFER: &str = "running-process-delete-transf
 pub const RUNNING_PROCESS_SET_LANGUAGE: &str = "running-process-set-language";
 pub const RUNNING_PROCESS_SET_CURRENCY: &str = "running-process-set-currency";
 pub const RUNNING_PROCESS_LIST_EXPENSES: &str = "running-process-list-expenses";
+pub const RUNNING_PROCESS_TRANSFER: &str = "running-process-transfer";
 
 pub const SET_LANGUAGE_NOT_AVAILABLE: &str = "set-language-not-available";
 pub const SET_LANGUAGE_OK: &str = "set-language-ok";

@@ -36,3 +36,14 @@ set-currency-invalid-currency = You sent an invalid currency code, please retry.
 ## /list_expenses
 
 list-expenses-ask-description = Send a description (or part of it) to filter expenses by.
+
+## /transfer
+
+transfer-ask-from = Who is the sender? The process can be interrupted at any time by sending `/{-cancel-command}`.
+transfer-ask-from-reprompt = You sent an invalid name, please retry. Who is the sender?
+transfer-from-not-found = Traveler "{$name}" not found. Who is the sender?
+transfer-ask-to = Who is the receiver of the transfer from {$name}?
+transfer-ask-to-reprompt = You sent an invalid name, please retry. Who is the receiver?
+transfer-to-not-found = Traveler "{$name}" not found. Who is the receiver?
+transfer-ask-amount = How much did {$name} transfer?
+transfer-invalid-amount = You sent an invalid amount, please retry.

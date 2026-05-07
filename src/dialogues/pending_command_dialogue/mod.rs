@@ -16,6 +16,7 @@ pub mod list_expenses;
 pub mod set_currency;
 pub mod set_language;
 pub mod show_expense;
+pub mod transfer;
 
 use add_traveler::AddTravelerState;
 use delete_expense::DeleteExpenseState;
@@ -32,6 +33,7 @@ use teloxide::{
     },
     types::Message,
 };
+use transfer::TransferState;
 
 #[derive(Debug, Clone, Default)]
 pub enum PendingCommandState {
@@ -45,6 +47,7 @@ pub enum PendingCommandState {
     SetLanguage(SetLanguageState),
     SetCurrency(SetCurrencyState),
     ListExpenses(ListExpensesState),
+    Transfer(TransferState),
 }
 
 pub type PendingCommandStorage = InMemStorage<PendingCommandState>;
@@ -67,6 +70,7 @@ impl crate::dialogues::storage::DialogueState for PendingCommandState {
             PendingCommandState::SetLanguage(_) => RUNNING_PROCESS_SET_LANGUAGE,
             PendingCommandState::SetCurrency(_) => RUNNING_PROCESS_SET_CURRENCY,
             PendingCommandState::ListExpenses(_) => RUNNING_PROCESS_LIST_EXPENSES,
+            PendingCommandState::Transfer(_) => RUNNING_PROCESS_TRANSFER,
         }
     }
 }
@@ -114,4 +118,12 @@ pub fn handler_branch() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync
         .branch(case![ListExpenses(state)].branch(
             case![ListExpensesState::AskDescription].endpoint(list_expenses::receive_description),
         ))
+        .branch(
+            case![Transfer(state)]
+                .branch(case![TransferState::AskFrom].endpoint(transfer::receive_from_text))
+                .branch(case![TransferState::AskTo(from)].endpoint(transfer::receive_to_text))
+                .branch(
+                    case![TransferState::AskAmount(from, to)].endpoint(transfer::receive_amount),
+                ),
+        )
 }
