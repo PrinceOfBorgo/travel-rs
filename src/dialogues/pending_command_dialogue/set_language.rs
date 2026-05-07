@@ -5,11 +5,9 @@ use crate::{
     Context, HandlerResult,
     commands::{Command, CommandArg, command_reply},
     consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
-    dialogues::{
-        keyboard,
-        pending_command_dialogue::{PendingCommandDialogue, PendingCommandState},
-    },
+    dialogues::pending_command_dialogue::{PendingCommandDialogue, PendingCommandState},
     i18n::{self, Translate, TryTranslate},
+    keyboard::{self, DEFAULT_ROWS_PER_PAGE, PaginatedKeyboardConfig, PickerItem},
 };
 use macro_rules_attribute::apply;
 use std::{
@@ -21,7 +19,7 @@ use teloxide::{
     Bot,
     payloads::SendMessageSetters,
     requests::Requester,
-    types::{CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message},
+    types::{CallbackQuery, InlineKeyboardMarkup, Message},
 };
 use tracing::Level;
 use unic_langid::LanguageIdentifier;
@@ -48,29 +46,34 @@ pub enum SetLanguageState {
 
 /// Builds an inline keyboard with the available languages in a uniform grid.
 fn available_langs_keyboard(ctx: Arc<Mutex<Context>>) -> InlineKeyboardMarkup {
-    let mut lang_buttons: Vec<InlineKeyboardButton> = i18n::available_langs()
+    let mut items: Vec<PickerItem> = i18n::available_langs()
         .map(|langid| {
             let langid_str = langid.to_string();
-            // Fall back to langid when the label is not defined
             let label = format!("{}{langid_str}", i18n::labels::LANGUAGE_LABEL_PREFIX)
                 .try_translate(ctx.clone())
                 .unwrap_or_else(|| langid_str.clone());
-            InlineKeyboardButton::callback(label, format!("{CALLBACK_PREFIX}{langid_str}"))
+            PickerItem {
+                label,
+                value: langid_str,
+            }
         })
         .collect();
-    lang_buttons.sort_by(|a, b| a.text.cmp(&b.text));
+    items.sort_by(|a, b| a.label.cmp(&b.label));
 
-    let cancel_button = InlineKeyboardButton::callback(
-        i18n::labels::CANCEL_BUTTON.translate(ctx),
-        CANCEL_CALLBACK_DATA,
-    );
-
-    keyboard::grid_keyboard(
-        lang_buttons,
-        cancel_button,
-        LANGS_PER_ROW,
-        NOOP_CALLBACK_DATA,
-    )
+    // Languages list is small — always fits on one page.
+    keyboard::paginated_keyboard(PaginatedKeyboardConfig {
+        items: &items,
+        page: 0,
+        columns: LANGS_PER_ROW,
+        rows_per_page: DEFAULT_ROWS_PER_PAGE,
+        prefix: CALLBACK_PREFIX,
+        cancel_callback: CANCEL_CALLBACK_DATA,
+        noop_callback: NOOP_CALLBACK_DATA,
+        action_buttons: &[],
+        show_cancel: true,
+        ctx,
+    })
+    .expect("at least one language must be available")
 }
 
 #[apply(trace_state)]

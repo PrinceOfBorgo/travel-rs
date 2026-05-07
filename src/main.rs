@@ -19,6 +19,7 @@ mod dialogues;
 mod errors;
 mod expense_details;
 mod i18n;
+pub(crate) mod keyboard;
 mod money_wrapper;
 mod relationships;
 mod settings;
@@ -316,6 +317,9 @@ pub(crate) fn handler_tree() -> UpdateHandler<Box<dyn std::error::Error + Send +
                     || d.starts_with(pending_delete_traveler::CALLBACK_PREFIX)
                     || d.starts_with(pending_transfer::CALLBACK_PREFIX_FROM)
                     || d.starts_with(pending_transfer::CALLBACK_PREFIX_TO)
+                    || d.starts_with(pending_delete_expense::CALLBACK_PREFIX)
+                    || d.starts_with(pending_show_expense::CALLBACK_PREFIX)
+                    || d.starts_with(pending_delete_transfer::CALLBACK_PREFIX)
             })
         })
         .filter(|q: CallbackQuery| {
@@ -352,6 +356,24 @@ pub(crate) fn handler_tree() -> UpdateHandler<Box<dyn std::error::Error + Send +
                     case![pending_transfer::TransferState::AskTo(from)]
                         .endpoint(pending_transfer::receive_to_callback),
                 ),
+        )
+        .branch(
+            case![PendingCommandState::DeleteExpense(state)].branch(
+                case![pending_delete_expense::DeleteExpenseState::AskNumber]
+                    .endpoint(pending_delete_expense::receive_callback),
+            ),
+        )
+        .branch(
+            case![PendingCommandState::ShowExpense(state)].branch(
+                case![pending_show_expense::ShowExpenseState::AskNumber]
+                    .endpoint(pending_show_expense::receive_callback),
+            ),
+        )
+        .branch(
+            case![PendingCommandState::DeleteTransfer(state)].branch(
+                case![pending_delete_transfer::DeleteTransferState::AskNumber]
+                    .endpoint(pending_delete_transfer::receive_callback),
+            ),
         );
 
     // Stateless command-keyboard callbacks.
@@ -380,9 +402,50 @@ pub(crate) fn handler_tree() -> UpdateHandler<Box<dyn std::error::Error + Send +
         })
         .endpoint(pending_list_expenses::receive_filter_callback);
 
+    // AddExpense payer-picker and split-picker callbacks. Uses its own
+    // dialogue storage (InMemStorage<AddExpenseState>) so it needs a separate branch.
+    let add_expense_callback_branch = Update::filter_callback_query()
+        .filter(|q: CallbackQuery| {
+            q.data.as_deref().is_some_and(|d| {
+                d.starts_with(add_expense_dialogue::CALLBACK_PREFIX)
+                    || d.starts_with(add_expense_dialogue::CALLBACK_PREFIX_SPLIT)
+            })
+        })
+        .filter(|q: CallbackQuery| {
+            q.regular_message()
+                .map(|m| is_chat_whitelisted(m.chat.id))
+                .unwrap_or(false)
+        })
+        .enter_dialogue::<CallbackQuery, InMemStorage<AddExpenseState>, AddExpenseState>()
+        .branch(
+            case![AddExpenseState::ReceivePaidBy {
+                description,
+                amount
+            }]
+            .endpoint(add_expense_dialogue::receive_paid_by_callback),
+        )
+        .branch(
+            case![AddExpenseState::StartSplitAmong {
+                description,
+                amount,
+                paid_by
+            }]
+            .endpoint(add_expense_dialogue::receive_split_callback),
+        )
+        .branch(
+            case![AddExpenseState::ReceiveSplitAmong {
+                description,
+                amount,
+                paid_by,
+                split_among
+            }]
+            .endpoint(add_expense_dialogue::receive_split_continue_callback),
+        );
+
     dptree::entry()
         .branch(message_branch)
         .branch(dialogue_callback_branch)
+        .branch(add_expense_callback_branch)
         .branch(stateless_callback_branch)
         .branch(list_expenses_filter_callback_branch)
 }

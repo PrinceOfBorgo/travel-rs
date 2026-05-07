@@ -107,7 +107,7 @@ The following commands are supported by Travel-RS Bot:
 * **`/addexpense`** — Starts a new interactive session to add an expense to the travel plan.
 
   * Example: `/addexpense` (a series of interactive questions will follow)
-* **`/deleteexpense`** — Deletes the expense with the specified identifier from the travel plan. If invoked without an identifier, the bot prompts for one interactively.
+* **`/deleteexpense`** — Deletes the expense with the specified identifier from the travel plan. If invoked without an identifier, the bot shows a paginated inline keyboard listing the chat's expenses for quick selection; free-text input is also accepted.
 
   * Example: `/deleteexpense 3`
   * Example: `/deleteexpense` (the bot will ask for the identifier)
@@ -115,7 +115,7 @@ The following commands are supported by Travel-RS Bot:
 
   * Example: `/listexpenses`
   * Example: `/listexpenses Toll`
-* **`/showexpense`** — Displays the details of the expense with the specified identifier. If invoked without an identifier, the bot prompts for one interactively.
+* **`/showexpense`** — Displays the details of the expense with the specified identifier. If invoked without an identifier, the bot shows a paginated inline keyboard listing the chat's expenses for quick selection; free-text input is also accepted.
 
   * Example: `/showexpense 3`
   * Example: `/showexpense` (the bot will ask for the identifier)
@@ -124,7 +124,7 @@ The following commands are supported by Travel-RS Bot:
   * Example: `/transfer Alice Bob 25.00`
   * Example: `/transfer Alice` (the bot will ask for the receiver and amount)
   * Example: `/transfer` (the bot will ask for sender, receiver, and amount)
-* **`/deletetransfer`** — Deletes the transfer with the specified identifier from the travel plan. If invoked without an identifier, the bot prompts for one interactively.
+* **`/deletetransfer`** — Deletes the transfer with the specified identifier from the travel plan. If invoked without an identifier, the bot shows a paginated inline keyboard listing the chat's transfers for quick selection; free-text input is also accepted.
 
   * Example: `/deletetransfer 7`
   * Example: `/deletetransfer` (the bot will ask for the identifier)

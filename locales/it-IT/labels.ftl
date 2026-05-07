@@ -1,8 +1,11 @@
 ## Etichette UI generiche (pulsanti, tastiere inline, ecc.)
 
 cancel-button = Annulla
+all-button = Tutti
+end-button = Termina
 filter-button = Filtra…
 show-all-button = Mostra tutto
+help-button = ❓ Aiuto
 
 ## Etichette delle lingue: <emoji bandiera> <nome esteso>
 

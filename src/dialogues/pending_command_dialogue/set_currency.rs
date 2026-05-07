@@ -5,11 +5,9 @@ use crate::{
     Context, HandlerResult,
     commands::{Command, CommandArg, command_reply},
     consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
-    dialogues::{
-        keyboard,
-        pending_command_dialogue::{PendingCommandDialogue, PendingCommandState},
-    },
+    dialogues::pending_command_dialogue::{PendingCommandDialogue, PendingCommandState},
     i18n::{self, Translate},
+    keyboard::{self, DEFAULT_ROWS_PER_PAGE, PaginatedKeyboardConfig, PickerItem},
     money_wrapper::currency_label,
     settings::SETTINGS,
 };
@@ -20,7 +18,7 @@ use teloxide::{
     Bot,
     payloads::SendMessageSetters,
     requests::Requester,
-    types::{CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message},
+    types::{CallbackQuery, InlineKeyboardMarkup, Message},
 };
 use tracing::Level;
 
@@ -46,26 +44,30 @@ pub enum SetCurrencyState {
 
 /// Builds an inline keyboard with the popular currencies in a uniform grid.
 fn popular_currencies_keyboard(ctx: Arc<Mutex<Context>>) -> InlineKeyboardMarkup {
-    let buttons: Vec<InlineKeyboardButton> = SETTINGS
+    let items: Vec<PickerItem> = SETTINGS
         .i18n
         .popular_currencies
         .iter()
-        .map(|code| {
-            InlineKeyboardButton::callback(currency_label(code), format!("{CALLBACK_PREFIX}{code}"))
+        .map(|code| PickerItem {
+            label: currency_label(code),
+            value: code.to_string(),
         })
         .collect();
 
-    let cancel_button = InlineKeyboardButton::callback(
-        i18n::labels::CANCEL_BUTTON.translate(ctx),
-        CANCEL_CALLBACK_DATA,
-    );
-
-    keyboard::grid_keyboard(
-        buttons,
-        cancel_button,
-        CURRENCIES_PER_ROW,
-        NOOP_CALLBACK_DATA,
-    )
+    // Popular-currencies list is small — always fits on one page.
+    keyboard::paginated_keyboard(PaginatedKeyboardConfig {
+        items: &items,
+        page: 0,
+        columns: CURRENCIES_PER_ROW,
+        rows_per_page: DEFAULT_ROWS_PER_PAGE,
+        prefix: CALLBACK_PREFIX,
+        cancel_callback: CANCEL_CALLBACK_DATA,
+        noop_callback: NOOP_CALLBACK_DATA,
+        action_buttons: &[],
+        show_cancel: true,
+        ctx,
+    })
+    .expect("at least one popular currency must be configured")
 }
 
 #[apply(trace_state)]

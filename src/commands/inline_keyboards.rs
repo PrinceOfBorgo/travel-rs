@@ -67,7 +67,19 @@ pub async fn handle_stateless_callback(
 
     let data = q.data.as_deref().unwrap_or("");
 
-    // Remove the keyboard from the original message.
+    // Ignore blank spacer buttons (noop).
+    if data.ends_with("__noop__") {
+        return Ok(());
+    }
+
+    // Edit the original message to show which option was selected and
+    // remove the keyboard.
+    let selected_value = mappings.iter().find_map(|m| data.strip_prefix(m.prefix));
+    if let (Some(val), Some(text)) = (selected_value, msg.text()) {
+        let _ = bot
+            .edit_message_text(msg.chat.id, msg.id, format!("{text}\n✓ {val}"))
+            .await;
+    }
     let _ = bot.edit_message_reply_markup(msg.chat.id, msg.id).await;
 
     for mapping in mappings {

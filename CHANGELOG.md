@@ -9,6 +9,9 @@
 - `/transfer` interactive dialogue: when invoked without arguments (or with partial arguments), guides the user through selecting a sender, receiver, and amount via a multi-step conversation with traveler-picker inline keyboards. Partial invocations (`/transfer Alice`, `/transfer Alice Bob`) skip already-provided steps. Invalid or non-existent traveler names are re-prompted with the keyboard.
 - `/listexpenses` now shows a "Filter…" inline keyboard button when invoked without a description. Tapping it starts an interactive dialogue that asks for search criteria (or `/cancel` to abort).
 - `/help`, `/listtransfers`, and `/showbalances` display inline keyboards for quick selection when invoked without arguments.
+- `/deleteexpense`, `/showexpense`, and `/deletetransfer` interactive dialogues now show a paginated inline keyboard listing the chat's expenses or transfers for quick selection (with `◀`/`▶` page navigation); free-text input is still accepted as a fallback.
+- `/addexpense` split step now includes a Help button (❓) that displays the full `/addexpense` usage guide without interrupting the dialogue.
+- Inline keyboard selections now echo the chosen value on the original prompt message (e.g. `✓ Alice`) so users can see what they picked after the keyboard is dismissed.
 - Input validations:
   - `/setcurrency` rejects unknown codes (must be a known ISO 4217 or crypto code).
   - `/transfer` rejects non-positive amounts and self-transfers (sender == receiver).
@@ -32,6 +35,7 @@
 - The "another process is already running" notice and the `/cancel` confirmation now identify the dialogue in question (e.g. `Another process (/addexpense) is already running, ...`, `The process (/addtraveler) was cancelled.`). Each dialogue state implements a shared `DialogueState` trait that exposes its user-facing label.
 - `/listtransfers` and `/showbalances` now accept their `name` argument as optional via `CommandArg<Name>`.
 - Removed `utils.rs`: tracing attribute aliases moved to `macros.rs`, debt logic (`update_debts`, `simplify_balances`) moved to `debt.rs`, and `indent_multiline` moved to `i18n/mod.rs`.
+- Refactored inline-keyboard utilities from a single `keyboard.rs` file into a dedicated `keyboard` module with submodules (`callback`, `travelers`, `paginated`) for better maintainability.
 - Removed the `CommandError::EmptyInput` variant and its associated localization key (`command-error-empty-input`). Commands that previously returned this error now start an interactive dialogue instead.
 
 ### Fixed

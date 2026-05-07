@@ -4,6 +4,7 @@ use crate::{
     errors::{AddExpenseError, EndError},
     expense::Expense,
     i18n::{self, Translate, TranslateWithArgs},
+    keyboard,
     traveler::{Name, Traveler},
     update_debts,
 };
@@ -25,13 +26,37 @@ use surrealdb::{
 use teloxide::{
     Bot,
     dispatching::{HandlerExt, UpdateHandler, dialogue::InMemStorage},
+    payloads::SendMessageSetters,
     prelude::Dialogue,
     requests::Requester,
-    types::{ChatId, Message},
+    types::{CallbackQuery, ChatId, InlineKeyboardButton, Message},
 };
 use tracing::Level;
 
 type AddExpenseDialogue = Dialogue<AddExpenseState, InMemStorage<AddExpenseState>>;
+
+// ─── Callback constants ──────────────────────────────────────────────────────
+
+/// Prefix for the payer-picker keyboard.
+pub const CALLBACK_PREFIX: &str = "addexp_payer:";
+/// Cancel sentinel.
+const CANCEL_CALLBACK: &str = "addexp_payer:__cancel__";
+/// Noop sentinel for spacer buttons.
+const NOOP_CALLBACK: &str = "addexp_payer:__noop__";
+
+/// Prefix for the split-among traveler picker keyboard.
+pub const CALLBACK_PREFIX_SPLIT: &str = "addexp_split:";
+/// Cancel sentinel for the split step.
+const CANCEL_CALLBACK_SPLIT: &str = "addexp_split:__cancel__";
+/// Noop sentinel for the split step.
+const NOOP_CALLBACK_SPLIT: &str = "addexp_split:__noop__";
+/// "All" action button callback.
+const ALL_CALLBACK_SPLIT: &str = "addexp_split:__all__";
+/// "End" action button callback.
+const END_CALLBACK_SPLIT: &str = "addexp_split:__end__";
+/// "Help" action button callback.
+const HELP_CALLBACK_SPLIT: &str = "addexp_split:__help__";
+
 static SPLIT_AMONG_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
         format!(r"^\s*(?P<{SPLIT_AMONG_REGEX_NAME_GRP}>[^{name_amount_sep}]+)(\s*{name_amount_sep}\s*(?P<{SPLIT_AMONG_REGEX_AMOUNT_GRP}>\d+({decimal_sep}\d+)?\s*(?P<{SPLIT_AMONG_REGEX_PERCENTAGE_GRP}>%)?))?\s*$",
@@ -66,8 +91,8 @@ pub enum AddExpenseState {
     },
 }
 
-/// AddExpense has a single user-facing identity regardless of which step
-/// the dialogue is on, so the state is unused.
+/// AddExpense has a single user-facing running label regardless of which step
+/// the dialogue is on, so `running_label()` returns a constant.
 impl crate::dialogues::storage::DialogueState for AddExpenseState {
     fn running_label(&self) -> &'static str {
         crate::i18n::commands::RUNNING_PROCESS_ADD_EXPENSE
@@ -164,8 +189,9 @@ pub async fn receive_description(
     Ok(())
 }
 
-#[apply(trace_state)]
+#[apply(trace_state_db)]
 pub async fn receive_amount(
+    db: Arc<Surreal<Any>>,
     bot: Bot,
     dialogue: AddExpenseDialogue,
     description: String, // Available from `AddExpenseState::ReceiveAmount`.
@@ -185,11 +211,7 @@ pub async fn receive_amount(
                 .await?;
                 return Ok(());
             }
-            bot.send_message(
-                msg.chat.id,
-                i18n::dialogues::ADD_EXPENSE_ASK_PAID_BY.translate(ctx),
-            )
-            .await?;
+            send_ask_paid_by(&bot, db, msg.chat.id, ctx).await?;
             dialogue
                 .update(AddExpenseState::ReceivePaidBy {
                     description,
@@ -231,32 +253,26 @@ pub async fn receive_paid_by(
                     "{invalid_paid_by}\n\n{reason}",
                     invalid_paid_by =
                         i18n::dialogues::ADD_EXPENSE_INVALID_PAID_BY.translate(ctx.clone()),
-                    reason = err.translate(ctx)
+                    reason = err.translate(ctx.clone())
                 );
-                bot.send_message(msg.chat.id, reply).await?;
+                reprompt_paid_by(&bot, Arc::clone(&db), msg.chat.id, ctx, &reply).await?;
                 return Ok(());
             }
         },
         None => {
             tracing::warn!("Invalid name: received `{text:?}`.");
-            bot.send_message(
-                msg.chat.id,
-                i18n::dialogues::ADD_EXPENSE_INVALID_PAID_BY.translate(ctx),
-            )
-            .await?;
+            let reply = i18n::dialogues::ADD_EXPENSE_INVALID_PAID_BY.translate(ctx.clone());
+            reprompt_paid_by(&bot, Arc::clone(&db), msg.chat.id, ctx, &reply).await?;
             return Ok(());
         }
     };
 
     // Select traveler from db
-    let select_res = Traveler::db_select_by_name(db, msg.chat.id, &name).await;
+    let select_res = Traveler::db_select_by_name(Arc::clone(&db), msg.chat.id, &name).await;
     match select_res {
         Ok(Some(traveler)) => {
-            bot.send_message(
-                msg.chat.id,
-                i18n::dialogues::ADD_EXPENSE_ASK_SHARES.translate(ctx),
-            )
-            .await?;
+            let text = i18n::dialogues::ADD_EXPENSE_ASK_SHARES.translate(ctx.clone());
+            send_split_prompt(&bot, Arc::clone(&db), msg.chat.id, &text, false, ctx).await?;
             dialogue
                 .update(AddExpenseState::StartSplitAmong {
                     description,
@@ -268,24 +284,422 @@ pub async fn receive_paid_by(
         }
         Ok(None) => {
             tracing::warn!("Invalid traveler: received {name}.");
-            bot.send_message(
-                msg.chat.id,
-                i18n::dialogues::ADD_EXPENSE_TRAVELER_NOT_FOUND
-                    .translate_with_args(ctx, &hashmap! {i18n::args::NAME.into() => name.into()}),
-            )
-            .await?;
+            let reply = i18n::dialogues::ADD_EXPENSE_TRAVELER_NOT_FOUND.translate_with_args(
+                ctx.clone(),
+                &hashmap! {i18n::args::NAME.into() => name.into()},
+            );
+            reprompt_paid_by(&bot, db, msg.chat.id, ctx, &reply).await?;
         }
         Err(err) => {
             tracing::error!("{err}");
-            bot.send_message(
-                msg.chat.id,
-                i18n::dialogues::ADD_EXPENSE_TRAVELER_GENERIC_ERROR
-                    .translate_with_args(ctx, &hashmap! {i18n::args::NAME.into() => name.into()}),
-            )
-            .await?;
+            let reply = i18n::dialogues::ADD_EXPENSE_TRAVELER_GENERIC_ERROR.translate_with_args(
+                ctx.clone(),
+                &hashmap! {i18n::args::NAME.into() => name.into()},
+            );
+            reprompt_paid_by(&bot, db, msg.chat.id, ctx, &reply).await?;
         }
     }
 
+    Ok(())
+}
+
+// ─── Payer keyboard helpers ──────────────────────────────────────────────────
+
+/// Sends the "who paid?" prompt with a traveler-picker inline keyboard.
+async fn send_ask_paid_by(
+    bot: &Bot,
+    db: Arc<Surreal<Any>>,
+    chat_id: ChatId,
+    ctx: Arc<Mutex<Context>>,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let text = i18n::dialogues::ADD_EXPENSE_ASK_PAID_BY.translate(ctx.clone());
+    let kb = keyboard::travelers_keyboard(keyboard::TravelersKeyboardConfig {
+        db,
+        chat_id,
+        prefix: CALLBACK_PREFIX,
+        cancel_callback: CANCEL_CALLBACK,
+        noop_callback: NOOP_CALLBACK,
+        show_cancel: false,
+        ctx,
+    })
+    .await;
+    match kb {
+        Some(kb) => {
+            bot.send_message(chat_id, text).reply_markup(kb).await?;
+        }
+        None => {
+            bot.send_message(chat_id, text).await?;
+        }
+    }
+    Ok(())
+}
+
+/// Re-sends the error message together with the traveler keyboard.
+async fn reprompt_paid_by(
+    bot: &Bot,
+    db: Arc<Surreal<Any>>,
+    chat_id: ChatId,
+    ctx: Arc<Mutex<Context>>,
+    error_text: &str,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let kb = keyboard::travelers_keyboard(keyboard::TravelersKeyboardConfig {
+        db,
+        chat_id,
+        prefix: CALLBACK_PREFIX,
+        cancel_callback: CANCEL_CALLBACK,
+        noop_callback: NOOP_CALLBACK,
+        show_cancel: false,
+        ctx,
+    })
+    .await;
+    match kb {
+        Some(kb) => {
+            bot.send_message(chat_id, error_text)
+                .reply_markup(kb)
+                .await?;
+        }
+        None => {
+            bot.send_message(chat_id, error_text).await?;
+        }
+    }
+    Ok(())
+}
+
+// ─── Payer callback handler ──────────────────────────────────────────────────
+
+/// Handles an inline-keyboard callback for the "who paid?" step.
+#[apply(trace_callback)]
+pub async fn receive_paid_by_callback(
+    db: Arc<Surreal<Any>>,
+    bot: Bot,
+    dialogue: AddExpenseDialogue,
+    (description, amount): (String, Decimal),
+    q: CallbackQuery,
+    ctx: Arc<Mutex<Context>>,
+) -> HandlerResult {
+    tracing::debug!("{LOG_DEBUG_START}");
+
+    let _ = bot.answer_callback_query(q.id.clone()).await;
+
+    let Some(msg) = q.regular_message().cloned() else {
+        tracing::warn!("Callback query without an accessible message; ignoring");
+        return Ok(());
+    };
+
+    let data = q.data.as_deref().unwrap_or("");
+
+    // Noop (spacer buttons).
+    if data == NOOP_CALLBACK {
+        return Ok(());
+    }
+
+    // Cancel — exit the dialogue.
+    if data == CANCEL_CALLBACK {
+        let _ = bot.edit_message_reply_markup(msg.chat.id, msg.id).await;
+        let process_name = i18n::commands::RUNNING_PROCESS_ADD_EXPENSE.translate(Arc::clone(&ctx));
+        let cancel_msg = i18n::commands::CANCEL_OK.translate_with_args(
+            ctx,
+            &hashmap! { i18n::args::PROCESS.into() => process_name.into() },
+        );
+        bot.send_message(msg.chat.id, cancel_msg).await?;
+        dialogue.exit().await?;
+        return Ok(());
+    }
+
+    // Strip prefix to get the selected name.
+    let raw = data.strip_prefix(CALLBACK_PREFIX).unwrap_or("").to_owned();
+    if raw.is_empty() {
+        tracing::warn!("Empty value in callback data: {data:?}");
+        return Ok(());
+    }
+
+    let Ok(name) = Name::from_str(&raw) else {
+        tracing::warn!("Invalid name in callback data: {raw:?}");
+        return Ok(());
+    };
+
+    // Remove the inline keyboard and show the selected name.
+    if let Some(text) = msg.text() {
+        let _ = bot
+            .edit_message_text(msg.chat.id, msg.id, format!("{text}\n✓ {raw}"))
+            .await;
+    }
+    let _ = bot.edit_message_reply_markup(msg.chat.id, msg.id).await;
+
+    // Look up the traveler.
+    let select_res = Traveler::db_select_by_name(Arc::clone(&db), msg.chat.id, &name).await;
+    match select_res {
+        Ok(Some(traveler)) => {
+            let text = i18n::dialogues::ADD_EXPENSE_ASK_SHARES.translate(ctx.clone());
+            send_split_prompt(&bot, Arc::clone(&db), msg.chat.id, &text, false, ctx).await?;
+            dialogue
+                .update(AddExpenseState::StartSplitAmong {
+                    description,
+                    amount,
+                    paid_by: traveler,
+                })
+                .await?;
+            tracing::debug!("{LOG_DEBUG_SUCCESS}");
+        }
+        Ok(None) => {
+            tracing::warn!("Traveler from callback not found: {name}");
+            let reply = i18n::dialogues::ADD_EXPENSE_TRAVELER_NOT_FOUND.translate_with_args(
+                ctx.clone(),
+                &hashmap! {i18n::args::NAME.into() => name.into()},
+            );
+            reprompt_paid_by(&bot, db, msg.chat.id, ctx, &reply).await?;
+        }
+        Err(err) => {
+            tracing::error!("{err}");
+            let reply = i18n::dialogues::ADD_EXPENSE_TRAVELER_GENERIC_ERROR.translate_with_args(
+                ctx.clone(),
+                &hashmap! {i18n::args::NAME.into() => name.into()},
+            );
+            reprompt_paid_by(&bot, db, msg.chat.id, ctx, &reply).await?;
+        }
+    }
+
+    Ok(())
+}
+
+// ─── Split keyboard helpers ──────────────────────────────────────────────────
+
+/// Builds a simple action keyboard with "All", "End" (when some travelers have
+/// already been added) and "Help" buttons for the split-among step.
+fn split_keyboard(
+    has_travelers: bool,
+    ctx: Arc<Mutex<Context>>,
+) -> teloxide::types::InlineKeyboardMarkup {
+    let mut row = vec![InlineKeyboardButton::callback(
+        i18n::labels::ALL_BUTTON.translate(ctx.clone()),
+        ALL_CALLBACK_SPLIT.to_owned(),
+    )];
+    if has_travelers {
+        row.push(InlineKeyboardButton::callback(
+            i18n::labels::END_BUTTON.translate(ctx.clone()),
+            END_CALLBACK_SPLIT.to_owned(),
+        ));
+    }
+    let help_row = vec![InlineKeyboardButton::callback(
+        i18n::labels::HELP_BUTTON.translate(ctx),
+        HELP_CALLBACK_SPLIT.to_owned(),
+    )];
+    teloxide::types::InlineKeyboardMarkup::new(vec![row, help_row])
+}
+
+/// Sends the split prompt with the action keyboard.
+async fn send_split_prompt(
+    bot: &Bot,
+    _db: Arc<Surreal<Any>>,
+    chat_id: ChatId,
+    text: &str,
+    has_travelers: bool,
+    ctx: Arc<Mutex<Context>>,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let kb = split_keyboard(has_travelers, ctx);
+    bot.send_message(chat_id, text).reply_markup(kb).await?;
+    Ok(())
+}
+
+// ─── Split callback handler ─────────────────────────────────────────────────
+
+/// Handles an inline-keyboard callback for the split-among step.
+#[apply(trace_callback)]
+pub async fn receive_split_callback(
+    db: Arc<Surreal<Any>>,
+    bot: Bot,
+    dialogue: AddExpenseDialogue,
+    (description, amount, paid_by): (String, Decimal, Traveler),
+    q: CallbackQuery,
+    ctx: Arc<Mutex<Context>>,
+) -> HandlerResult {
+    tracing::debug!("{LOG_DEBUG_START}");
+    receive_split_callback_inner(
+        db,
+        bot,
+        dialogue,
+        (description, amount, paid_by, BTreeMap::new()),
+        q,
+        ctx,
+    )
+    .await
+}
+
+/// Handles split callback when some travelers have already been added.
+#[apply(trace_callback)]
+pub async fn receive_split_continue_callback(
+    db: Arc<Surreal<Any>>,
+    bot: Bot,
+    dialogue: AddExpenseDialogue,
+    (description, amount, paid_by, split_among): (
+        String,
+        Decimal,
+        Traveler,
+        BTreeMap<Name, AmountEnum>,
+    ),
+    q: CallbackQuery,
+    ctx: Arc<Mutex<Context>>,
+) -> HandlerResult {
+    tracing::debug!("{LOG_DEBUG_START}");
+    receive_split_callback_inner(
+        db,
+        bot,
+        dialogue,
+        (description, amount, paid_by, split_among),
+        q,
+        ctx,
+    )
+    .await
+}
+
+async fn receive_split_callback_inner(
+    db: Arc<Surreal<Any>>,
+    bot: Bot,
+    dialogue: AddExpenseDialogue,
+    (description, amount, paid_by, mut split_among): (
+        String,
+        Decimal,
+        Traveler,
+        BTreeMap<Name, AmountEnum>,
+    ),
+    q: CallbackQuery,
+    ctx: Arc<Mutex<Context>>,
+) -> HandlerResult {
+    let _ = bot.answer_callback_query(q.id.clone()).await;
+
+    let Some(msg) = q.regular_message().cloned() else {
+        tracing::warn!("Callback query without an accessible message; ignoring");
+        return Ok(());
+    };
+
+    let data = q.data.as_deref().unwrap_or("");
+
+    if data == NOOP_CALLBACK_SPLIT {
+        return Ok(());
+    }
+
+    // Help — show add_expense help text without dismissing the keyboard.
+    if data == HELP_CALLBACK_SPLIT {
+        use crate::commands::{Command, HelpMessage};
+        let help_text = Command::AddExpense.help_message(ctx);
+        bot.send_message(msg.chat.id, help_text).await?;
+        return Ok(());
+    }
+
+    // Cancel
+    if data == CANCEL_CALLBACK_SPLIT {
+        let _ = bot.edit_message_reply_markup(msg.chat.id, msg.id).await;
+        let process_name = i18n::commands::RUNNING_PROCESS_ADD_EXPENSE.translate(Arc::clone(&ctx));
+        let cancel_msg = i18n::commands::CANCEL_OK.translate_with_args(
+            ctx,
+            &hashmap! { i18n::args::PROCESS.into() => process_name.into() },
+        );
+        bot.send_message(msg.chat.id, cancel_msg).await?;
+        dialogue.exit().await?;
+        return Ok(());
+    }
+
+    // "All" action
+    if data == ALL_CALLBACK_SPLIT {
+        if let Some(text) = msg.text() {
+            let label = i18n::labels::ALL_BUTTON.translate(ctx.clone());
+            let _ = bot
+                .edit_message_text(msg.chat.id, msg.id, format!("{text}\n✓ {label}"))
+                .await;
+        }
+        let _ = bot.edit_message_reply_markup(msg.chat.id, msg.id).await;
+        // Simulate "all" text input
+        let result = parse_split_among(db.clone(), ALL_KWORD, msg.chat.id, &mut split_among).await;
+        match result {
+            Ok(SplitAmongEnum::End) => {
+                match end(
+                    db.clone(),
+                    &dialogue,
+                    (&description, amount, &paid_by, split_among),
+                    msg.chat.id,
+                )
+                .await
+                {
+                    Ok(expense) => {
+                        let reply = format!(
+                            "{expense_added}\n\n{format_expense}",
+                            expense_added = i18n::dialogues::ADD_EXPENSE_OK.translate(ctx.clone()),
+                            format_expense = expense.translate(ctx)
+                        );
+                        bot.send_message(msg.chat.id, reply).await?;
+                    }
+                    Err(err) => {
+                        let reply = err.translate(ctx.clone());
+                        bot.send_message(msg.chat.id, reply).await?;
+                        send_split_prompt(
+                            &bot,
+                            db,
+                            msg.chat.id,
+                            &i18n::dialogues::ADD_EXPENSE_ASK_SHARES.translate(ctx.clone()),
+                            false,
+                            ctx,
+                        )
+                        .await?;
+                    }
+                }
+            }
+            _ => {
+                // Shouldn't normally happen, but just re-prompt
+                send_split_prompt(
+                    &bot,
+                    db,
+                    msg.chat.id,
+                    &i18n::dialogues::ADD_EXPENSE_ASK_SHARES.translate(ctx.clone()),
+                    !split_among.is_empty(),
+                    ctx,
+                )
+                .await?;
+            }
+        }
+        tracing::debug!("{LOG_DEBUG_SUCCESS}");
+        return Ok(());
+    }
+
+    // "End" action
+    if data == END_CALLBACK_SPLIT {
+        if let Some(text) = msg.text() {
+            let label = i18n::labels::END_BUTTON.translate(ctx.clone());
+            let _ = bot
+                .edit_message_text(msg.chat.id, msg.id, format!("{text}\n✓ {label}"))
+                .await;
+        }
+        let _ = bot.edit_message_reply_markup(msg.chat.id, msg.id).await;
+        if split_among.is_empty() {
+            // Shouldn't happen since button is hidden, but guard anyway
+            return Ok(());
+        }
+        match end(
+            db.clone(),
+            &dialogue,
+            (&description, amount, &paid_by, split_among),
+            msg.chat.id,
+        )
+        .await
+        {
+            Ok(expense) => {
+                let reply = format!(
+                    "{expense_added}\n\n{format_expense}",
+                    expense_added = i18n::dialogues::ADD_EXPENSE_OK.translate(ctx.clone()),
+                    format_expense = expense.translate(ctx)
+                );
+                bot.send_message(msg.chat.id, reply).await?;
+            }
+            Err(err) => {
+                let reply = err.translate(ctx.clone());
+                bot.send_message(msg.chat.id, reply).await?;
+            }
+        }
+        tracing::debug!("{LOG_DEBUG_SUCCESS}");
+        return Ok(());
+    }
+
+    // Unknown callback data — ignore.
+    tracing::warn!("Unexpected callback data in split step: {data:?}");
     Ok(())
 }
 
@@ -358,11 +772,9 @@ async fn handle_split_among_input(input: SplitAmongInput) -> HandlerResult {
             tracing::debug!("Received text: `{text}`.");
             match parse_split_among(db.clone(), text, msg.chat.id, &mut split_among).await {
                 Ok(SplitAmongEnum::List) => {
-                    bot.send_message(
-                        msg.chat.id,
-                        i18n::dialogues::ADD_EXPENSE_CONTINUE_SPLIT.translate(ctx),
-                    )
-                    .await?;
+                    let prompt = i18n::dialogues::ADD_EXPENSE_CONTINUE_SPLIT.translate(ctx.clone());
+                    send_split_prompt(&bot, Arc::clone(&db), msg.chat.id, &prompt, true, ctx)
+                        .await?;
                     dialogue
                         .update(AddExpenseState::ReceiveSplitAmong {
                             description,

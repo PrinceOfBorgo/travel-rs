@@ -7,11 +7,9 @@ use crate::{
     Context, HandlerResult,
     commands::{Command, CommandArg, command_reply},
     consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
-    dialogues::{
-        keyboard,
-        pending_command_dialogue::{PendingCommandDialogue, PendingCommandState},
-    },
+    dialogues::pending_command_dialogue::{PendingCommandDialogue, PendingCommandState},
     i18n::{self, Translate},
+    keyboard,
     traveler::Name,
 };
 use macro_rules_attribute::apply;
@@ -55,14 +53,15 @@ pub async fn start(
     tracing::debug!("{LOG_DEBUG_START}");
     let prompt = i18n::dialogues::DELETE_TRAVELER_ASK_NAME.translate(ctx.clone());
     let mut request = bot.send_message(msg.chat.id, prompt);
-    if let Some(kb) = keyboard::travelers_keyboard(
+    if let Some(kb) = keyboard::travelers_keyboard(keyboard::TravelersKeyboardConfig {
         db,
-        msg.chat.id,
-        CALLBACK_PREFIX,
-        CANCEL_CALLBACK_DATA,
-        NOOP_CALLBACK_DATA,
+        chat_id: msg.chat.id,
+        prefix: CALLBACK_PREFIX,
+        cancel_callback: CANCEL_CALLBACK_DATA,
+        noop_callback: NOOP_CALLBACK_DATA,
+        show_cancel: true,
         ctx,
-    )
+    })
     .await
     {
         request = request.reply_markup(kb);
@@ -179,14 +178,15 @@ pub async fn receive_callback(
         // Dialogue stays alive: re-send the prompt with a fresh keyboard.
         let prompt = i18n::dialogues::DELETE_TRAVELER_ASK_NAME.translate(ctx.clone());
         let mut request = bot.send_message(msg.chat.id, prompt);
-        if let Some(kb) = keyboard::travelers_keyboard(
+        if let Some(kb) = keyboard::travelers_keyboard(keyboard::TravelersKeyboardConfig {
             db,
-            msg.chat.id,
-            CALLBACK_PREFIX,
-            CANCEL_CALLBACK_DATA,
-            NOOP_CALLBACK_DATA,
+            chat_id: msg.chat.id,
+            prefix: CALLBACK_PREFIX,
+            cancel_callback: CANCEL_CALLBACK_DATA,
+            noop_callback: NOOP_CALLBACK_DATA,
+            show_cancel: true,
             ctx,
-        )
+        })
         .await
         {
             request = request.reply_markup(kb);

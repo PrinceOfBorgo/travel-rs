@@ -7,7 +7,8 @@ use crate::{
     },
     consts::MIN_SIMILARITY_SCORE,
     i18n::{self, Translate, TranslateWithArgs, help::*},
-    traveler::{Name, Traveler},
+    keyboard,
+    traveler::Name,
 };
 use maplit::hashmap;
 use rust_decimal::Decimal;
@@ -347,10 +348,28 @@ async fn command_inline_keyboard(
             Some(inline_keyboards::buttons_keyboard(buttons, 2))
         }
         Command::ListTransfers { name } if name.is_missing() => {
-            travelers_keyboard(db, msg, LIST_TRANSFERS_CALLBACK_PREFIX).await
+            keyboard::travelers_keyboard(keyboard::TravelersKeyboardConfig {
+                db,
+                chat_id: msg.chat.id,
+                prefix: LIST_TRANSFERS_CALLBACK_PREFIX,
+                cancel_callback: "",
+                noop_callback: &format!("{LIST_TRANSFERS_CALLBACK_PREFIX}__noop__"),
+                show_cancel: false,
+                ctx,
+            })
+            .await
         }
         Command::ShowBalances { name } if name.is_missing() => {
-            travelers_keyboard(db, msg, SHOW_BALANCES_CALLBACK_PREFIX).await
+            keyboard::travelers_keyboard(keyboard::TravelersKeyboardConfig {
+                db,
+                chat_id: msg.chat.id,
+                prefix: SHOW_BALANCES_CALLBACK_PREFIX,
+                cancel_callback: "",
+                noop_callback: &format!("{SHOW_BALANCES_CALLBACK_PREFIX}__noop__"),
+                show_cancel: false,
+                ctx,
+            })
+            .await
         }
         Command::ListExpenses { description } if description.is_empty() => {
             let filter_button = InlineKeyboardButton::callback(
@@ -361,26 +380,6 @@ async fn command_inline_keyboard(
         }
         _ => None,
     }
-}
-
-/// Loads chat travelers and builds a keyboard with one button per name.
-async fn travelers_keyboard(
-    db: Arc<Surreal<Any>>,
-    msg: &Message,
-    prefix: &str,
-) -> Option<InlineKeyboardMarkup> {
-    let travelers = Traveler::db_select(db, msg.chat.id).await.ok()?;
-    if travelers.is_empty() {
-        return None;
-    }
-    let buttons: Vec<InlineKeyboardButton> = travelers
-        .into_iter()
-        .map(|t| {
-            let name = t.name.to_string();
-            InlineKeyboardButton::callback(name.clone(), format!("{prefix}{name}"))
-        })
-        .collect();
-    Some(inline_keyboards::buttons_keyboard(buttons, 2))
 }
 
 pub async fn command_reply(

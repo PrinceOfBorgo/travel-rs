@@ -7,11 +7,9 @@ use crate::{
     Context, HandlerResult,
     commands::transfer as cmd_transfer,
     consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
-    dialogues::{
-        keyboard,
-        pending_command_dialogue::{PendingCommandDialogue, PendingCommandState},
-    },
+    dialogues::pending_command_dialogue::{PendingCommandDialogue, PendingCommandState},
     i18n::{self, Translate, TranslateWithArgs},
+    keyboard::{self, DEFAULT_ROWS_PER_PAGE, PaginatedKeyboardConfig, PickerItem},
     traveler::{Name, Traveler},
 };
 use macro_rules_attribute::apply;
@@ -25,7 +23,7 @@ use teloxide::{
     Bot,
     payloads::SendMessageSetters,
     requests::Requester,
-    types::{CallbackQuery, InlineKeyboardButton, Message},
+    types::{CallbackQuery, Message},
 };
 use tracing::Level;
 
@@ -78,14 +76,15 @@ pub async fn start(
     tracing::debug!("{LOG_DEBUG_START}");
     let prompt = i18n::dialogues::TRANSFER_ASK_FROM.translate(ctx.clone());
     let mut request = bot.send_message(msg.chat.id, prompt);
-    if let Some(kb) = keyboard::travelers_keyboard(
+    if let Some(kb) = keyboard::travelers_keyboard(keyboard::TravelersKeyboardConfig {
         db,
-        msg.chat.id,
-        CALLBACK_PREFIX_FROM,
-        CANCEL_CALLBACK_FROM,
-        NOOP_CALLBACK_FROM,
+        chat_id: msg.chat.id,
+        prefix: CALLBACK_PREFIX_FROM,
+        cancel_callback: CANCEL_CALLBACK_FROM,
+        noop_callback: NOOP_CALLBACK_FROM,
+        show_cancel: true,
         ctx,
-    )
+    })
     .await
     {
         request = request.reply_markup(kb);
@@ -116,14 +115,15 @@ pub async fn start_with_from(
             // Invalid from name — fall back to full dialogue starting from AskFrom.
             let prompt = i18n::dialogues::TRANSFER_ASK_FROM.translate(ctx.clone());
             let mut request = bot.send_message(msg.chat.id, prompt);
-            if let Some(kb) = keyboard::travelers_keyboard(
+            if let Some(kb) = keyboard::travelers_keyboard(keyboard::TravelersKeyboardConfig {
                 db,
-                msg.chat.id,
-                CALLBACK_PREFIX_FROM,
-                CANCEL_CALLBACK_FROM,
-                NOOP_CALLBACK_FROM,
+                chat_id: msg.chat.id,
+                prefix: CALLBACK_PREFIX_FROM,
+                cancel_callback: CANCEL_CALLBACK_FROM,
+                noop_callback: NOOP_CALLBACK_FROM,
+                show_cancel: true,
                 ctx,
-            )
+            })
             .await
             {
                 request = request.reply_markup(kb);
@@ -172,14 +172,15 @@ pub async fn start_with_from_to(
             // Invalid from — start full dialogue.
             let prompt = i18n::dialogues::TRANSFER_ASK_FROM.translate(ctx.clone());
             let mut request = bot.send_message(msg.chat.id, prompt);
-            if let Some(kb) = keyboard::travelers_keyboard(
+            if let Some(kb) = keyboard::travelers_keyboard(keyboard::TravelersKeyboardConfig {
                 db,
-                msg.chat.id,
-                CALLBACK_PREFIX_FROM,
-                CANCEL_CALLBACK_FROM,
-                NOOP_CALLBACK_FROM,
+                chat_id: msg.chat.id,
+                prefix: CALLBACK_PREFIX_FROM,
+                cancel_callback: CANCEL_CALLBACK_FROM,
+                noop_callback: NOOP_CALLBACK_FROM,
+                show_cancel: true,
                 ctx,
-            )
+            })
             .await
             {
                 request = request.reply_markup(kb);
@@ -459,14 +460,15 @@ async fn reprompt_ask_from(
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let prompt = i18n::dialogues::TRANSFER_ASK_FROM_REPROMPT.translate(ctx.clone());
     let mut request = bot.send_message(chat_id, prompt);
-    if let Some(kb) = keyboard::travelers_keyboard(
+    if let Some(kb) = keyboard::travelers_keyboard(keyboard::TravelersKeyboardConfig {
         db,
         chat_id,
-        CALLBACK_PREFIX_FROM,
-        CANCEL_CALLBACK_FROM,
-        NOOP_CALLBACK_FROM,
+        prefix: CALLBACK_PREFIX_FROM,
+        cancel_callback: CANCEL_CALLBACK_FROM,
+        noop_callback: NOOP_CALLBACK_FROM,
+        show_cancel: true,
         ctx,
-    )
+    })
     .await
     {
         request = request.reply_markup(kb);
@@ -488,14 +490,15 @@ async fn reprompt_from_not_found(
         &maplit::hashmap! { i18n::args::NAME.into() => name.to_string().into() },
     );
     let mut request = bot.send_message(chat_id, prompt);
-    if let Some(kb) = keyboard::travelers_keyboard(
+    if let Some(kb) = keyboard::travelers_keyboard(keyboard::TravelersKeyboardConfig {
         db,
         chat_id,
-        CALLBACK_PREFIX_FROM,
-        CANCEL_CALLBACK_FROM,
-        NOOP_CALLBACK_FROM,
+        prefix: CALLBACK_PREFIX_FROM,
+        cancel_callback: CANCEL_CALLBACK_FROM,
+        noop_callback: NOOP_CALLBACK_FROM,
+        show_cancel: true,
         ctx,
-    )
+    })
     .await
     {
         request = request.reply_markup(kb);
@@ -586,27 +589,32 @@ async fn travelers_keyboard_excluding(
     ctx: Arc<Mutex<Context>>,
 ) -> Option<teloxide::types::InlineKeyboardMarkup> {
     let travelers = Traveler::db_select(db, chat_id).await.ok()?;
-    let buttons: Vec<InlineKeyboardButton> = travelers
+    let items: Vec<PickerItem> = travelers
         .into_iter()
         .filter(|t| t.name.to_lowercase() != exclude.to_lowercase())
         .map(|t| {
             let name = t.name.to_string();
-            InlineKeyboardButton::callback(name.clone(), format!("{CALLBACK_PREFIX_TO}{name}"))
+            PickerItem {
+                label: name.clone(),
+                value: name,
+            }
         })
         .collect();
-    if buttons.is_empty() {
+    if items.is_empty() {
         return None;
     }
-    let cancel_button = InlineKeyboardButton::callback(
-        i18n::labels::CANCEL_BUTTON.translate(ctx),
-        CANCEL_CALLBACK_TO.to_owned(),
-    );
-    Some(keyboard::grid_keyboard(
-        buttons,
-        cancel_button,
-        TRAVELERS_PER_ROW,
-        NOOP_CALLBACK_TO,
-    ))
+    keyboard::paginated_keyboard(PaginatedKeyboardConfig {
+        items: &items,
+        page: 0,
+        columns: TRAVELERS_PER_ROW,
+        rows_per_page: DEFAULT_ROWS_PER_PAGE,
+        prefix: CALLBACK_PREFIX_TO,
+        cancel_callback: CANCEL_CALLBACK_TO,
+        noop_callback: NOOP_CALLBACK_TO,
+        action_buttons: &[],
+        show_cancel: true,
+        ctx,
+    })
 }
 
 #[cfg(test)]

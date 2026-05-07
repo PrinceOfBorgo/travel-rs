@@ -9,6 +9,11 @@ pub const SPLIT_AMONG_REGEX_PERCENTAGE_GRP: &str = "percentage";
 pub const ALL_KWORD: &str = "all";
 pub const END_KWORD: &str = "end";
 pub const RESERVED_KWORDS: [&str; 2] = [ALL_KWORD, END_KWORD];
+
+pub const BLANK_LABEL: &str = "\u{2800}"; // Braille Pattern Blank — invisible but non-empty
+pub const BACK_LABEL: &str = "◀";
+pub const NEXT_LABEL: &str = "▶";
+
 pub const NAME_INVALID_CHARS: [char; 4] = [
     SPLIT_AMONG_ENTRIES_SEP,
     SPLIT_AMONG_NAME_AMOUNT_SEP,

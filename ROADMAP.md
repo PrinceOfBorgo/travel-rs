@@ -18,26 +18,17 @@
 - [ ] Refactor code to make it more readable and maintainable.
 - [x] Add tests:
   - [x] Unit tests:
-    - [x] DB connection
-    - [x] Command parsing
-    - [x] Traveler name parsing
-    - [x] Commands
-  - [x] Integration tests
+    - [x] DB connection.
+    - [x] Command parsing.
+    - [x] Traveler name parsing.
+    - [x] Commands.
+  - [x] Integration tests.
 - [ ] Add assertion/events to check if `in.chat = out.chat` for relationships.
 - [x] Handle `unknown_command` when command name is right but arguments are incomplete.
 - [x] Add dedicated help messages for all commands.
 - [ ] Improve user experience:
-  - [ ] Add inline keyboard support:
-    - [x] `Help`
-    - [x] `SetLanguage`
-    - [x] `SetCurrency`
-    - [x] `DeleteTraveler`
-    - [ ] `ShowExpense`
-    - [x] `ListExpenses`
-    - [x] `Transfer`
-    - [x] `ListTransfers`
-    - [x] `ShowBalances`
-  - [ ] Implement a Telegram Mini App
+  - [x] Add inline keyboard support.
+  - [ ] Implement a Telegram Mini App.
   - [x] Interactive prompts for commands invoked without their arguments.
 - [x] Add timestamps to expenses and transfers.
 - [x] Add `ShowStats` command.
