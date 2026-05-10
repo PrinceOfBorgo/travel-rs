@@ -1,6 +1,6 @@
 [package]
 name = "travel-rs"
-version = "0.3.0"
+version = "0.3.1-SNAPSHOT"
 authors = ["Michele Medori <michele.medori93@gmail.com>"]
 edition = "2024"
 
