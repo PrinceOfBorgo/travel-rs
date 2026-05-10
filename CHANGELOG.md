@@ -1,6 +1,7 @@
 # Changelog
 
-## [0.2.6-SNAPSHOT] - Unreleased
+## [0.3.0] - 2026-05-10
+### ✨ Minor Release
 ### Added
 - Command descriptions shown by Telegram are now translated into the chat's selected language, and update automatically when the language is changed via `/setlanguage`.
 - `dialogues/pending_commands.ftl` and `labels.ftl` localization files.
