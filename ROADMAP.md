@@ -1,7 +1,7 @@
+# Roadmap
 
-## Roadmap
+## To do
 
-- [x] Use stable channel when `std::sync::LazyLock` will be stabilized (1.80 - 25 July, 2024).
 - [ ] Currency support:
   - [ ] Exchange using external APIs. https://crates.io/crates/freecurrencyapi-rs
   - [x] Handle different currencies with their specific precision instead of Decimal.
@@ -16,6 +16,24 @@
 - [ ] Improve error handling: distinguish errors resulting from DB queries.
   - [x] Delete from DB always returns OK even if the entry doesn't exist. Should return WARN with a dedicated message.
 - [ ] Refactor code to make it more readable and maintainable (constantly on-going).
+- [ ] Add assertion/events to check if `in.chat = out.chat` for relationships.
+- [ ] Improve user experience:
+  - [ ] Implement a Telegram Mini App.
+  - [x] Add inline keyboard support.
+  - [x] Interactive prompts for commands invoked without their arguments.
+- [ ] Add `EditExpense` command.
+- [ ] Change `ListExpenses` command so that the filter matches the string representation of the expense.
+- [ ] Refactor callback prefix to derive them from commands instead of hardcoding them.
+- [ ] Add confirmation step to delete commands before executing the deletion.
+- [ ] Add "clear" commands:
+  - [ ] `ClearTravelers`
+  - [ ] `ClearExpenses`
+  - [ ] `ClearTransfers`
+  - [ ] `ClearAll` (clears travelers, expenses, and transfers)
+
+## Done
+
+- [x] Use stable channel when `std::sync::LazyLock` will be stabilized (1.80 - 25 July, 2024).
 - [x] Add tests:
   - [x] Unit tests:
     - [x] DB connection.
@@ -23,17 +41,8 @@
     - [x] Traveler name parsing.
     - [x] Commands.
   - [x] Integration tests.
-- [ ] Add assertion/events to check if `in.chat = out.chat` for relationships.
 - [x] Handle `unknown_command` when command name is right but arguments are incomplete.
 - [x] Add dedicated help messages for all commands.
-- [ ] Improve user experience:
-  - [x] Add inline keyboard support.
-  - [ ] Implement a Telegram Mini App.
-  - [x] Interactive prompts for commands invoked without their arguments.
 - [x] Add timestamps to expenses and transfers.
 - [x] Add `ShowStats` command.
-- [ ] Add `EditExpense` command.
-- [ ] Change `ListExpenses` command so that the filter matches the string representation of the expense.
-- [ ] Refactor callback prefix to derive them from commands instead of hardcoding them.
 - [x] Factor callback dispatch branches out of `main.rs` into their dialogue modules.
-- [ ] Add confirmation step to delete commands before executing the deletion.
