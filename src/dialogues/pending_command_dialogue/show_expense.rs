@@ -107,6 +107,7 @@ pub async fn start(
         ))
         .await?;
     tracing::debug!("{LOG_DEBUG_SUCCESS}");
+    tracing::info!("Dialogue started: /showexpense");
     Ok(())
 }
 

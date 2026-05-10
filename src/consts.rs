@@ -27,3 +27,15 @@ pub const MIN_SIMILARITY_SCORE: f32 = 0.25;
 
 pub const LOG_DEBUG_START: &str = "START";
 pub const LOG_DEBUG_SUCCESS: &str = "SUCCESS";
+
+/// Text keywords accepted as confirmation / denial in the Confirm state.
+pub const CONFIRM_YES_KWORDS: &[&str] = &["yes", "y"];
+pub const CONFIRM_NO_KWORDS: &[&str] = &["no", "n"];
+
+/// Monotonically increasing counter used as a per-span trace identifier.
+/// Each call returns a unique value within the process lifetime.
+static TRACE_COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+
+pub fn next_trace_id() -> u64 {
+    TRACE_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+}

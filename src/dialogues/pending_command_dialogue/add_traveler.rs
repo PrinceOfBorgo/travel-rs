@@ -41,6 +41,7 @@ pub async fn start(
         .update(PendingCommandState::AddTraveler(AddTravelerState::AskName))
         .await?;
     tracing::debug!("{LOG_DEBUG_SUCCESS}");
+    tracing::info!("Dialogue started: /addtraveler");
     Ok(())
 }
 

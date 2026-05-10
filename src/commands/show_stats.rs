@@ -23,6 +23,7 @@ pub async fn show_stats(
         Ok(Some(stats)) => {
             let reply = stats.translate(ctx);
             tracing::debug!("{LOG_DEBUG_SUCCESS}");
+            tracing::info!("Stats retrieved");
             Ok(reply)
         }
         Ok(_) => {

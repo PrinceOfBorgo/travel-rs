@@ -1,6 +1,4 @@
 //! Traveler-picker inline keyboard.
-//!
-//! Built on top of [`super::paginated_keyboard`] with a two-column grid layout.
 
 use crate::{Context, traveler::Traveler};
 use std::sync::{Arc, Mutex};

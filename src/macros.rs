@@ -28,6 +28,7 @@ attribute_alias! {
         ret(level = Level::DEBUG),
         skip_all,
         fields(
+            trace_id = crate::consts::next_trace_id(),
             chat_id = %msg.chat.id,
             sender_id = %msg.from.as_ref().unwrap().id,
             msg_text = ?msg.text(),
@@ -43,6 +44,7 @@ attribute_alias! {
         ret(level = Level::DEBUG),
         skip(msg, ctx),
         fields(
+            trace_id = crate::consts::next_trace_id(),
             chat_id = %msg.chat.id,
             sender_id = %msg.from.as_ref().unwrap().id,
             msg_text = ?msg.text(),
@@ -58,6 +60,7 @@ attribute_alias! {
         ret(level = Level::DEBUG),
         skip(db, msg, ctx),
         fields(
+            trace_id = crate::consts::next_trace_id(),
             chat_id = %msg.chat.id,
             sender_id = %msg.from.as_ref().unwrap().id,
             msg_text = ?msg.text(),
@@ -73,6 +76,7 @@ attribute_alias! {
         ret(level = Level::DEBUG),
         skip(bot, dialogue, msg),
         fields(
+            trace_id = crate::consts::next_trace_id(),
             chat_id = %msg.chat.id,
             sender_id = %msg.from.as_ref().unwrap().id,
             msg_text = ?msg.text(),
@@ -88,6 +92,7 @@ attribute_alias! {
         ret(level = Level::DEBUG),
         skip(db, bot, dialogue, msg),
         fields(
+            trace_id = crate::consts::next_trace_id(),
             chat_id = %msg.chat.id,
             sender_id = %msg.from.as_ref().unwrap().id,
             msg_text = ?msg.text(),
@@ -103,6 +108,7 @@ attribute_alias! {
         ret(level = Level::DEBUG),
         skip_all,
         fields(
+            trace_id = crate::consts::next_trace_id(),
             chat_id = ?q.regular_message().map(|m| m.chat.id),
             sender_id = %q.from.id,
             data = ?q.data,

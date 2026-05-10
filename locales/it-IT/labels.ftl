@@ -6,6 +6,8 @@ end-button = Termina
 filter-button = Filtra…
 show-all-button = Mostra tutto
 help-button = ❓ Aiuto
+confirm-yes-button = ✓ Sì
+confirm-no-button = ✗ No
 
 ## Etichette delle lingue: <emoji bandiera> <nome esteso>
 

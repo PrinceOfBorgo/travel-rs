@@ -141,6 +141,7 @@ pub async fn start(
     bot.send_message(msg.chat.id, reply).await?;
     dialogue.update(AddExpenseState::ReceiveDescription).await?;
     tracing::debug!("{LOG_DEBUG_SUCCESS}");
+    tracing::info!("Dialogue started: /addexpense");
     Ok(())
 }
 
@@ -925,6 +926,13 @@ pub async fn end(
                         match dialogue.exit().await {
                             Ok(_) => {
                                 tracing::debug!("{LOG_DEBUG_SUCCESS} - id: {}", expense.id);
+                                tracing::info!(
+                                    "Expense #{} created: '{}' ({} {})",
+                                    expense.number,
+                                    description,
+                                    amount,
+                                    chat_id
+                                );
                                 Ok(expense)
                             }
                             Err(err_closing) => {

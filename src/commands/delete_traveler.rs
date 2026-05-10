@@ -43,6 +43,7 @@ pub async fn delete_traveler(
                                 tracing::warn!("{err_update}");
                             }
                             tracing::debug!("{LOG_DEBUG_SUCCESS}");
+                            tracing::info!("Traveler '{canonical_name}' deleted");
                             Ok(CommandOutcome::Success(
                                 i18n::commands::DELETE_TRAVELER_OK.translate_with_args(
                                     ctx,
@@ -107,13 +108,10 @@ pub async fn delete_traveler(
 mod tests {
     use crate::{
         db::db,
-        expense::Expense,
         i18n::{self, Translate, TranslateWithArgs},
         tests::TestBot,
-        traveler::{Name, Traveler},
     };
     use maplit::hashmap;
-    use std::str::FromStr;
 
     test! { delete_traveler_ok,
         let db = db().await;
@@ -122,9 +120,10 @@ mod tests {
         let mut bot = TestBot::new(db, "/addtraveler Alice");
         bot.dispatch().await;
 
-        // Delete traveler "Alice"
+        // Delete traveler "Alice" → inline form shows confirmation prompt.
         bot.update("/deletetraveler Alice");
-        let response = i18n::commands::DELETE_TRAVELER_OK.translate_with_args_default(&hashmap! {i18n::args::NAME.into() => "Alice".into()},
+        let response = i18n::dialogues::DELETE_TRAVELER_CONFIRM.translate_with_args_default(
+            &hashmap! {i18n::args::NAME.into() => "Alice".into()},
         );
         bot.test_last_message(&response).await;
     }
@@ -136,10 +135,11 @@ mod tests {
         let mut bot = TestBot::new(db, "/addtraveler Alice");
         bot.dispatch().await;
 
-        // Delete traveler with different casing -> response should show
-        // the canonical name as stored in the database, not the input.
+        // Delete traveler with different casing -> confirmation prompt uses
+        // the user-supplied casing (canonical check happens on confirm).
         bot.update("/deletetraveler ALICE");
-        let response = i18n::commands::DELETE_TRAVELER_OK.translate_with_args_default(&hashmap! {i18n::args::NAME.into() => "Alice".into()},
+        let response = i18n::dialogues::DELETE_TRAVELER_CONFIRM.translate_with_args_default(
+            &hashmap! {i18n::args::NAME.into() => "ALICE".into()},
         );
         bot.test_last_message(&response).await;
     }
@@ -147,8 +147,10 @@ mod tests {
     test! { delete_traveler_not_found,
         let db = db().await;
 
+        // Inline form with non-existent traveler still shows confirmation prompt.
         let mut bot = TestBot::new(db, "/deletetraveler Alice");
-        let response = i18n::commands::DELETE_TRAVELER_NOT_FOUND.translate_with_args_default(&hashmap! {i18n::args::NAME.into() => "Alice".into()},
+        let response = i18n::dialogues::DELETE_TRAVELER_CONFIRM.translate_with_args_default(
+            &hashmap! {i18n::args::NAME.into() => "Alice".into()},
         );
         bot.test_last_message(&response).await;
     }
@@ -160,14 +162,10 @@ mod tests {
         let mut bot = TestBot::new(db, "/addtraveler Alice");
         bot.dispatch().await;
 
-        // Delete traveler "Alice" -> ok
+        // Delete traveler "Alice" → confirmation prompt.
         bot.update("/deletetraveler Alice");
-        let response = i18n::commands::DELETE_TRAVELER_OK.translate_with_args_default(&hashmap! {i18n::args::NAME.into() => "Alice".into()},
-        );
-        bot.test_last_message(&response).await;
-
-        // Delete traveler "Alice" again -> not found
-        let response = i18n::commands::DELETE_TRAVELER_NOT_FOUND.translate_with_args_default(&hashmap! {i18n::args::NAME.into() => "Alice".into()},
+        let response = i18n::dialogues::DELETE_TRAVELER_CONFIRM.translate_with_args_default(
+            &hashmap! {i18n::args::NAME.into() => "Alice".into()},
         );
         bot.test_last_message(&response).await;
     }
@@ -195,23 +193,10 @@ mod tests {
         bot.update("all");
         bot.dispatch().await;
 
-        // Retrieve traveler "Alice" and their expenses
-        let traveler =
-            Traveler::db_select_by_name(db.clone(), bot.chat_id(), &Name::from_str("Alice").unwrap())
-                .await
-                .unwrap()
-                .unwrap();
-        let expenses = Expense::db_select_by_payer(db, traveler).await.unwrap();
-        // Check that only one expense is returned
-        assert_eq!(expenses.len(), 1);
-        let expense = expenses.first().unwrap();
-
-        // Delete traveler "Alice" -> has expenses
+        // Delete traveler "Alice" → confirmation prompt (validation happens on confirm).
         bot.update("/deletetraveler Alice");
-        let response = i18n::commands::DELETE_TRAVELER_HAS_EXPENSES.translate_with_args_default(&hashmap! {
-                i18n::args::NAME.into() => "Alice".into(),
-                i18n::args::EXPENSES.into() => expense.translate_default().into(),
-            },
+        let response = i18n::dialogues::DELETE_TRAVELER_CONFIRM.translate_with_args_default(
+            &hashmap! {i18n::args::NAME.into() => "Alice".into()},
         );
         bot.test_last_message(&response).await;
     }

@@ -35,6 +35,7 @@ pub async fn delete_transfer(
                         tracing::warn!("{err_update}");
                     }
                     tracing::debug!("{LOG_DEBUG_SUCCESS}");
+                    tracing::info!("Transfer #{number} deleted");
                     Ok(CommandOutcome::Success(
                         i18n::commands::DELETE_TRANSFER_OK.translate_with_args(
                             ctx,
@@ -85,9 +86,10 @@ mod tests {
         // Transfer 100 from Alice to Bob
         helpers::add_travelers_and_transfer(&mut bot, "Alice", "Bob", 100.into()).await;
 
-        // Delete transfer #1
+        // Delete transfer #1 → inline form shows confirmation prompt.
         bot.update("/deletetransfer 1");
-        let response = i18n::commands::DELETE_TRANSFER_OK.translate_with_args_default(&hashmap! {i18n::args::NUMBER.into() => 1.into()},
+        let response = i18n::dialogues::DELETE_TRANSFER_CONFIRM.translate_with_args_default(
+            &hashmap! {i18n::args::NUMBER.into() => 1.into()},
         );
         bot.test_last_message(&response).await;
     }
@@ -95,8 +97,10 @@ mod tests {
     test! { delete_transfer_not_found,
         let db = db().await;
 
+        // Inline form with non-existent transfer still shows confirmation prompt.
         let mut bot = TestBot::new(db, "/deletetransfer 1");
-        let response = i18n::commands::DELETE_TRANSFER_NOT_FOUND.translate_with_args_default(&hashmap! {i18n::args::NUMBER.into() => 1.into()},
+        let response = i18n::dialogues::DELETE_TRANSFER_CONFIRM.translate_with_args_default(
+            &hashmap! {i18n::args::NUMBER.into() => 1.into()},
         );
         bot.test_last_message(&response).await;
     }
@@ -108,14 +112,10 @@ mod tests {
         // Transfer 100 from Alice to Bob
         helpers::add_travelers_and_transfer(&mut bot, "Alice", "Bob", 100.into()).await;
 
-        // Delete transfer #1 -> ok
+        // Delete transfer #1 → confirmation prompt.
         bot.update("/deletetransfer 1");
-        let response = i18n::commands::DELETE_TRANSFER_OK.translate_with_args_default(&hashmap! {i18n::args::NUMBER.into() => 1.into()},
-        );
-        bot.test_last_message(&response).await;
-
-        // Delete transfer #1 again -> not found
-        let response = i18n::commands::DELETE_TRANSFER_NOT_FOUND.translate_with_args_default(&hashmap! {i18n::args::NUMBER.into() => 1.into()},
+        let response = i18n::dialogues::DELETE_TRANSFER_CONFIRM.translate_with_args_default(
+            &hashmap! {i18n::args::NUMBER.into() => 1.into()},
         );
         bot.test_last_message(&response).await;
     }

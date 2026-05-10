@@ -43,6 +43,7 @@ pub async fn add_traveler(
             match create_res {
                 Ok(_) => {
                     tracing::debug!("{LOG_DEBUG_SUCCESS}");
+                    tracing::info!("Traveler '{name}' added");
                     Ok(CommandOutcome::Success(
                         i18n::commands::ADD_TRAVELER_OK.translate_with_args(
                             ctx,

@@ -236,6 +236,7 @@ pub async fn process_already_running_endpoint(
         // Fall back to a generic placeholder so the message still renders.
         None => i18n::commands::RUNNING_PROCESS_UNKNOWN.translate(Arc::clone(&ctx)),
     };
+    tracing::warn!("Dialogue blocked: '{process_name}' already running");
     let text = i18n::commands::PROCESS_ALREADY_RUNNING.translate_with_args(
         ctx,
         &hashmap! { args::PROCESS.into() => process_name.into() },

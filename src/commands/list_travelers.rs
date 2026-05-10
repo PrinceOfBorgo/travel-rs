@@ -31,6 +31,7 @@ pub async fn list_travelers(
                     .join("\n")
             };
             tracing::debug!("{LOG_DEBUG_SUCCESS}");
+            tracing::info!("Listed travelers");
             Ok(reply)
         }
         Err(err) => {

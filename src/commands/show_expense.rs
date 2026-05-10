@@ -33,6 +33,7 @@ pub async fn show_expense(
                 Ok(Some(expense_details)) => {
                     let reply = expense_details.translate(ctx.clone());
                     tracing::debug!("{LOG_DEBUG_SUCCESS}");
+                    tracing::info!("Expense #{number} details retrieved");
                     Ok(CommandOutcome::Success(reply))
                 }
                 Ok(_) => {

@@ -107,8 +107,11 @@ mod collisions {
     test! { add_expense_blocked_while_delete_traveler_dialogue_running,
         let db = db().await;
         let host_followup = "Alice";
-        // After the not-found reply, the dialogue re-prompts the user.
-        let host_next_prompt = i18n::dialogues::DELETE_TRAVELER_ASK_NAME.translate_default();
+        // After entering a name, the dialogue transitions to the confirmation step.
+        let host_next_prompt = i18n::dialogues::DELETE_TRAVELER_CONFIRM
+            .translate_with_args_default(
+                &maplit::hashmap! {i18n::args::NAME.into() => "Alice".into()},
+            );
         assert_dialogues_are_mutually_exclusive(
             db,
             "/deletetraveler",
@@ -140,8 +143,11 @@ mod collisions {
     test! { add_traveler_dialogue_blocked_while_delete_traveler_dialogue_running,
         let db = db().await;
         let host_followup = "Alice";
-        // After the not-found reply, the dialogue re-prompts the user.
-        let host_next_prompt = i18n::dialogues::DELETE_TRAVELER_ASK_NAME.translate_default();
+        // After entering a name, the dialogue transitions to the confirmation step.
+        let host_next_prompt = i18n::dialogues::DELETE_TRAVELER_CONFIRM
+            .translate_with_args_default(
+                &maplit::hashmap! {i18n::args::NAME.into() => "Alice".into()},
+            );
         assert_dialogues_are_mutually_exclusive(
             db,
             "/deletetraveler",
@@ -169,8 +175,11 @@ mod collisions {
     test! { add_expense_blocked_while_delete_expense_dialogue_running,
         let db = db().await;
         let host_followup = "999";
-        // After the not-found reply, the dialogue re-prompts the user.
-        let host_next_prompt = i18n::dialogues::DELETE_EXPENSE_ASK_NUMBER.translate_default();
+        // After entering a number, the dialogue transitions to the confirmation step.
+        let host_next_prompt = i18n::dialogues::DELETE_EXPENSE_CONFIRM
+            .translate_with_args_default(
+                &maplit::hashmap! {i18n::args::NUMBER.into() => 999.into()},
+            );
         assert_dialogues_are_mutually_exclusive(
             db, "/deleteexpense", "/addexpense", host_followup, &host_next_prompt,
         ).await;
@@ -207,8 +216,11 @@ mod collisions {
     test! { add_expense_blocked_while_delete_transfer_dialogue_running,
         let db = db().await;
         let host_followup = "999";
-        // After the not-found reply, the dialogue re-prompts the user.
-        let host_next_prompt = i18n::dialogues::DELETE_TRANSFER_ASK_NUMBER.translate_default();
+        // After entering a number, the dialogue transitions to the confirmation step.
+        let host_next_prompt = i18n::dialogues::DELETE_TRANSFER_CONFIRM
+            .translate_with_args_default(
+                &maplit::hashmap! {i18n::args::NUMBER.into() => 999.into()},
+            );
         assert_dialogues_are_mutually_exclusive(
             db, "/deletetransfer", "/addexpense", host_followup, &host_next_prompt,
         ).await;

@@ -29,6 +29,7 @@ pub async fn cancel(
             // Race: the dialogue exited between `running_label` and `exit_all`.
             None => i18n::commands::RUNNING_PROCESS_UNKNOWN.translate(Arc::clone(&ctx)),
         };
+        tracing::info!("Dialogue cancelled: {process_name}");
         i18n::commands::CANCEL_OK.translate_with_args(
             ctx,
             &hashmap! { args::PROCESS.into() => process_name.into() },

@@ -35,6 +35,7 @@ pub async fn delete_expense(
                         tracing::warn!("{err_update}");
                     }
                     tracing::debug!("{LOG_DEBUG_SUCCESS}");
+                    tracing::info!("Expense #{number} deleted");
                     Ok(CommandOutcome::Success(
                         i18n::commands::DELETE_EXPENSE_OK.translate_with_args(
                             ctx,
@@ -101,9 +102,10 @@ mod tests {
         bot.update("all");
         bot.dispatch().await;
 
-        // Delete expense #1
+        // Delete expense #1 → inline form shows confirmation prompt.
         bot.update("/deleteexpense 1");
-        let response = i18n::commands::DELETE_EXPENSE_OK.translate_with_args_default(&hashmap! {i18n::args::NUMBER.into() => 1.into()},
+        let response = i18n::dialogues::DELETE_EXPENSE_CONFIRM.translate_with_args_default(
+            &hashmap! {i18n::args::NUMBER.into() => 1.into()},
         );
         bot.test_last_message(&response).await;
     }
@@ -111,8 +113,10 @@ mod tests {
     test! { delete_expense_not_found,
         let db = db().await;
 
+        // Inline form with non-existent expense still shows confirmation prompt.
         let mut bot = TestBot::new(db, "/deleteexpense 1");
-        let response = i18n::commands::DELETE_EXPENSE_NOT_FOUND.translate_with_args_default(&hashmap! {i18n::args::NUMBER.into() => 1.into()},
+        let response = i18n::dialogues::DELETE_EXPENSE_CONFIRM.translate_with_args_default(
+            &hashmap! {i18n::args::NUMBER.into() => 1.into()},
         );
         bot.test_last_message(&response).await;
     }
@@ -140,15 +144,9 @@ mod tests {
         bot.update("all");
         bot.dispatch().await;
 
-        // Delete expense #1 -> ok
+        // Delete expense #1 → confirmation prompt (can't simulate callback).
         bot.update("/deleteexpense 1");
-        let response = i18n::commands::DELETE_EXPENSE_OK.translate_with_args_default(
-            &hashmap! {i18n::args::NUMBER.into() => 1.into()},
-        );
-        bot.test_last_message(&response).await;
-
-        // Delete expense #1 again -> not found
-        let response = i18n::commands::DELETE_EXPENSE_NOT_FOUND.translate_with_args_default(
+        let response = i18n::dialogues::DELETE_EXPENSE_CONFIRM.translate_with_args_default(
             &hashmap! {i18n::args::NUMBER.into() => 1.into()},
         );
         bot.test_last_message(&response).await;

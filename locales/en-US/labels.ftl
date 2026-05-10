@@ -6,6 +6,8 @@ end-button = End
 filter-button = Filter…
 show-all-button = Show all
 help-button = ❓ Help
+confirm-yes-button = ✓ Yes
+confirm-no-button = ✗ No
 
 ## Language labels: <flag emoji> <long name>
 

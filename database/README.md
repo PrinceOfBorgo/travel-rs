@@ -24,3 +24,7 @@ Execute each migration script in the order they appear (e.g., `001_init.surql`, 
 - Use scripts in [`migrations/`](migrations/) for incremental, non-destructive schema updates (apply in order).
 
 **Note:** Always back up your data before running schema changes, especially when using the full build script.
+
+## Deployment
+
+For production deployment and upgrade procedures — including which migrations to run for each release — see the [Deployment Guide](../DEPLOYMENT.md).

@@ -5,7 +5,6 @@ use crate::{
     i18n::{self, Translate, TranslateWithArgs},
     tests::{TestBot, helpers},
     transfer::Transfer,
-    traveler::{Name, Traveler},
 };
 use maplit::hashmap;
 use rust_decimal::Decimal;
@@ -133,32 +132,21 @@ async fn test_traveler_lifecycle() {
     // Add an expense to create a relationship
     helpers::add_expense(&mut bot, "Test expense", 100.into(), "Alice", &["all"]).await;
 
-    // Try to delete traveler with expenses - should fail
-    // 1. Retrieve traveler "Alice" and their expenses
-    let traveler =
-        Traveler::db_select_by_name(db.clone(), bot.chat_id(), &Name::from_str("Alice").unwrap())
-            .await
-            .unwrap()
-            .unwrap();
-    let expenses = Expense::db_select_by_payer(db, traveler).await.unwrap();
-    // 2. Check that only one expense is returned
-    assert_eq!(expenses.len(), 1);
-    let expense = expenses.first().unwrap();
-
-    // 3. Delete traveler "Alice" -> has expenses
+    // Try to delete traveler with expenses - now shows confirmation prompt first.
     bot.update("/deletetraveler Alice");
-    let response = i18n::commands::DELETE_TRAVELER_HAS_EXPENSES.translate_with_args(
+    let response = i18n::dialogues::DELETE_TRAVELER_CONFIRM.translate_with_args(
         bot.context(),
-        &hashmap! {
-            i18n::args::NAME.into() => "Alice".into(),
-            i18n::args::EXPENSES.into() => expense.translate_default().into(),
-        },
+        &hashmap! {i18n::args::NAME.into() => "Alice".into()},
     );
     bot.test_last_message(&response).await;
 
-    // Try to delete non-existent traveler
+    // Cancel the confirmation dialogue before the next command.
+    bot.update("/cancel");
+    bot.dispatch().await;
+
+    // Try to delete non-existent traveler - also shows confirmation prompt.
     bot.update("/deletetraveler Charlie");
-    let response = i18n::commands::DELETE_TRAVELER_NOT_FOUND.translate_with_args(
+    let response = i18n::dialogues::DELETE_TRAVELER_CONFIRM.translate_with_args(
         bot.context(),
         &hashmap! {i18n::args::NAME.into() => "Charlie".into()},
     );

@@ -1,8 +1,8 @@
 //! Paginated picker keyboard for large item lists.
 //!
 //! This module provides the core paginated layout that other keyboard builders
-//! (e.g. [`super::travelers_keyboard`]) compose on top of.  The layout
-//! supports configurable column count and optional action buttons.
+//! (e.g. [`super::travelers_keyboard`]) compose on top of. The layout supports
+//! configurable column count and optional action buttons.
 
 use crate::{
     Context,

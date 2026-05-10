@@ -46,6 +46,7 @@ pub async fn list_expenses(
                     .join("\n")
             };
             tracing::debug!("{LOG_DEBUG_SUCCESS}");
+            tracing::info!("Listed expenses");
             Ok(reply)
         }
         Err(err) => {

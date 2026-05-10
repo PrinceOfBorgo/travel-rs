@@ -46,6 +46,7 @@ pub async fn list_transfers(
                     .join("\n")
             };
             tracing::debug!("{LOG_DEBUG_SUCCESS}");
+            tracing::info!("Listed transfers");
             Ok(reply)
         }
         Err(err) => {

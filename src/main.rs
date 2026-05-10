@@ -99,6 +99,17 @@ pub static ARGS: LazyLock<Args> = LazyLock::new(Args::parse);
 static REGISTERED_LOCALIZED_COMMANDS: LazyLock<Mutex<HashSet<(ChatId, String)>>> =
     LazyLock::new(|| Mutex::new(HashSet::new()));
 
+const ASCII_LOG: &str = r#"
+  ______                      __      ____  _____
+ /_  __/________ __   _____  / /     / __ \/ ___/
+  / / / ___/ __ `/ | / / _ \/ /_____/ /_/ /\__ \ 
+ / / / /  / /_/ /| |/ /  __/ /_____/ _, _/___/ / 
+/_/ /_/_  \__,_/_|___/\___/_/     /_/ |_|/____/  
+   / __ )____  / /_                              
+  / __  / __ \/ __/                              
+ / /_/ / /_/ / /_                                
+/_____/\____/\__/                                "#;
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     // Setup logs
@@ -127,6 +138,7 @@ async fn main() -> anyhow::Result<()> {
         .with(log_layer)
         .init();
 
+    tracing::info!("{ASCII_LOG}\nv{}\n", env!("CARGO_PKG_VERSION"));
     tracing::info!("Using profile {}", SETTINGS.profile);
     tracing::debug!("Settings: {:#?}", SETTINGS);
     println!("Using profile {}", SETTINGS.profile);
@@ -213,13 +225,23 @@ pub(crate) fn handler_tree() -> UpdateHandler<Box<dyn std::error::Error + Send +
                 .branch(case![PendingCommandState::Start].endpoint(pending_add_traveler::start)),
         )
         // DeleteTraveler command without an inline name -> start a dialogue
-        // to ask for the name. Inline form falls through to `commands_handler`.
+        // to ask for the name.
         .branch(
             case![Command::DeleteTraveler { name }]
                 .filter(|name: CommandArg<traveler::Name>| name.is_missing())
                 .branch(any_dialogue_running_guard())
                 .enter_dialogue::<Message, PendingCommandStorage, PendingCommandState>()
                 .branch(case![PendingCommandState::Start].endpoint(pending_delete_traveler::start)),
+        )
+        // DeleteTraveler with inline name -> start confirmation dialogue.
+        .branch(
+            case![Command::DeleteTraveler { name }]
+                .branch(any_dialogue_running_guard())
+                .enter_dialogue::<Message, PendingCommandStorage, PendingCommandState>()
+                .branch(
+                    case![PendingCommandState::Start]
+                        .endpoint(pending_delete_traveler::start_confirm),
+                ),
         )
         // DeleteExpense without an inline number -> start dialogue.
         .branch(
@@ -228,6 +250,16 @@ pub(crate) fn handler_tree() -> UpdateHandler<Box<dyn std::error::Error + Send +
                 .branch(any_dialogue_running_guard())
                 .enter_dialogue::<Message, PendingCommandStorage, PendingCommandState>()
                 .branch(case![PendingCommandState::Start].endpoint(pending_delete_expense::start)),
+        )
+        // DeleteExpense with inline number -> start confirmation dialogue.
+        .branch(
+            case![Command::DeleteExpense { number }]
+                .branch(any_dialogue_running_guard())
+                .enter_dialogue::<Message, PendingCommandStorage, PendingCommandState>()
+                .branch(
+                    case![PendingCommandState::Start]
+                        .endpoint(pending_delete_expense::start_confirm),
+                ),
         )
         // ShowExpense without an inline number -> start dialogue.
         .branch(
@@ -244,6 +276,16 @@ pub(crate) fn handler_tree() -> UpdateHandler<Box<dyn std::error::Error + Send +
                 .branch(any_dialogue_running_guard())
                 .enter_dialogue::<Message, PendingCommandStorage, PendingCommandState>()
                 .branch(case![PendingCommandState::Start].endpoint(pending_delete_transfer::start)),
+        )
+        // DeleteTransfer with inline number -> start confirmation dialogue.
+        .branch(
+            case![Command::DeleteTransfer { number }]
+                .branch(any_dialogue_running_guard())
+                .enter_dialogue::<Message, PendingCommandStorage, PendingCommandState>()
+                .branch(
+                    case![PendingCommandState::Start]
+                        .endpoint(pending_delete_transfer::start_confirm),
+                ),
         )
         // SetLanguage without an inline langid -> start dialogue.
         .branch(

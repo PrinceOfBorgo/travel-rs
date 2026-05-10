@@ -41,6 +41,7 @@ pub async fn set_currency(
     match update_res {
         Ok(_) => {
             tracing::debug!("{LOG_DEBUG_SUCCESS}");
+            tracing::info!("Currency set to '{currency}'");
             {
                 let mut ctx_guard = ctx.lock().expect("Failed to lock context");
                 ctx_guard.currency = currency.to_owned();

@@ -1,6 +1,6 @@
 # Profile: unit-tests
-# Description: Configuration for unit tests
-# Use this for running automated tests with in-memory database and mock values
+# Description: Configuration for unit tests.
+# Use this for running automated tests with in-memory database and mock values.
 
 [logging]
 path = ""
@@ -14,7 +14,6 @@ level = ""
 # - "env": The token is read from an environment variable.
 # - "string": The token is provided directly as a string.
 token_source = "string"
-
 # token: The bot token.
 # If token_source is "file", this should be a path to a file containing the token.
 # If token_source is "env", this should be the name of the environment variable holding the token.

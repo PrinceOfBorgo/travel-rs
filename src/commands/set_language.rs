@@ -46,6 +46,7 @@ pub async fn set_language(
     match update_res {
         Ok(_) => {
             tracing::debug!("{LOG_DEBUG_SUCCESS}");
+            tracing::info!("Language set to '{langid}'");
             {
                 let mut ctx_guard = ctx.lock().expect("Failed to lock context");
                 ctx_guard.langid = langid.clone();

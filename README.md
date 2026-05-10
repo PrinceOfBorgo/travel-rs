@@ -39,13 +39,14 @@ The primary goal of Travel-RS Bot is to simplify the management of shared expens
   - [10.2. Running from GitHub Container Registry (Manual Docker Commands)](#102-running-from-github-container-registry-manual-docker-commands)
   - [10.3. Docker Configuration](#103-docker-configuration)
   - [10.4. Volume Configuration](#104-volume-configuration)
-- [11. Support Travel-RS Bot](#11-support-travel-rs-bot)
-- [12. Collaborations and Contributions](#12-collaborations-and-contributions)
-  - [12.1. How You Can Contribute](#121-how-you-can-contribute)
-  - [12.2. Getting Started](#122-getting-started)
-- [13. Roadmap](#13-roadmap)
-- [14. Changelog](#14-changelog)
-- [15. Contact](#15-contact)
+- [11. Deployment](#11-deployment)
+- [12. Support Travel-RS Bot](#12-support-travel-rs-bot)
+- [13. Collaborations and Contributions](#13-collaborations-and-contributions)
+  - [13.1. How You Can Contribute](#131-how-you-can-contribute)
+  - [13.2. Getting Started](#132-getting-started)
+- [14. Roadmap](#14-roadmap)
+- [15. Changelog](#15-changelog)
+- [16. Contact](#16-contact)
 
 ## 1. Adding Travel-RS Bot to a Telegram Group Chat
 
@@ -97,7 +98,7 @@ The following commands are supported by Travel-RS Bot:
 
   * Example: `/addtraveler Alice`
   * Example: `/addtraveler` (the bot will ask for the name)
-* **`/deletetraveler`** — Removes the traveler with the specified name from the travel plan. If invoked without a name, the bot shows an inline keyboard with the available travelers for quick selection; free-text input is also accepted.
+* **`/deletetraveler`** — Removes the traveler with the specified name from the travel plan. A confirmation prompt (Yes/No) is shown before the deletion is executed. If invoked without a name, the bot shows an inline keyboard with the available travelers for quick selection; free-text input is also accepted.
 
   * Example: `/deletetraveler Alice`
   * Example: `/deletetraveler` (the bot will ask for the name)
@@ -107,7 +108,7 @@ The following commands are supported by Travel-RS Bot:
 * **`/addexpense`** — Starts a new interactive session to add an expense to the travel plan.
 
   * Example: `/addexpense` (a series of interactive questions will follow)
-* **`/deleteexpense`** — Deletes the expense with the specified identifier from the travel plan. If invoked without an identifier, the bot shows a paginated inline keyboard listing the chat's expenses for quick selection; free-text input is also accepted.
+* **`/deleteexpense`** — Deletes the expense with the specified identifier from the travel plan. A confirmation prompt (Yes/No) is shown before the deletion is executed. If invoked without an identifier, the bot shows a paginated inline keyboard listing the chat's expenses for quick selection; free-text input is also accepted.
 
   * Example: `/deleteexpense 3`
   * Example: `/deleteexpense` (the bot will ask for the identifier)
@@ -124,7 +125,7 @@ The following commands are supported by Travel-RS Bot:
   * Example: `/transfer Alice Bob 25.00`
   * Example: `/transfer Alice` (the bot will ask for the receiver and amount)
   * Example: `/transfer` (the bot will ask for sender, receiver, and amount)
-* **`/deletetransfer`** — Deletes the transfer with the specified identifier from the travel plan. If invoked without an identifier, the bot shows a paginated inline keyboard listing the chat's transfers for quick selection; free-text input is also accepted.
+* **`/deletetransfer`** — Deletes the transfer with the specified identifier from the travel plan. A confirmation prompt (Yes/No) is shown before the deletion is executed. If invoked without an identifier, the bot shows a paginated inline keyboard listing the chat's transfers for quick selection; free-text input is also accepted.
 
   * Example: `/deletetransfer 7`
   * Example: `/deletetransfer` (the bot will ask for the identifier)
@@ -358,6 +359,10 @@ This modular structure allows users to easily configure the bot's behavior for d
 
 Logs are written to files within a **profile-specific subfolder** located under the **path** specified in the `[logging]` section of your profile's `.toml` file. For instance, if the specified profile is `dev` and the `path` in `dev.toml` is set to `logs`, you'll find your logs in `./logs/dev/`. Each log file is timestamped for easy reference. You can customize logging behavior, including the log directory and log level, directly within your profile-specific configuration.
 
+Every instrumented handler span includes a monotonically increasing `trace_id` field that uniquely identifies each invocation and propagates to nested spans, making it easy to correlate related log lines.
+
+At **INFO** level, the bot logs a one-line summary for each user-facing action: command outcomes (e.g. `Traveler 'Alice' added`, `Transfer #3 deleted`), dialogue lifecycle events (started, cancelled, completed), dialogue-blocked notices, and whitelist rejections. Internal state, parsed arguments, and return values remain at **DEBUG** level.
+
 ## 7. GitHub Actions Workflows
 
 This repository has two main workflows under `.github/workflows/`:
@@ -374,10 +379,14 @@ This repository has two main workflows under `.github/workflows/`:
 When the release trigger matches, the workflow:
 - bumps `Cargo.toml` version (`cargo set-version`) according to release type
 - updates `CHANGELOG.md` by converting `x.y.z-SNAPSHOT` to the real release heading and section
+- validates that `DEPLOYMENT.md` migration reference table has been updated if migration scripts are referenced in the changelog (fails the build otherwise)
 - builds and pushes the Docker image (multi-arch, GHCR tags)
+- builds a **deploy bundle** (`deploy-v<version>.zip`) containing a version-pinned `docker-compose.yml`, locale files, database scripts, a sanitized config template, and a `MIGRATIONS.md` manifest
 - commits and tags release as `v<version>`
-- generates GitHub release notes and publishes the release
+- generates GitHub release notes, attaches the deploy bundle, and publishes the release
 - bumps the next snapshot version in `Cargo.toml` and pre-populates `CHANGELOG.md` for ongoing development
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for how to use the deploy bundle for production deployments and upgrades.
 
 ## 8. Localization
 
@@ -566,7 +575,11 @@ The container requires three volume mounts to function properly:
    * Enables log access from the host machine
    * Files are organized by profile and date
 
-## 11. Support Travel-RS Bot
+## 11. Deployment
+
+For production deployment instructions, upgrade procedures, and database migration guidance, see [DEPLOYMENT.md](DEPLOYMENT.md).
+
+## 12. Support Travel-RS Bot
 
 Travel-RS Bot is a passion project built in Rust to help simplify group travel expenses. While the bot is free to use, running it smoothly relies on cloud infrastructure, specifically for the database, which incurs ongoing costs.
 
@@ -578,13 +591,13 @@ If you find Travel-RS Bot useful and would like to help cover these expenses and
 
 Every contribution, no matter the size, directly fuels the bot's operation and helps ensure it remains a valuable and accessible tool for everyone. Thank you for being a part of the Travel-RS Bot journey!
 
-## 12. Collaborations and Contributions
+## 13. Collaborations and Contributions
 
 Travel-RS Bot is an open-source project, and I warmly welcome contributions from the community! Whether you're a seasoned Rustacean, a Telegram bot enthusiast, or someone passionate about improving travel tools, there are many ways to get involved.
 
 Your contributions can significantly help enhance the bot, expand its features, and ensure its long-term success.
 
-### 12.1. How You Can Contribute
+### 13.1. How You Can Contribute
 
 * **Code Contributions:**
   * **Bug Reports:** Found an issue? Please open a [new issue](https://github.com/PrinceOfBorgo/travel-rs/issues/new?assignees=&labels=bug&projects=&template=bug_report.md&title=) on GitHub with a detailed description of the bug and steps to reproduce it. (This link attempts to pre-fill a bug report template if you have one).
@@ -594,7 +607,7 @@ Your contributions can significantly help enhance the bot, expand its features, 
 * **Localization:** Expand the bot's language support by contributing new Fluent localization files or improving existing translations.
 * **Feedback and Ideas:** Even if you don't code, your insights as a user are invaluable! Share your thoughts on how the bot could be better or what features you'd love to see.
 
-### 12.2. Getting Started
+### 13.2. Getting Started
 
 1. **Fork the Repository:** Start by forking the `Travel-RS Bot` repository on GitHub.
 2. **Clone Your Fork:** Clone your forked repository to your local machine.
@@ -606,15 +619,15 @@ I'm committed to providing a welcoming and inclusive environment for all contrib
 
 Let's build something amazing together!
 
-## 13. Roadmap
+## 14. Roadmap
 
 Planned features and improvements are documented in the [ROADMAP.md](ROADMAP.md) file.
 
-## 14. Changelog
+## 15. Changelog
 
 For a history of changes and updates, see the [CHANGELOG.md](CHANGELOG.md) file.
 
-## 15. Contact
+## 16. Contact
 
 For questions or support, please contact the project maintainers or open an issue on GitHub.
 

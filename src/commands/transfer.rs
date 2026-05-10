@@ -53,6 +53,7 @@ pub async fn transfer(
                                 tracing::warn!("{err_update}");
                             }
                             tracing::debug!("{LOG_DEBUG_SUCCESS} - id: {}", transfer.id);
+                            tracing::info!("{from} -> {to}: {amount}");
                             Ok(i18n::commands::TRANSFER_OK.translate(ctx))
                         }
                         Ok(None) => {

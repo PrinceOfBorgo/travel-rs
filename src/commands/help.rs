@@ -20,6 +20,7 @@ pub fn help(
     let command = command.trim();
     if command.is_empty() {
         tracing::debug!("{LOG_DEBUG_SUCCESS}");
+        tracing::info!("Help shown (all commands)");
         return Ok(COMMAND_DESCRIPTIONS.translate(ctx));
     }
 
@@ -28,6 +29,7 @@ pub fn help(
     match Command::parse_cmd_name(&cmd_name) {
         ParseCommand::ValidCommandName(command) => {
             tracing::debug!("{LOG_DEBUG_SUCCESS}");
+            tracing::info!("Help shown for /{cmd_name}");
             Ok(command.help_message(ctx).to_string())
         }
         ParseCommand::BestMatch(best_match) => {

@@ -94,6 +94,7 @@ pub async fn start(
         .update(PendingCommandState::Transfer(TransferState::AskFrom))
         .await?;
     tracing::debug!("{LOG_DEBUG_SUCCESS}");
+    tracing::info!("Dialogue started: /transfer");
     Ok(())
 }
 

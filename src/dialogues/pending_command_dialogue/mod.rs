@@ -90,22 +90,41 @@ pub fn handler_branch() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync
                 .branch(case![AddTravelerState::AskName].endpoint(add_traveler::receive_name)),
         )
         .branch(
-            case![DeleteTraveler(state)].branch(
-                case![DeleteTravelerState::AskName].endpoint(delete_traveler::receive_name),
-            ),
+            case![DeleteTraveler(state)]
+                .branch(
+                    case![DeleteTravelerState::AskName].endpoint(delete_traveler::receive_name),
+                )
+                .branch(
+                    case![DeleteTravelerState::Confirm(name)]
+                        .endpoint(delete_traveler::receive_confirm_text),
+                ),
         )
         .branch(
-            case![DeleteExpense(state)].branch(
-                case![DeleteExpenseState::AskNumber].endpoint(delete_expense::receive_number),
-            ),
+            case![DeleteExpense(state)]
+                .branch(
+                    case![DeleteExpenseState::AskNumber]
+                        .endpoint(delete_expense::receive_number),
+                )
+                .branch(
+                    case![DeleteExpenseState::Confirm(number)]
+                        .endpoint(delete_expense::receive_confirm_text),
+                ),
         )
         .branch(
             case![ShowExpense(state)]
                 .branch(case![ShowExpenseState::AskNumber].endpoint(show_expense::receive_number)),
         )
-        .branch(case![DeleteTransfer(state)].branch(
-            case![DeleteTransferState::AskNumber].endpoint(delete_transfer::receive_number),
-        ))
+        .branch(
+            case![DeleteTransfer(state)]
+                .branch(
+                    case![DeleteTransferState::AskNumber]
+                        .endpoint(delete_transfer::receive_number),
+                )
+                .branch(
+                    case![DeleteTransferState::Confirm(number)]
+                        .endpoint(delete_transfer::receive_confirm_text),
+                ),
+        )
         .branch(
             case![SetLanguage(state)]
                 .branch(case![SetLanguageState::AskLangid].endpoint(set_language::receive_langid)),
@@ -165,23 +184,42 @@ pub fn callback_branch() -> UpdateHandler<Box<dyn std::error::Error + Send + Syn
                 case![SetCurrencyState::AskCurrency].endpoint(set_currency::receive_callback),
             ),
         )
-        .branch(case![DeleteTraveler(state)].branch(
-            case![DeleteTravelerState::AskName].endpoint(delete_traveler::receive_callback),
-        ))
+        .branch(case![DeleteTraveler(state)]
+            .branch(
+                case![DeleteTravelerState::AskName].endpoint(delete_traveler::receive_callback),
+            )
+            .branch(
+                case![DeleteTravelerState::Confirm(name)]
+                    .endpoint(delete_traveler::receive_confirm_callback),
+            ),
+        )
         .branch(
             case![Transfer(state)]
                 .branch(case![TransferState::AskFrom].endpoint(transfer::receive_from_callback))
                 .branch(case![TransferState::AskTo(from)].endpoint(transfer::receive_to_callback)),
         )
-        .branch(case![DeleteExpense(state)].branch(
-            case![DeleteExpenseState::AskNumber].endpoint(delete_expense::receive_callback),
-        ))
+        .branch(case![DeleteExpense(state)]
+            .branch(
+                case![DeleteExpenseState::AskNumber].endpoint(delete_expense::receive_callback),
+            )
+            .branch(
+                case![DeleteExpenseState::Confirm(number)]
+                    .endpoint(delete_expense::receive_confirm_callback),
+            ),
+        )
         .branch(
             case![ShowExpense(state)].branch(
                 case![ShowExpenseState::AskNumber].endpoint(show_expense::receive_callback),
             ),
         )
-        .branch(case![DeleteTransfer(state)].branch(
-            case![DeleteTransferState::AskNumber].endpoint(delete_transfer::receive_callback),
-        ))
+        .branch(case![DeleteTransfer(state)]
+            .branch(
+                case![DeleteTransferState::AskNumber]
+                    .endpoint(delete_transfer::receive_callback),
+            )
+            .branch(
+                case![DeleteTransferState::Confirm(number)]
+                    .endpoint(delete_transfer::receive_confirm_callback),
+            ),
+        )
 }

@@ -61,6 +61,7 @@ pub async fn show_balances(
     match res {
         Ok(reply) => {
             tracing::debug!("{LOG_DEBUG_SUCCESS}");
+            tracing::info!("Balances shown");
             Ok(reply)
         }
         Err(err) => {

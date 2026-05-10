@@ -11,7 +11,6 @@
     - [x] it-IT
   - [ ] Add currency input formatting (decimal separators).
   - [x] Add `SetLanguage` command.
-- [ ] Logs with span_id/trace_id.
 - [ ] Formatting of bot responses (bold, italic, etc.). https://docs.rs/teloxide/latest/teloxide/types/enum.ParseMode.html
 - [ ] Improve error handling: distinguish errors resulting from DB queries.
   - [x] Delete from DB always returns OK even if the entry doesn't exist. Should return WARN with a dedicated message.
@@ -24,7 +23,6 @@
 - [ ] Add `EditExpense` command.
 - [ ] Change `ListExpenses` command so that the filter matches the string representation of the expense.
 - [ ] Refactor callback prefix to derive them from commands instead of hardcoding them.
-- [ ] Add confirmation step to delete commands before executing the deletion.
 - [ ] Add "clear" commands:
   - [ ] `ClearTravelers`
   - [ ] `ClearExpenses`
@@ -46,3 +44,5 @@
 - [x] Add timestamps to expenses and transfers.
 - [x] Add `ShowStats` command.
 - [x] Factor callback dispatch branches out of `main.rs` into their dialogue modules.
+- [x] Logs with trace_id.
+- [x] Add confirmation step to delete commands before executing the deletion.

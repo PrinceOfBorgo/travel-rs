@@ -7,11 +7,15 @@ add-traveler-invalid-name = Hai inviato un nome non valido, per favore riprova.
 
 delete-traveler-ask-name = Quale viaggiatore vuoi eliminare? Il processo può essere interrotto in qualsiasi momento inviando `/{-cancel-command}`.
 delete-traveler-invalid-name = Hai inviato un nome non valido, per favore riprova.
+delete-traveler-confirm =
+    Sei sicuro di voler eliminare il viaggiatore "{$name}"?
+    ⚠️ Tutti i trasferimenti che coinvolgono questo viaggiatore verranno eliminati.
 
 ## /delete_expense
 
 delete-expense-ask-number = Quale spesa vuoi eliminare? Invia il numero della spesa. Il processo può essere interrotto in qualsiasi momento inviando `/{-cancel-command}`.
 delete-expense-invalid-number = Hai inviato un numero non valido, per favore riprova.
+delete-expense-confirm = Sei sicuro di voler eliminare la spesa #{$number}?
 
 ## /show_expense
 
@@ -22,6 +26,7 @@ show-expense-invalid-number = Hai inviato un numero non valido, per favore ripro
 
 delete-transfer-ask-number = Quale trasferimento vuoi eliminare? Invia il numero del trasferimento. Il processo può essere interrotto in qualsiasi momento inviando `/{-cancel-command}`.
 delete-transfer-invalid-number = Hai inviato un numero non valido, per favore riprova.
+delete-transfer-confirm = Sei sicuro di voler eliminare il trasferimento #{$number}?
 
 ## /set_language
 

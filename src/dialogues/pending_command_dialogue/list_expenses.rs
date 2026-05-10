@@ -32,8 +32,8 @@ pub enum ListExpensesState {
 
 /// Callback handler for the "Filter…" button on `/listexpenses`. Starts the
 /// pending-command dialogue and prompts the user for a description.
+#[apply(trace_callback)]
 pub async fn receive_filter_callback(
-    _db: Arc<Surreal<Any>>,
     bot: Bot,
     q: CallbackQuery,
     ctx: Arc<Mutex<Context>>,
@@ -81,6 +81,7 @@ pub async fn receive_filter_callback(
         i18n::dialogues::LIST_EXPENSES_ASK_DESCRIPTION.translate(ctx),
     )
     .await?;
+    tracing::info!("Dialogue started: /listexpenses filter");
 
     Ok(())
 }

@@ -83,6 +83,57 @@ jobs:
         run: |
           echo "repo_lower=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
 
+      - name: Validate DEPLOYMENT.md migration table
+        run: |
+          NEW_VERSION="${{ steps.bump_version.outputs.new_version }}"
+
+          # Extract migration scripts referenced in the CHANGELOG for this version
+          CURRENT_SECTION=$(sed -n "/^## \[${NEW_VERSION}\]/,/^## \[/p" CHANGELOG.md | head -n -1)
+          CHANGELOG_SCRIPTS=$(echo "$CURRENT_SECTION" | grep -oP '\d{3}_[A-Za-z0-9_]+\.surql' | sort -u || true)
+
+          if [ -n "$CHANGELOG_SCRIPTS" ]; then
+            echo "Migrations referenced in CHANGELOG for v${NEW_VERSION}:"
+            echo "$CHANGELOG_SCRIPTS"
+
+            # Check that DEPLOYMENT.md contains a row for this version
+            DEPLOY_ROW=$(grep -P "^\|\s*v${NEW_VERSION}\s*\|" DEPLOYMENT.md || true)
+            if [ -z "$DEPLOY_ROW" ]; then
+              echo ""
+              echo "::error::DEPLOYMENT.md migration reference table is missing an entry for v${NEW_VERSION}."
+              echo "The CHANGELOG references migration scripts for this release, but the migration"
+              echo "reference table in DEPLOYMENT.md has not been updated."
+              echo ""
+              echo "Add a row to the table in DEPLOYMENT.md before releasing:"
+              echo ""
+              MIGRATION_LIST=$(echo "$CHANGELOG_SCRIPTS" | sed 's/.*$/\`&\`/' | paste -sd ', ')
+              echo "  | v${NEW_VERSION} | ${MIGRATION_LIST} | <notes> |"
+              echo ""
+              echo "See DEPLOYMENT.md Migration Reference section for details."
+              exit 1
+            fi
+
+            # Verify every script from the CHANGELOG appears in the DEPLOYMENT.md row
+            MISSING=""
+            while IFS= read -r script; do
+              if ! echo "$DEPLOY_ROW" | grep -qF "$script"; then
+                MISSING="${MISSING}  - ${script}\n"
+              fi
+            done <<< "$CHANGELOG_SCRIPTS"
+
+            if [ -n "$MISSING" ]; then
+              echo ""
+              echo "::error::DEPLOYMENT.md migration table row for v${NEW_VERSION} is incomplete."
+              echo "The following migration scripts are in the CHANGELOG but missing from the DEPLOYMENT.md row:"
+              echo -e "$MISSING"
+              echo "Update the v${NEW_VERSION} row in DEPLOYMENT.md to include all migration scripts."
+              exit 1
+            fi
+
+            echo "DEPLOYMENT.md migration table entry for v${NEW_VERSION} is complete. ✓"
+          else
+            echo "No migration scripts referenced in CHANGELOG for v${NEW_VERSION}. Skipping check."
+          fi
+
       - name: Upload release files artifact
         uses: actions/upload-artifact@v4
         with:
@@ -239,6 +290,139 @@ jobs:
           # Pass the final notes file path as an output for the next step
           echo "release_notes_file=FINAL_RELEASE_NOTES.md" >> "$GITHUB_OUTPUT"
 
+      - name: Build deploy bundle
+        id: deploy_bundle
+        run: |
+          NEW_VERSION="${{ needs.prepare_release_data.outputs.new_version }}"
+          REPO_LOWER="${{ needs.prepare_release_data.outputs.repo_lower }}"
+          BUNDLE_DIR="deploy-v${NEW_VERSION}"
+
+          mkdir -p "${BUNDLE_DIR}/config/profiles"
+          mkdir -p "${BUNDLE_DIR}/database"
+          mkdir -p "${BUNDLE_DIR}/locales"
+
+          # --- Version-pinned docker-compose.yml ---
+          cat > "${BUNDLE_DIR}/docker-compose.yml" <<EOF
+          services:
+            travel-rs:
+              image: ghcr.io/${REPO_LOWER}:v${NEW_VERSION}
+              container_name: travel-rs
+              volumes:
+                - ./config:/app/config
+                - ./locales:/app/locales
+                - ./logs:/app/logs
+              restart: unless-stopped
+          EOF
+          # Remove leading whitespace added by heredoc indentation
+          sed -i 's/^          //' "${BUNDLE_DIR}/docker-compose.yml"
+
+          # --- Locale files ---
+          cp -r locales/* "${BUNDLE_DIR}/locales/"
+
+          # --- Database files ---
+          cp database/build_travelers_db.surql "${BUNDLE_DIR}/database/"
+          cp -r database/migrations "${BUNDLE_DIR}/database/"
+
+          # --- Config template ---
+          cp config/config.toml "${BUNDLE_DIR}/config/"
+
+          # --- Sanitized production profile example ---
+          cat > "${BUNDLE_DIR}/config/profiles/prod.toml.example" <<'PROFILE_EOF'
+          # Profile: prod
+          # Description: Example configuration file for production deployments.
+          # For a clean deployment, copy this to your profile TOML file (e.g., prod.toml) and fill in the required values before deploying.
+          # To update an existing deployment, compare this file with to your current profile TOML file (e.g., prod.toml) and apply any necessary changes (e.g., new config fields, updated database credentials, etc.).
+          # Check the repository config/profiles/ directory for example values for different environments (e.g., dev-local.toml, dev-cloud.toml) that can help guide your configuration.
+
+          [logging]
+          # path: Base folder for logs. The active profile name is appended automatically to create a per-profile subfolder.
+          path = "logs"
+          file_name_prefix = "travelrs.log"
+          level = "info"
+
+          [bot]
+          # token_source: Specifies the source in which the bot token is provided.
+          # Allowed values:
+          # - "file": The token is read from a file.
+          # - "env": The token is read from an environment variable.
+          # - "string": The token is provided directly as a string.
+          token_source = "file"
+
+          # token: The bot token.
+          # If token_source is "file", this should be a path to a file containing the token.
+          # If token_source is "env", this should be the name of the environment variable containing the token.
+          # If token_source is "string", this should be the token itself.
+          token = "config/prod-token.txt"
+
+          # [optional] chat_whitelist_source: Specifies the source for the chat whitelist for dev purposes.
+          # Allowed values:
+          # - "file": The whitelist is read from a file.
+          # - "env": The whitelist is read from an environment variable.
+          # - "string": The whitelist is provided directly as a string.
+          # chat_whitelist_source = "file"
+
+          # [optional] chat_whitelist: list of allowed chat IDs for dev purposes.
+          # List format: IDs can be separated by commas, colons, spaces, or newlines. Example: 12345, 67890
+          # - If chat_whitelist_source is "file", this should be a path to a file containing the list of chat IDs.
+          # - If chat_whitelist_source is "env", this should be the name of the environment variable holding the list of chat IDs.
+          # - If chat_whitelist_source is "string", this should be the list of chat IDs as a string.
+          # If the array is missing or empty, all chats are allowed.
+          # If the array contains one or more IDs, only those chat IDs are allowed.
+          # chat_whitelist = "config/chat-whitelist.txt"
+
+          [database]
+          address = "<database_address>"
+          username = "<your_username>"
+          password = "<your_password>"
+          namespace = "<your_namespace>"
+          database = "<your_database>"
+
+          [i18n]
+          default_locale = "en-US"
+          locales_path = "locales"
+          default_currency = "USD"
+          # popular_currencies: list of currency codes shown as quick-pick buttons in the /setcurrency inline keyboard.
+          # If omitted, defaults to: ["USD", "EUR", "GBP", "JPY", "CHF", "CAD", "AUD", "CNY"]
+          popular_currencies = ["USD", "EUR", "GBP", "JPY", "CHF", "CAD", "AUD", "CNY"]
+
+          PROFILE_EOF
+          sed -i 's/^          //' "${BUNDLE_DIR}/config/profiles/prod.toml.example"
+
+          # --- Deployment guide ---
+          cp DEPLOYMENT.md "${BUNDLE_DIR}/"
+
+          # --- MIGRATIONS.md (new scripts for this release from DEPLOYMENT.md) ---
+          # Extract the migration scripts from the DEPLOYMENT.md table row for this version
+          DEPLOY_ROW=$(grep -P "^\|\s*v${NEW_VERSION}\s*\|" DEPLOYMENT.md || true)
+          MIGRATION_SCRIPTS=$(echo "$DEPLOY_ROW" | grep -oP '\d{3}_[A-Za-z0-9_]+\.surql' | sort -u || true)
+
+          if [ -n "$MIGRATION_SCRIPTS" ]; then
+            {
+              echo "# Migrations Required for v${NEW_VERSION}"
+              echo ""
+              echo "The following database migration scripts were introduced in this release."
+              echo "Apply them **in order** against your SurrealDB instance before starting the new version."
+              echo ""
+              echo "$MIGRATION_SCRIPTS" | while IFS= read -r script; do
+                echo "- \`${script}\`"
+              done
+              echo ""
+              echo "See [DEPLOYMENT.md](DEPLOYMENT.md#6-migration-reference) for the full migration history."
+            } > "${BUNDLE_DIR}/MIGRATIONS.md"
+          else
+            {
+              echo "# Migrations Required for v${NEW_VERSION}"
+              echo ""
+              echo "No database migrations are required for this release."
+            } > "${BUNDLE_DIR}/MIGRATIONS.md"
+          fi
+
+          # --- Create the zip archive ---
+          zip -r "deploy-v${NEW_VERSION}.zip" "${BUNDLE_DIR}"
+
+          echo "bundle_path=deploy-v${NEW_VERSION}.zip" >> "$GITHUB_OUTPUT"
+          echo "Deploy bundle created: deploy-v${NEW_VERSION}.zip"
+
       - name: Bump to next snapshot version
         run: |
           # Get the current version components from the *just-released* version
@@ -266,9 +450,11 @@ jobs:
         run: |
           NEW_VERSION="${{ needs.prepare_release_data.outputs.new_version }}"
           # Create the actual release using the modified notes file
+          # The deploy bundle zip is attached as a release asset
           gh release create "v${NEW_VERSION}" \
             --title "Release v${NEW_VERSION}" \
-            --notes-file ${{ steps.generate_release_notes.outputs.release_notes_file }}
+            --notes-file ${{ steps.generate_release_notes.outputs.release_notes_file }} \
+            ${{ steps.deploy_bundle.outputs.bundle_path }}
 
       - name: Rollback on failure
         if: failure()
