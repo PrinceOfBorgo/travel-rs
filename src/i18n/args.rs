@@ -43,6 +43,7 @@ pub const TRAVELER_IS_CASE_CREDITOR: &str = "creditor";
 pub const TRAVELER_IS_CASE_DEBTOR: &str = "debtor";
 pub const TRAVELER_NAME: &str = "traveler-name";
 pub const TRAVELER_STATS: &str = "traveler-stats";
+pub const TRAVELERS: &str = "travelers";
 pub const TRAVELERS_PAID_LEAST: &str = "travelers-paid-least";
 pub const TRAVELERS_PAID_MOST: &str = "travelers-paid-most";
 pub const TRAVELERS_PAYS_LEAST_FREQUENTLY: &str = "travelers-pays-least-frequently";

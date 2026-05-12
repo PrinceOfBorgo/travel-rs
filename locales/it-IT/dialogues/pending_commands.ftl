@@ -52,3 +52,23 @@ transfer-ask-to-reprompt = Hai inviato un nome non valido, per favore riprova. C
 transfer-to-not-found = Viaggiatore "{$name}" non trovato. Chi è il destinatario?
 transfer-ask-amount = Quanto ha trasferito {$name}?
 transfer-invalid-amount = Hai inviato un importo non valido, per favore riprova.
+
+## /cleartravelers
+
+clear-travelers-confirm =
+    Sei sicuro di voler eliminare tutti i viaggiatori?
+    ⚠️ Tutti i trasferimenti che coinvolgono questi viaggiatori verranno eliminati.
+
+## /clearexpenses
+
+clear-expenses-confirm = Sei sicuro di voler eliminare tutte le spese?
+
+## /cleartransfers
+
+clear-transfers-confirm = Sei sicuro di voler eliminare tutti i trasferimenti?
+
+## /clearall
+
+clear-all-confirm =
+    Sei sicuro di voler eliminare tutti i viaggiatori, spese e trasferimenti?
+    ⚠️ Questa azione non può essere annullata.

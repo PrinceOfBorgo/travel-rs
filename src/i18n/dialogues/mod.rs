@@ -1,5 +1,9 @@
 pub mod add_expense;
 pub mod add_traveler;
+pub mod clear_all;
+pub mod clear_expenses;
+pub mod clear_transfers;
+pub mod clear_travelers;
 pub mod delete_expense;
 pub mod delete_transfer;
 pub mod delete_traveler;
@@ -11,6 +15,10 @@ pub mod transfer;
 
 pub use add_expense::*;
 pub use add_traveler::*;
+pub use clear_all::*;
+pub use clear_expenses::*;
+pub use clear_transfers::*;
+pub use clear_travelers::*;
 pub use delete_expense::*;
 pub use delete_transfer::*;
 pub use delete_traveler::*;

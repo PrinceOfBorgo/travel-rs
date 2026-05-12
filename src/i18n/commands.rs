@@ -13,6 +13,10 @@ pub const RUNNING_PROCESS_SET_LANGUAGE: &str = "running-process-set-language";
 pub const RUNNING_PROCESS_SET_CURRENCY: &str = "running-process-set-currency";
 pub const RUNNING_PROCESS_LIST_EXPENSES: &str = "running-process-list-expenses";
 pub const RUNNING_PROCESS_TRANSFER: &str = "running-process-transfer";
+pub const RUNNING_PROCESS_CLEAR_TRAVELERS: &str = "running-process-clear-travelers";
+pub const RUNNING_PROCESS_CLEAR_EXPENSES: &str = "running-process-clear-expenses";
+pub const RUNNING_PROCESS_CLEAR_TRANSFERS: &str = "running-process-clear-transfers";
+pub const RUNNING_PROCESS_CLEAR_ALL: &str = "running-process-clear-all";
 
 pub const SET_LANGUAGE_NOT_AVAILABLE: &str = "set-language-not-available";
 pub const SET_LANGUAGE_OK: &str = "set-language-ok";
@@ -51,6 +55,19 @@ pub const TRANSFER_NON_POSITIVE_AMOUNT: &str = "transfer-non-positive-amount";
 
 pub const DELETE_TRANSFER_NOT_FOUND: &str = "delete-transfer-not-found";
 pub const DELETE_TRANSFER_OK: &str = "delete-transfer-ok";
+
+pub const CLEAR_TRAVELERS_OK: &str = "clear-travelers-ok";
+pub const CLEAR_TRAVELERS_NOT_FOUND: &str = "clear-travelers-not-found";
+pub const CLEAR_TRAVELERS_HAS_EXPENSES: &str = "clear-travelers-has-expenses";
+
+pub const CLEAR_EXPENSES_OK: &str = "clear-expenses-ok";
+pub const CLEAR_EXPENSES_NOT_FOUND: &str = "clear-expenses-not-found";
+
+pub const CLEAR_TRANSFERS_OK: &str = "clear-transfers-ok";
+pub const CLEAR_TRANSFERS_NOT_FOUND: &str = "clear-transfers-not-found";
+
+pub const CLEAR_ALL_OK: &str = "clear-all-ok";
+pub const CLEAR_ALL_NOT_FOUND: &str = "clear-all-not-found";
 
 pub const LIST_TRANSFERS_NAME_NOT_FOUND: &str = "list-transfers-name-not-found";
 pub const LIST_TRANSFERS_NOT_FOUND: &str = "list-transfers-not-found";

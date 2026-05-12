@@ -1,5 +1,9 @@
 mod add_traveler;
 mod cancel;
+mod clear_all;
+mod clear_expenses;
+mod clear_transfers;
+mod clear_travelers;
 mod command;
 mod command_arg;
 mod command_outcome;
@@ -22,6 +26,10 @@ mod unknown_command;
 
 pub use add_traveler::add_traveler;
 pub use cancel::cancel;
+pub use clear_all::clear_all;
+pub use clear_expenses::clear_expenses;
+pub use clear_transfers::clear_transfers;
+pub use clear_travelers::clear_travelers;
 pub use command::*;
 pub use command_arg::CommandArg;
 pub use command_outcome::CommandOutcome;

@@ -1,9 +1,10 @@
 use crate::{
     Context, HandlerResult,
     commands::{
-        CommandArg, CommandOutcome, HelpMessage, add_traveler, delete_expense, delete_transfer,
-        delete_traveler, help, inline_keyboards, list_expenses, list_transfers, list_travelers,
-        set_currency, set_language, show_balances, show_expense, show_stats, transfer,
+        CommandArg, CommandOutcome, HelpMessage, add_traveler, clear_all, clear_expenses,
+        clear_transfers, clear_travelers, delete_expense, delete_transfer, delete_traveler, help,
+        inline_keyboards, list_expenses, list_transfers, list_travelers, set_currency,
+        set_language, show_balances, show_expense, show_stats, transfer,
     },
     consts::MIN_SIMILARITY_SCORE,
     i18n::{self, Translate, TranslateWithArgs, help::*},
@@ -68,6 +69,14 @@ pub enum Command {
     ShowBalances { name: CommandArg<Name> },
     #[command(description = "{descr-show-stats}")]
     ShowStats,
+    #[command(description = "{descr-clear-travelers}")]
+    ClearTravelers,
+    #[command(description = "{descr-clear-expenses}")]
+    ClearExpenses,
+    #[command(description = "{descr-clear-transfers}")]
+    ClearTransfers,
+    #[command(description = "{descr-clear-all}")]
+    ClearAll,
     #[command(description = "{descr-cancel}")]
     Cancel,
 }
@@ -140,6 +149,22 @@ impl Command {
             BotCommand::new(
                 variant_to_string!(Command::ShowStats),
                 i18n::help::DESCR_SHOW_STATS.translate(ctx.clone()),
+            ),
+            BotCommand::new(
+                variant_to_string!(Command::ClearTravelers),
+                i18n::help::DESCR_CLEAR_TRAVELERS.translate(ctx.clone()),
+            ),
+            BotCommand::new(
+                variant_to_string!(Command::ClearExpenses),
+                i18n::help::DESCR_CLEAR_EXPENSES.translate(ctx.clone()),
+            ),
+            BotCommand::new(
+                variant_to_string!(Command::ClearTransfers),
+                i18n::help::DESCR_CLEAR_TRANSFERS.translate(ctx.clone()),
+            ),
+            BotCommand::new(
+                variant_to_string!(Command::ClearAll),
+                i18n::help::DESCR_CLEAR_ALL.translate(ctx.clone()),
             ),
             BotCommand::new(
                 variant_to_string!(Command::Cancel),
@@ -216,6 +241,10 @@ impl HelpMessage for Command {
             ListTransfers { name: _ } => HELP_LIST_TRANSFERS.translate(ctx),
             ShowBalances { name: _ } => HELP_SHOW_BALANCES.translate(ctx),
             ShowStats => HELP_SHOW_STATS.translate(ctx),
+            ClearTravelers => HELP_CLEAR_TRAVELERS.translate(ctx),
+            ClearExpenses => HELP_CLEAR_EXPENSES.translate(ctx),
+            ClearTransfers => HELP_CLEAR_TRANSFERS.translate(ctx),
+            ClearAll => HELP_CLEAR_ALL.translate(ctx),
             Cancel => HELP_CANCEL.translate(ctx),
         }
     }
@@ -479,6 +508,10 @@ pub async fn command_reply(
         ShowStats => show_stats(db, msg, ctx.clone())
             .await
             .map(CommandOutcome::Success),
+        ClearTravelers => clear_travelers(db, msg, ctx.clone()).await,
+        ClearExpenses => clear_expenses(db, msg, ctx.clone()).await,
+        ClearTransfers => clear_transfers(db, msg, ctx.clone()).await,
+        ClearAll => clear_all(db, msg, ctx.clone()).await,
         Cancel | AddExpense => {
             unreachable!("This command is handled before calling this function.")
         }

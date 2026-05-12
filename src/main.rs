@@ -34,6 +34,10 @@ use dialogues::add_expense_dialogue::{self, AddExpenseState};
 use dialogues::pending_command_dialogue::{
     self, PendingCommandState, PendingCommandStorage,
     add_traveler::{self as pending_add_traveler},
+    clear_all::{self as pending_clear_all},
+    clear_expenses::{self as pending_clear_expenses},
+    clear_transfers::{self as pending_clear_transfers},
+    clear_travelers::{self as pending_clear_travelers},
     delete_expense::{self as pending_delete_expense},
     delete_transfer::{self as pending_delete_transfer},
     delete_traveler::{self as pending_delete_traveler},
@@ -99,7 +103,7 @@ pub static ARGS: LazyLock<Args> = LazyLock::new(Args::parse);
 static REGISTERED_LOCALIZED_COMMANDS: LazyLock<Mutex<HashSet<(ChatId, String)>>> =
     LazyLock::new(|| Mutex::new(HashSet::new()));
 
-const ASCII_LOG: &str = r#"
+const ASCII_LOGO: &str = r#"
   ______                      __      ____  _____
  /_  __/________ __   _____  / /     / __ \/ ___/
   / / / ___/ __ `/ | / / _ \/ /_____/ /_/ /\__ \ 
@@ -138,7 +142,11 @@ async fn main() -> anyhow::Result<()> {
         .with(log_layer)
         .init();
 
-    tracing::info!("{ASCII_LOG}\nv{}\n", env!("CARGO_PKG_VERSION"));
+    tracing::info!(
+        "{ASCII_LOGO}\n{name} v{version}\n",
+        name = env!("CARGO_PKG_NAME"),
+        version = env!("CARGO_PKG_VERSION")
+    );
     tracing::info!("Using profile {}", SETTINGS.profile);
     tracing::debug!("Settings: {:#?}", SETTINGS);
     println!("Using profile {}", SETTINGS.profile);
@@ -158,6 +166,14 @@ async fn start_bot() {
 
     // Initialize the database connection.
     let db_instance = db::db().await;
+
+    // Push the default-locale command list to the global (default) scope so
+    // the command menu is available immediately in new chats.
+    let default_ctx = Arc::new(Mutex::new(Context::default()));
+    let default_commands = Command::localized_bot_commands(default_ctx);
+    if let Err(err) = bot.set_my_commands(default_commands).await {
+        tracing::error!("Failed setting default bot commands: {err}");
+    }
 
     Dispatcher::builder(bot, handler_tree())
         .error_handler(LoggingErrorHandler::with_custom_text(
@@ -331,6 +347,34 @@ pub(crate) fn handler_tree() -> UpdateHandler<Box<dyn std::error::Error + Send +
                     case![PendingCommandState::Start]
                         .endpoint(pending_transfer::start_with_from_to),
                 ),
+        )
+        // ClearExpenses -> start confirmation dialogue.
+        .branch(
+            case![Command::ClearExpenses]
+                .branch(any_dialogue_running_guard())
+                .enter_dialogue::<Message, PendingCommandStorage, PendingCommandState>()
+                .branch(case![PendingCommandState::Start].endpoint(pending_clear_expenses::start)),
+        )
+        // ClearTransfers -> start confirmation dialogue.
+        .branch(
+            case![Command::ClearTransfers]
+                .branch(any_dialogue_running_guard())
+                .enter_dialogue::<Message, PendingCommandStorage, PendingCommandState>()
+                .branch(case![PendingCommandState::Start].endpoint(pending_clear_transfers::start)),
+        )
+        // ClearTravelers -> start confirmation dialogue.
+        .branch(
+            case![Command::ClearTravelers]
+                .branch(any_dialogue_running_guard())
+                .enter_dialogue::<Message, PendingCommandStorage, PendingCommandState>()
+                .branch(case![PendingCommandState::Start].endpoint(pending_clear_travelers::start)),
+        )
+        // ClearAll -> start confirmation dialogue.
+        .branch(
+            case![Command::ClearAll]
+                .branch(any_dialogue_running_guard())
+                .enter_dialogue::<Message, PendingCommandStorage, PendingCommandState>()
+                .branch(case![PendingCommandState::Start].endpoint(pending_clear_all::start)),
         )
         // Otherwise -> handle other commands
         .endpoint(commands_handler);

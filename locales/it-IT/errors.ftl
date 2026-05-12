@@ -15,6 +15,10 @@ command-error-list-transfers = Impossibile elencare i trasferimenti.
 command-error-show-balance = Impossibile mostrare il saldo per il viaggiatore "{$name}".
 command-error-show-balances = Impossibile mostrare i saldi.
 command-error-show-stats = Impossibile mostrare le statistiche.
+command-error-clear-travelers = Impossibile eliminare i viaggiatori.
+command-error-clear-expenses = Impossibile eliminare le spese.
+command-error-clear-transfers = Impossibile eliminare i trasferimenti.
+command-error-clear-all = Impossibile eliminare il piano di viaggio.
 
 ## NameValidationError
 

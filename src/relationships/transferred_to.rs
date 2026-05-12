@@ -97,4 +97,22 @@ impl TransferredTo {
         .await
         .map(|_| {})
     }
+
+    pub async fn db_delete_all(
+        db: Arc<Surreal<Any>>,
+        chat_id: ChatId,
+    ) -> Result<(), surrealdb::Error> {
+        use crate::{
+            chat::{ID as CHAT_ID, TABLE as CHAT_TB},
+            traveler::CHAT,
+        };
+
+        db.query(format!(
+            "DELETE {TABLE}
+             WHERE {IN}.{CHAT} = ${CHAT_ID}",
+        ))
+        .bind((CHAT_ID, RecordId::from_table_key(CHAT_TB, chat_id.0)))
+        .await
+        .map(|_| {})
+    }
 }

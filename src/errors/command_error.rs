@@ -54,6 +54,10 @@ pub enum CommandError {
         name: Name,
     },
     ShowStats,
+    ClearTravelers,
+    ClearExpenses,
+    ClearTransfers,
+    ClearAll,
 }
 
 impl Translate for CommandError {
@@ -167,6 +171,18 @@ impl Translate for CommandError {
                 ),
             ShowStats => {
                 i18n::errors::COMMAND_ERROR_SHOW_STATS.translate_with_indent(ctx, indent_lvl)
+            }
+            ClearTravelers => {
+                i18n::errors::COMMAND_ERROR_CLEAR_TRAVELERS.translate_with_indent(ctx, indent_lvl)
+            }
+            ClearExpenses => {
+                i18n::errors::COMMAND_ERROR_CLEAR_EXPENSES.translate_with_indent(ctx, indent_lvl)
+            }
+            ClearTransfers => {
+                i18n::errors::COMMAND_ERROR_CLEAR_TRANSFERS.translate_with_indent(ctx, indent_lvl)
+            }
+            ClearAll => {
+                i18n::errors::COMMAND_ERROR_CLEAR_ALL.translate_with_indent(ctx, indent_lvl)
             }
         }
     }

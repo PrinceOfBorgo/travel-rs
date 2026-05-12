@@ -23,11 +23,12 @@
 - [ ] Add `EditExpense` command.
 - [ ] Change `ListExpenses` command so that the filter matches the string representation of the expense.
 - [ ] Refactor callback prefix to derive them from commands instead of hardcoding them.
-- [ ] Add "clear" commands:
-  - [ ] `ClearTravelers`
-  - [ ] `ClearExpenses`
-  - [ ] `ClearTransfers`
-  - [ ] `ClearAll` (clears travelers, expenses, and transfers)
+- [x] Add "clear" commands:
+  - [x] `ClearTravelers`
+  - [x] `ClearExpenses`
+  - [x] `ClearTransfers`
+  - [x] `ClearAll` (clears travelers, expenses, and transfers)
+- [ ] Handle multiple travel plans in one chat.
 
 ## Done
 

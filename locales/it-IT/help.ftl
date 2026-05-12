@@ -39,7 +39,7 @@ help-add-traveler =
 
 ## /deletetraveler
 
-descr-delete-traveler = Elimina il viaggiatore con il nome specificato dal piano di viaggio.
+descr-delete-traveler = Elimina il viaggiatore con il nome specificato (e i trasferimenti associati) dal piano di viaggio.
 help-delete-traveler =
     /{-delete-traveler-command} — {descr-delete-traveler}
 
@@ -142,6 +142,38 @@ help-show-stats =
     /{-show-stats-command} — {descr-show-stats}
 
     Uso: /{-show-stats-command}
+
+## /cleartravelers
+
+descr-clear-travelers = Elimina tutti i viaggiatori e i trasferimenti associati dal piano di viaggio.
+help-clear-travelers =
+    /{-clear-travelers-command} — {descr-clear-travelers}
+
+    Uso: /{-clear-travelers-command}
+
+## /clearexpenses
+
+descr-clear-expenses = Elimina tutte le spese dal piano di viaggio.
+help-clear-expenses =
+    /{-clear-expenses-command} — {descr-clear-expenses}
+
+    Uso: /{-clear-expenses-command}
+
+## /cleartransfers
+
+descr-clear-transfers = Elimina tutti i trasferimenti dal piano di viaggio.
+help-clear-transfers =
+    /{-clear-transfers-command} — {descr-clear-transfers}
+
+    Uso: /{-clear-transfers-command}
+
+## /clearall
+
+descr-clear-all = Elimina tutti i viaggiatori, spese e trasferimenti dal piano di viaggio.
+help-clear-all =
+    /{-clear-all-command} — {descr-clear-all}
+
+    Uso: /{-clear-all-command}
 
 ## /cancel
 

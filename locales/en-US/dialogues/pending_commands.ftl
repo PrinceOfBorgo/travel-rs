@@ -52,3 +52,23 @@ transfer-ask-to-reprompt = You sent an invalid name, please retry. Who is the re
 transfer-to-not-found = Traveler "{$name}" not found. Who is the receiver?
 transfer-ask-amount = How much did {$name} transfer?
 transfer-invalid-amount = You sent an invalid amount, please retry.
+
+## /cleartravelers
+
+clear-travelers-confirm =
+    Are you sure you want to delete all travelers?
+    ⚠️ All transfers involving these travelers will also be deleted.
+
+## /clearexpenses
+
+clear-expenses-confirm = Are you sure you want to delete all expenses?
+
+## /cleartransfers
+
+clear-transfers-confirm = Are you sure you want to delete all transfers?
+
+## /clearall
+
+clear-all-confirm =
+    Are you sure you want to delete all travelers, expenses and transfers?
+    ⚠️ This action cannot be undone.

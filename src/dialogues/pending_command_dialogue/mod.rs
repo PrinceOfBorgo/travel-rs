@@ -9,6 +9,10 @@
 //! per-command states so that a single shared storage can drive any of them.
 
 pub mod add_traveler;
+pub mod clear_all;
+pub mod clear_expenses;
+pub mod clear_transfers;
+pub mod clear_travelers;
 pub mod delete_expense;
 pub mod delete_transfer;
 pub mod delete_traveler;
@@ -19,6 +23,10 @@ pub mod show_expense;
 pub mod transfer;
 
 use add_traveler::AddTravelerState;
+use clear_all::ClearAllState;
+use clear_expenses::ClearExpensesState;
+use clear_transfers::ClearTransfersState;
+use clear_travelers::ClearTravelersState;
 use delete_expense::DeleteExpenseState;
 use delete_transfer::DeleteTransferState;
 use delete_traveler::DeleteTravelerState;
@@ -48,6 +56,10 @@ pub enum PendingCommandState {
     SetCurrency(SetCurrencyState),
     ListExpenses(ListExpensesState),
     Transfer(TransferState),
+    ClearTravelers(ClearTravelersState),
+    ClearExpenses(ClearExpensesState),
+    ClearTransfers(ClearTransfersState),
+    ClearAll(ClearAllState),
 }
 
 pub type PendingCommandStorage = InMemStorage<PendingCommandState>;
@@ -71,6 +83,10 @@ impl crate::dialogues::storage::DialogueState for PendingCommandState {
             PendingCommandState::SetCurrency(_) => RUNNING_PROCESS_SET_CURRENCY,
             PendingCommandState::ListExpenses(_) => RUNNING_PROCESS_LIST_EXPENSES,
             PendingCommandState::Transfer(_) => RUNNING_PROCESS_TRANSFER,
+            PendingCommandState::ClearTravelers(_) => RUNNING_PROCESS_CLEAR_TRAVELERS,
+            PendingCommandState::ClearExpenses(_) => RUNNING_PROCESS_CLEAR_EXPENSES,
+            PendingCommandState::ClearTransfers(_) => RUNNING_PROCESS_CLEAR_TRANSFERS,
+            PendingCommandState::ClearAll(_) => RUNNING_PROCESS_CLEAR_ALL,
         }
     }
 }
@@ -91,9 +107,7 @@ pub fn handler_branch() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync
         )
         .branch(
             case![DeleteTraveler(state)]
-                .branch(
-                    case![DeleteTravelerState::AskName].endpoint(delete_traveler::receive_name),
-                )
+                .branch(case![DeleteTravelerState::AskName].endpoint(delete_traveler::receive_name))
                 .branch(
                     case![DeleteTravelerState::Confirm(name)]
                         .endpoint(delete_traveler::receive_confirm_text),
@@ -102,8 +116,7 @@ pub fn handler_branch() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync
         .branch(
             case![DeleteExpense(state)]
                 .branch(
-                    case![DeleteExpenseState::AskNumber]
-                        .endpoint(delete_expense::receive_number),
+                    case![DeleteExpenseState::AskNumber].endpoint(delete_expense::receive_number),
                 )
                 .branch(
                     case![DeleteExpenseState::Confirm(number)]
@@ -117,8 +130,7 @@ pub fn handler_branch() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync
         .branch(
             case![DeleteTransfer(state)]
                 .branch(
-                    case![DeleteTransferState::AskNumber]
-                        .endpoint(delete_transfer::receive_number),
+                    case![DeleteTransferState::AskNumber].endpoint(delete_transfer::receive_number),
                 )
                 .branch(
                     case![DeleteTransferState::Confirm(number)]
@@ -145,6 +157,19 @@ pub fn handler_branch() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync
                     case![TransferState::AskAmount(from, to)].endpoint(transfer::receive_amount),
                 ),
         )
+        .branch(case![ClearTravelers(state)].branch(
+            case![ClearTravelersState::Confirm].endpoint(clear_travelers::receive_confirm_text),
+        ))
+        .branch(case![ClearExpenses(state)].branch(
+            case![ClearExpensesState::Confirm].endpoint(clear_expenses::receive_confirm_text),
+        ))
+        .branch(case![ClearTransfers(state)].branch(
+            case![ClearTransfersState::Confirm].endpoint(clear_transfers::receive_confirm_text),
+        ))
+        .branch(
+            case![ClearAll(state)]
+                .branch(case![ClearAllState::Confirm].endpoint(clear_all::receive_confirm_text)),
+        )
 }
 
 /// All callback-data prefixes used by pending-command dialogue keyboards.
@@ -157,6 +182,10 @@ const CALLBACK_PREFIXES: &[&str] = &[
     delete_expense::CALLBACK_PREFIX,
     show_expense::CALLBACK_PREFIX,
     delete_transfer::CALLBACK_PREFIX,
+    clear_travelers::CALLBACK_PREFIX,
+    clear_expenses::CALLBACK_PREFIX,
+    clear_transfers::CALLBACK_PREFIX,
+    clear_all::CALLBACK_PREFIX,
 ];
 
 /// Returns `true` if the callback data matches any pending-command dialogue
@@ -184,42 +213,59 @@ pub fn callback_branch() -> UpdateHandler<Box<dyn std::error::Error + Send + Syn
                 case![SetCurrencyState::AskCurrency].endpoint(set_currency::receive_callback),
             ),
         )
-        .branch(case![DeleteTraveler(state)]
-            .branch(
-                case![DeleteTravelerState::AskName].endpoint(delete_traveler::receive_callback),
-            )
-            .branch(
-                case![DeleteTravelerState::Confirm(name)]
-                    .endpoint(delete_traveler::receive_confirm_callback),
-            ),
+        .branch(
+            case![DeleteTraveler(state)]
+                .branch(
+                    case![DeleteTravelerState::AskName].endpoint(delete_traveler::receive_callback),
+                )
+                .branch(
+                    case![DeleteTravelerState::Confirm(name)]
+                        .endpoint(delete_traveler::receive_confirm_callback),
+                ),
         )
         .branch(
             case![Transfer(state)]
                 .branch(case![TransferState::AskFrom].endpoint(transfer::receive_from_callback))
                 .branch(case![TransferState::AskTo(from)].endpoint(transfer::receive_to_callback)),
         )
-        .branch(case![DeleteExpense(state)]
-            .branch(
-                case![DeleteExpenseState::AskNumber].endpoint(delete_expense::receive_callback),
-            )
-            .branch(
-                case![DeleteExpenseState::Confirm(number)]
-                    .endpoint(delete_expense::receive_confirm_callback),
-            ),
+        .branch(
+            case![DeleteExpense(state)]
+                .branch(
+                    case![DeleteExpenseState::AskNumber].endpoint(delete_expense::receive_callback),
+                )
+                .branch(
+                    case![DeleteExpenseState::Confirm(number)]
+                        .endpoint(delete_expense::receive_confirm_callback),
+                ),
         )
         .branch(
             case![ShowExpense(state)].branch(
                 case![ShowExpenseState::AskNumber].endpoint(show_expense::receive_callback),
             ),
         )
-        .branch(case![DeleteTransfer(state)]
-            .branch(
-                case![DeleteTransferState::AskNumber]
-                    .endpoint(delete_transfer::receive_callback),
-            )
-            .branch(
-                case![DeleteTransferState::Confirm(number)]
-                    .endpoint(delete_transfer::receive_confirm_callback),
+        .branch(
+            case![DeleteTransfer(state)]
+                .branch(
+                    case![DeleteTransferState::AskNumber]
+                        .endpoint(delete_transfer::receive_callback),
+                )
+                .branch(
+                    case![DeleteTransferState::Confirm(number)]
+                        .endpoint(delete_transfer::receive_confirm_callback),
+                ),
+        )
+        .branch(case![ClearTravelers(state)].branch(
+            case![ClearTravelersState::Confirm].endpoint(clear_travelers::receive_confirm_callback),
+        ))
+        .branch(case![ClearExpenses(state)].branch(
+            case![ClearExpensesState::Confirm].endpoint(clear_expenses::receive_confirm_callback),
+        ))
+        .branch(case![ClearTransfers(state)].branch(
+            case![ClearTransfersState::Confirm].endpoint(clear_transfers::receive_confirm_callback),
+        ))
+        .branch(
+            case![ClearAll(state)].branch(
+                case![ClearAllState::Confirm].endpoint(clear_all::receive_confirm_callback),
             ),
         )
 }

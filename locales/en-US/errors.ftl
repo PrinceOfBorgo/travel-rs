@@ -15,6 +15,10 @@ command-error-list-transfers = Couldn't list transfers.
 command-error-show-balance = Couldn't show balance for traveler "{$name}".
 command-error-show-balances = Couldn't show balances.
 command-error-show-stats = Couldn't show statistics.
+command-error-clear-travelers = Couldn't clear travelers.
+command-error-clear-expenses = Couldn't clear expenses.
+command-error-clear-transfers = Couldn't clear transfers.
+command-error-clear-all = Couldn't clear travel plan.
 
 ## NameValidationError
 

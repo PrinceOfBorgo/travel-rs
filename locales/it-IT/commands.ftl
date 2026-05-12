@@ -12,6 +12,10 @@ running-process-set-language = /{-set-language-command}
 running-process-set-currency = /{-set-currency-command}
 running-process-list-expenses = /{-list-expenses-command}
 running-process-transfer = /{-transfer-command}
+running-process-clear-travelers = /{-clear-travelers-command}
+running-process-clear-expenses = /{-clear-expenses-command}
+running-process-clear-transfers = /{-clear-transfers-command}
+running-process-clear-all = /{-clear-all-command}
 
 ## /setlanguage
 
@@ -95,6 +99,29 @@ show-balances-traveler-not-found = Impossibile trovare il viaggiatore "{$name}" 
 
 cancel-no-process-to-cancel = Non c'è nessun processo da annullare.
 cancel-ok = Il processo ({$process}) è stato annullato.
+
+## /clearexpenses
+
+clear-expenses-ok = Tutte le spese eliminate con successo.
+clear-expenses-not-found = Nessuna spesa da eliminare.
+
+## /cleartransfers
+
+clear-transfers-ok = Tutti i trasferimenti eliminati con successo.
+clear-transfers-not-found = Nessun trasferimento da eliminare.
+
+## /cleartravelers
+
+clear-travelers-ok = Tutti i viaggiatori eliminati con successo.
+clear-travelers-not-found = Nessun viaggiatore da eliminare.
+clear-travelers-has-expenses =
+    I seguenti viaggiatori hanno spese associate e non possono essere eliminati: {$travelers}.
+    Elimina prima le loro spese, oppure usa /{-clear-all-command} per eliminare tutto.
+
+## /clearall
+
+clear-all-ok = Tutti i viaggiatori, spese e trasferimenti eliminati con successo.
+clear-all-not-found = Niente da eliminare.
 
 ## unknown command
 

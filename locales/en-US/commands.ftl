@@ -12,13 +12,17 @@ running-process-set-language = /{-set-language-command}
 running-process-set-currency = /{-set-currency-command}
 running-process-list-expenses = /{-list-expenses-command}
 running-process-transfer = /{-transfer-command}
+running-process-clear-travelers = /{-clear-travelers-command}
+running-process-clear-expenses = /{-clear-expenses-command}
+running-process-clear-transfers = /{-clear-transfers-command}
+running-process-clear-all = /{-clear-all-command}
 
 ## /setlanguage
 
 set-language-not-available =
     Couldn't set the language. "{$langid}" is not available.
 
-    Available langauges:
+    Available languages:
     {$available-langs}
 set-language-ok = Chat language correctly set to {$language}.
 
@@ -95,6 +99,29 @@ show-balances-traveler-not-found = Couldn't find traveler "{$name}" to show the 
 
 cancel-no-process-to-cancel = There is no process to cancel.
 cancel-ok = The process ({$process}) was cancelled.
+
+## /clearexpenses
+
+clear-expenses-ok = All expenses cleared successfully.
+clear-expenses-not-found = No expenses to clear.
+
+## /cleartransfers
+
+clear-transfers-ok = All transfers cleared successfully.
+clear-transfers-not-found = No transfers to clear.
+
+## /cleartravelers
+
+clear-travelers-ok = All travelers cleared successfully.
+clear-travelers-not-found = No travelers to clear.
+clear-travelers-has-expenses =
+    The following travelers have associated expenses and cannot be deleted: {$travelers}.
+    Please delete their expenses first, or use /{-clear-all-command} to clear everything.
+
+## /clearall
+
+clear-all-ok = All travelers, expenses and transfers cleared successfully.
+clear-all-not-found = Nothing to clear.
 
 ## unknown command
 

@@ -7,12 +7,13 @@
 - [`DEPLOYMENT.md`](DEPLOYMENT.md) guide covering fresh installation, upgrade procedures, rollback, and a migration reference table. Includes both Docker and manual (direct binary / systemd) deployment paths.
 - The `release.yml` workflow now builds and attaches a `deploy-v<version>.zip` bundle to each GitHub Release, containing a version-pinned `docker-compose.yml`, up-to-date locale files, database schema and migration scripts, a sanitized profile template, and a `MIGRATIONS.md` listing the migrations required for that release.
 - Confirmation step for destructive commands: `/deleteexpense`, `/deletetraveler`, and `/deletetransfer` now show a Yes/No inline keyboard asking the user to confirm before executing the deletion. This applies to both the interactive dialogue and the inline form (e.g. `/deleteexpense 5`). Pressing "No" cancels the operation.
+- Clear commands: `/clearexpenses`, `/cleartransfers`, `/cleartravelers`, and `/clearall` to bulk-delete all expenses, transfers, travelers, or everything at once. Each shows a confirmation prompt with a Yes/No keyboard before executing. `/cleartravelers` and `/clearall` warn that associated data will also be deleted.
 
 ### Changed
 - Updated `README.md` structure: added Deployment section linking to `DEPLOYMENT.md` and renumbered subsequent sections.
 
 ### Fixed
-- N/A
+- The bot now pushes the command list to the global (default) scope at startup, so the command menu is available immediately in new chats without waiting for the first message.
 
 ## [0.3.0] - 2026-05-10
 ### ✨ Minor Release

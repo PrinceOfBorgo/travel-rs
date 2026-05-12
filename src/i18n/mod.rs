@@ -46,6 +46,10 @@ static LOCALES: LazyLock<ArcLoader> = LazyLock::new(|| {
                 {LIST_TRANSFERS_COMMAND} = {list_transfers}
                 {SHOW_BALANCES_COMMAND} = {show_balances}
                 {SHOW_STATS_COMMAND} = {show_stats}
+                {CLEAR_TRAVELERS_COMMAND} = {clear_travelers}
+                {CLEAR_EXPENSES_COMMAND} = {clear_expenses}
+                {CLEAR_TRANSFERS_COMMAND} = {clear_transfers}
+                {CLEAR_ALL_COMMAND} = {clear_all}
                 {CANCEL_COMMAND} = {cancel}
                 ",
                 help = variant_to_string!(Command::Help),
@@ -63,6 +67,10 @@ static LOCALES: LazyLock<ArcLoader> = LazyLock::new(|| {
                 list_transfers = variant_to_string!(Command::ListTransfers),
                 show_balances = variant_to_string!(Command::ShowBalances),
                 show_stats = variant_to_string!(Command::ShowStats),
+                clear_travelers = variant_to_string!(Command::ClearTravelers),
+                clear_expenses = variant_to_string!(Command::ClearExpenses),
+                clear_transfers = variant_to_string!(Command::ClearTransfers),
+                clear_all = variant_to_string!(Command::ClearAll),
                 cancel = variant_to_string!(Command::Cancel),
             );
 
