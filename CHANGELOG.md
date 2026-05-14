@@ -1,6 +1,7 @@
 # Changelog
 
-## [0.3.1-SNAPSHOT] - Unreleased
+## [0.3.1] - 2026-05-14
+### 🔧 Patch Release
 ### Added
 - Every instrumented handler span now includes a `trace_id` field (monotonically increasing process-unique counter) for correlating log lines across nested calls.
 - More INFO and WARN-level summary logs for production visibility.
