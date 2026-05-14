@@ -164,10 +164,14 @@ impl Expense {
     ) -> Result<Vec<Self>, surrealdb::Error> {
         use crate::{paid_for::TABLE as PAID_FOR, traveler::TABLE as TRAVELER};
 
-        db.query(format!("${TRAVELER}->{PAID_FOR}->{TABLE}.*"))
-            .bind((TRAVELER, traveler))
-            .await
-            .and_then(|mut response| response.take::<Vec<Self>>(0))
+        db.query(format!(
+            "SELECT *
+            FROM ${TRAVELER}->{PAID_FOR}->{TABLE}.*
+            ORDER BY {NUMBER} ASC",
+        ))
+        .bind((TRAVELER, traveler))
+        .await
+        .and_then(|mut response| response.take::<Vec<Self>>(0))
     }
 
     pub async fn db_select_by_number(

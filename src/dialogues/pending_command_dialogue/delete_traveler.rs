@@ -185,12 +185,7 @@ pub async fn receive_callback(
     };
     let name = traveler.name;
 
-    // Echo the selected name and remove the inline keyboard.
-    if let Some(text) = msg.text() {
-        let _ = bot
-            .edit_message_text(msg.chat.id, msg.id, format!("{text}\n✓ {name}"))
-            .await;
-    }
+    keyboard::echo_callback_selection(&bot, &msg, &name).await;
 
     ask_confirmation(&bot, &dialogue, msg.chat.id, name, ctx).await?;
     tracing::debug!("{LOG_DEBUG_SUCCESS}");
@@ -280,8 +275,12 @@ pub async fn receive_confirm_callback(
 
     let data = q.data.as_deref().unwrap_or("");
 
-    // Remove the confirmation keyboard.
-    let _ = bot.edit_message_reply_markup(msg.chat.id, msg.id).await;
+    let label = if data == CONFIRM_CALLBACK {
+        i18n::labels::CONFIRM_YES_BUTTON.translate(ctx.clone())
+    } else {
+        i18n::labels::CONFIRM_NO_BUTTON.translate(ctx.clone())
+    };
+    keyboard::echo_callback_selection(&bot, &msg, &label).await;
 
     if data == CONFIRM_CALLBACK {
         let cmd = Command::DeleteTraveler {

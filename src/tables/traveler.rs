@@ -1,7 +1,8 @@
 use crate::{
     consts::{NAME_INVALID_CHARS, RESERVED_KWORDS},
     db::Count,
-    errors::NameValidationError,
+    errors::{CommandError, NameValidationError},
+    expense::Expense,
 };
 
 use serde::{Deserialize, Serialize};
@@ -236,6 +237,32 @@ impl Traveler {
     ) -> Option<Self> {
         let number: i64 = raw_number.parse().ok()?;
         Self::db_select_by_number(db, chat_id, number).await.ok()?
+    }
+
+    /// Returns a list of `(traveler, expenses)` pairs for every traveler
+    /// in `chat_id` that has at least one associated expense.
+    pub async fn travelers_with_expenses(
+        db: Arc<Surreal<Any>>,
+        chat_id: ChatId,
+    ) -> Result<Vec<(Self, Vec<Expense>)>, CommandError> {
+        let travelers = Self::db_select(db.clone(), chat_id).await.map_err(|err| {
+            tracing::error!("{err}");
+            CommandError::ClearTravelers
+        })?;
+
+        let mut result = Vec::new();
+        for traveler in &travelers {
+            let expenses = Expense::db_select_by_payer(db.clone(), traveler.clone())
+                .await
+                .map_err(|err| {
+                    tracing::error!("{err}");
+                    CommandError::ClearTravelers
+                })?;
+            if !expenses.is_empty() {
+                result.push((traveler.clone(), expenses));
+            }
+        }
+        Ok(result)
     }
 }
 

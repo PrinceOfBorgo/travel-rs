@@ -6,7 +6,7 @@ use crate::{
     consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     dialogues::pending_command_dialogue::{PendingCommandDialogue, PendingCommandState},
     i18n::{self, Translate, TranslateWithArgs},
-    keyboard::{ConfirmAnswer, ConfirmConfig, confirmation_keyboard, parse_confirm_answer},
+    keyboard::{self, ConfirmAnswer, ConfirmConfig, confirmation_keyboard, parse_confirm_answer},
 };
 use macro_rules_attribute::apply;
 use maplit::hashmap;
@@ -132,7 +132,12 @@ pub async fn receive_confirm_callback(
 
     let data = q.data.as_deref().unwrap_or("");
 
-    let _ = bot.edit_message_reply_markup(msg.chat.id, msg.id).await;
+    let label = if data == CONFIRM_CALLBACK {
+        i18n::labels::CONFIRM_YES_BUTTON.translate(ctx.clone())
+    } else {
+        i18n::labels::CONFIRM_NO_BUTTON.translate(ctx.clone())
+    };
+    keyboard::echo_callback_selection(&bot, &msg, &label).await;
 
     if data == CONFIRM_CALLBACK {
         let cmd = Command::ClearExpenses;

@@ -324,8 +324,12 @@ pub async fn receive_confirm_callback(
 
     let data = q.data.as_deref().unwrap_or("");
 
-    // Remove the confirmation keyboard.
-    let _ = bot.edit_message_reply_markup(msg.chat.id, msg.id).await;
+    let label = if data == CONFIRM_CALLBACK {
+        i18n::labels::CONFIRM_YES_BUTTON.translate(ctx.clone())
+    } else {
+        i18n::labels::CONFIRM_NO_BUTTON.translate(ctx.clone())
+    };
+    keyboard::echo_callback_selection(&bot, &msg, &label).await;
 
     if data == CONFIRM_CALLBACK {
         let cmd = Command::DeleteTransfer {

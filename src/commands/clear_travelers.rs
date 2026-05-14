@@ -4,7 +4,6 @@ use crate::{
     consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     debt::update_debts,
     errors::CommandError,
-    expense::Expense,
     i18n::{self, Translate, TranslateWithArgs},
     traveler::Traveler,
 };
@@ -14,34 +13,6 @@ use std::sync::{Arc, Mutex};
 use surrealdb::{Surreal, engine::any::Any};
 use teloxide::prelude::*;
 use tracing::Level;
-
-/// Returns a list of `(traveler, expenses)` pairs for every traveler
-/// in `chat_id` that has at least one associated expense.
-pub async fn travelers_with_expenses(
-    db: Arc<Surreal<Any>>,
-    chat_id: ChatId,
-) -> Result<Vec<(Traveler, Vec<Expense>)>, CommandError> {
-    let travelers = Traveler::db_select(db.clone(), chat_id)
-        .await
-        .map_err(|err| {
-            tracing::error!("{err}");
-            CommandError::ClearTravelers
-        })?;
-
-    let mut result = Vec::new();
-    for traveler in &travelers {
-        let expenses = Expense::db_select_by_payer(db.clone(), traveler.clone())
-            .await
-            .map_err(|err| {
-                tracing::error!("{err}");
-                CommandError::ClearTravelers
-            })?;
-        if !expenses.is_empty() {
-            result.push((traveler.clone(), expenses));
-        }
-    }
-    Ok(result)
-}
 
 #[apply(trace_command_db)]
 pub async fn clear_travelers(
@@ -54,14 +25,14 @@ pub async fn clear_travelers(
     let travelers = Traveler::db_select(db.clone(), msg.chat.id).await;
     match travelers {
         Ok(list) if !list.is_empty() => {
-            let with_expenses = travelers_with_expenses(db.clone(), msg.chat.id).await?;
+            let with_expenses = Traveler::travelers_with_expenses(db.clone(), msg.chat.id).await?;
 
             if !with_expenses.is_empty() {
                 let names = with_expenses
                     .iter()
                     .map(|(t, _)| t.name.to_string())
                     .collect::<Vec<_>>()
-                    .join(", ");
+                    .join("\n");
                 tracing::warn!(
                     "Unable to clear travelers because some have associated expenses: {names}"
                 );
@@ -191,7 +162,7 @@ mod tests {
         bot.update("yes");
         let has_expenses = i18n::commands::CLEAR_TRAVELERS_HAS_EXPENSES
             .translate_with_args_default(
-                &hashmap! { i18n::args::TRAVELERS.into() => "Alice, Bob".into() },
+                &hashmap! { i18n::args::TRAVELERS.into() => "Alice\nBob".into() },
             );
         let prompt = i18n::dialogues::CLEAR_TRAVELERS_SHOW_EXPENSES_PROMPT.translate_default();
         let response = format!("{has_expenses}\n\n{prompt}");
@@ -326,18 +297,21 @@ mod tests {
         // Select "All" via callback.
         bot.update_callback(SHOW_ALL_CALLBACK);
 
-        // Build expected response: all expenses from travelers that have them.
+        // Build expected response: expenses grouped by traveler.
         let travelers = Traveler::db_select(db.clone(), bot.chat_id()).await.unwrap();
-        let mut all_expenses = Vec::new();
+        let mut sections = Vec::new();
         for t in &travelers {
             let exps = Expense::db_select_by_payer(db.clone(), t.clone()).await.unwrap();
-            all_expenses.extend(exps);
+            if !exps.is_empty() {
+                let formatted: String = exps
+                    .iter()
+                    .map(|e| e.translate(bot.context()))
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                sections.push(format!("{}:\n{formatted}", t.name));
+            }
         }
-        let expected: String = all_expenses
-            .iter()
-            .map(|e| e.translate(bot.context()))
-            .collect::<Vec<_>>()
-            .join("\n");
+        let expected = sections.join("\n\n");
         bot.test_last_message(&expected).await;
     }
 }

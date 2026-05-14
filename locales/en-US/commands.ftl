@@ -115,7 +115,10 @@ clear-transfers-not-found = No transfers to clear.
 clear-travelers-ok = All travelers cleared successfully.
 clear-travelers-not-found = No travelers to clear.
 clear-travelers-has-expenses =
-    The following travelers have associated expenses and cannot be deleted: {$travelers}.
+    The following travelers have associated expenses and cannot be deleted:
+    
+    {$travelers}
+
     Please delete their expenses first, or use /{-clear-all-command} to clear everything.
 
 ## /clearall

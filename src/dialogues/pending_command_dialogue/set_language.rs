@@ -176,15 +176,12 @@ pub async fn receive_callback(
         return Ok(());
     };
 
+    keyboard::echo_callback_selection(&bot, &msg, &raw).await;
+
     let cmd = Command::SetLanguage {
         langid: CommandArg::Provided(langid),
     };
     let outcome = command_reply(db, &msg, &cmd, ctx.clone()).await;
-
-    // Remove the inline keyboard from the original prompt so the user
-    // can no longer interact with it. Best-effort: ignore errors (e.g. if
-    // the message was deleted).
-    let _ = bot.edit_message_reply_markup(msg.chat.id, msg.id).await;
 
     bot.send_message(msg.chat.id, outcome.message()).await?;
     if outcome.is_success() {

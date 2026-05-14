@@ -43,7 +43,7 @@ delete-traveler-has-expenses =
     
     {$expenses}
 
-    Per favore, eliminale prima di eliminare il viaggiatore.
+    Eliminale prima di eliminare il viaggiatore.
 delete-traveler-not-found = Impossibile trovare il viaggiatore {$name} da eliminare.
 delete-traveler-ok = Viaggiatore {$name} eliminato con successo.
 
@@ -115,7 +115,10 @@ clear-transfers-not-found = Nessun trasferimento da eliminare.
 clear-travelers-ok = Tutti i viaggiatori eliminati con successo.
 clear-travelers-not-found = Nessun viaggiatore da eliminare.
 clear-travelers-has-expenses =
-    I seguenti viaggiatori hanno spese associate e non possono essere eliminati: {$travelers}.
+    I seguenti viaggiatori hanno spese associate e non possono essere eliminati:
+
+    {$travelers}
+
     Elimina prima le loro spese, oppure usa /{-clear-all-command} per eliminare tutto.
 
 ## /clearall

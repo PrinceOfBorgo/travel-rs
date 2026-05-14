@@ -2,12 +2,12 @@
 
 use crate::{
     Context, HandlerResult,
-    commands::{Command, clear_travelers::travelers_with_expenses, command_reply},
+    commands::{Command, command_reply},
     consts::{LOG_DEBUG_START, LOG_DEBUG_SUCCESS},
     dialogues::pending_command_dialogue::{PendingCommandDialogue, PendingCommandState},
     expense::Expense,
     i18n::{self, Translate, TranslateWithArgs},
-    keyboard::{ConfirmAnswer, ConfirmConfig, confirmation_keyboard, parse_confirm_answer},
+    keyboard::{self, ConfirmAnswer, ConfirmConfig, confirmation_keyboard, parse_confirm_answer},
     traveler::Traveler,
 };
 use macro_rules_attribute::apply;
@@ -108,7 +108,7 @@ async fn handle_confirm_yes(
     msg: &Message,
     ctx: Arc<Mutex<Context>>,
 ) -> HandlerResult {
-    let with_expenses = travelers_with_expenses(db.clone(), chat_id).await;
+    let with_expenses = Traveler::travelers_with_expenses(db.clone(), chat_id).await;
     match with_expenses {
         Ok(list) if list.len() == 1 => {
             // Single traveler with expenses — show them directly (no keyboard).
@@ -128,7 +128,7 @@ async fn handle_confirm_yes(
             let has_expenses_msg = i18n::commands::CLEAR_TRAVELERS_HAS_EXPENSES
                 .translate_with_args(
                     ctx.clone(),
-                    &hashmap! { i18n::args::TRAVELERS.into() => names.join(", ").into() },
+                    &hashmap! { i18n::args::TRAVELERS.into() => names.join("\n").into() },
                 );
             let prompt = format!(
                 "{has_expenses_msg}\n\n{}",
@@ -234,7 +234,12 @@ pub async fn receive_confirm_callback(
 
     let data = q.data.as_deref().unwrap_or("");
 
-    let _ = bot.edit_message_reply_markup(msg.chat.id, msg.id).await;
+    let label = if data == CONFIRM_CALLBACK {
+        i18n::labels::CONFIRM_YES_BUTTON.translate(ctx.clone())
+    } else {
+        i18n::labels::CONFIRM_NO_BUTTON.translate(ctx.clone())
+    };
+    keyboard::echo_callback_selection(&bot, &msg, &label).await;
 
     if data == CONFIRM_CALLBACK {
         handle_confirm_yes(db, &bot, &dialogue, msg.chat.id, &msg, ctx).await?;
@@ -268,22 +273,46 @@ pub async fn receive_show_expenses_callback(
 
     let data = q.data.as_deref().unwrap_or("");
 
-    let _ = bot.edit_message_reply_markup(msg.chat.id, msg.id).await;
+    // Resolve the label for the selected button.
+    let label = if data == SHOW_ALL_CALLBACK {
+        i18n::labels::ALL_BUTTON.translate(ctx.clone())
+    } else if let Some(num_str) = data.strip_prefix(SHOW_PREFIX) {
+        if let Ok(number) = num_str.parse::<i64>() {
+            Traveler::db_select_by_number(db.clone(), msg.chat.id, number)
+                .await
+                .ok()
+                .flatten()
+                .map(|t| t.name.to_string())
+                .unwrap_or_default()
+        } else {
+            String::new()
+        }
+    } else {
+        String::new()
+    };
+    if !label.is_empty() {
+        keyboard::echo_callback_selection(&bot, &msg, &label).await;
+    }
 
     if data == SHOW_ALL_CALLBACK {
-        // Show expenses for all travelers that have them.
-        match travelers_with_expenses(db, msg.chat.id).await {
+        // Show expenses for all travelers that have them, grouped by traveler.
+        match Traveler::travelers_with_expenses(db, msg.chat.id).await {
             Ok(list) => {
-                let all_expenses: Vec<Expense> =
-                    list.into_iter().flat_map(|(_, exps)| exps).collect();
-                if all_expenses.is_empty() {
+                let sections: Vec<String> = list
+                    .iter()
+                    .filter(|(_, exps)| !exps.is_empty())
+                    .map(|(t, exps)| format!("{}:\n{}", t.name, format_expenses(exps, ctx.clone())))
+                    .collect();
+                if sections.is_empty() {
                     tracing::info!("No expenses found (race condition or already deleted)");
                 } else {
-                    let reply = format_expenses(&all_expenses, ctx);
+                    let reply = sections.join("\n\n");
                     bot.send_message(msg.chat.id, reply).await?;
                 }
             }
-            Err(_) => { /* already logged */ }
+            Err(err) => {
+                tracing::error!("{err}");
+            }
         }
     } else if let Some(num_str) = data.strip_prefix(SHOW_PREFIX) {
         // Show expenses for one specific traveler, identified by number.

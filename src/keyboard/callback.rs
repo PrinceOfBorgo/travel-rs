@@ -35,6 +35,21 @@ pub struct CallbackConfig<'a> {
     pub running_process_key: &'a str,
 }
 
+/// Edits the callback message to append the user's selection with a ✓ prefix
+/// and removes the inline keyboard.
+///
+/// This is the standard visual feedback for inline-keyboard selections:
+/// the original prompt is kept, and the chosen option is appended below it.
+/// Best-effort: errors (e.g. message already deleted) are silently ignored.
+pub async fn echo_callback_selection(bot: &Bot, msg: &Message, label: &str) {
+    if let Some(text) = msg.text() {
+        let _ = bot
+            .edit_message_text(msg.chat.id, msg.id, format!("{text}\n✓ {label}"))
+            .await;
+    }
+    let _ = bot.edit_message_reply_markup(msg.chat.id, msg.id).await;
+}
+
 /// Performs the boilerplate shared by every inline-keyboard callback handler:
 ///
 /// 1. Answers the callback query (dismisses the Telegram spinner).
@@ -83,10 +98,7 @@ pub async fn handle_callback_prelude(
     }
 
     // Strip the prefix to get the actual value selected by the user.
-    let value = data
-        .strip_prefix(config.prefix)
-        .unwrap_or("")
-        .to_owned();
+    let value = data.strip_prefix(config.prefix).unwrap_or("").to_owned();
     if value.is_empty() {
         tracing::warn!("Empty value in callback data: {data:?}");
         return Ok(CallbackAction::Handled);

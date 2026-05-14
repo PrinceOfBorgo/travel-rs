@@ -425,12 +425,7 @@ pub async fn receive_paid_by_callback(
     };
 
     // Remove the inline keyboard and show the selected name.
-    if let Some(text) = msg.text() {
-        let _ = bot
-            .edit_message_text(msg.chat.id, msg.id, format!("{text}\n✓ {}", traveler.name))
-            .await;
-    }
-    let _ = bot.edit_message_reply_markup(msg.chat.id, msg.id).await;
+    keyboard::echo_callback_selection(&bot, &msg, &traveler.name).await;
 
     let text = i18n::dialogues::ADD_EXPENSE_ASK_SHARES.translate(ctx.clone());
     send_split_prompt(&bot, Arc::clone(&db), msg.chat.id, &text, false, ctx).await?;
@@ -585,13 +580,8 @@ async fn receive_split_callback_inner(
 
     // "All" action
     if data == ALL_CALLBACK_SPLIT {
-        if let Some(text) = msg.text() {
-            let label = i18n::labels::ALL_BUTTON.translate(ctx.clone());
-            let _ = bot
-                .edit_message_text(msg.chat.id, msg.id, format!("{text}\n✓ {label}"))
-                .await;
-        }
-        let _ = bot.edit_message_reply_markup(msg.chat.id, msg.id).await;
+        let label = i18n::labels::ALL_BUTTON.translate(ctx.clone());
+        keyboard::echo_callback_selection(&bot, &msg, &label).await;
         // Simulate "all" text input
         let result = parse_split_among(db.clone(), ALL_KWORD, msg.chat.id, &mut split_among).await;
         match result {
@@ -646,13 +636,8 @@ async fn receive_split_callback_inner(
 
     // "End" action
     if data == END_CALLBACK_SPLIT {
-        if let Some(text) = msg.text() {
-            let label = i18n::labels::END_BUTTON.translate(ctx.clone());
-            let _ = bot
-                .edit_message_text(msg.chat.id, msg.id, format!("{text}\n✓ {label}"))
-                .await;
-        }
-        let _ = bot.edit_message_reply_markup(msg.chat.id, msg.id).await;
+        let label = i18n::labels::END_BUTTON.translate(ctx.clone());
+        keyboard::echo_callback_selection(&bot, &msg, &label).await;
         if split_among.is_empty() {
             // Shouldn't happen since button is hidden, but guard anyway
             return Ok(());

@@ -8,6 +8,7 @@
 use crate::{
     Context,
     commands::{Command, command_reply},
+    keyboard,
     traveler::Traveler,
 };
 use std::sync::{Arc, Mutex};
@@ -79,7 +80,7 @@ pub async fn handle_stateless_callback(
     // Edit the original message to show which option was selected and
     // remove the keyboard.
     let selected_value = mappings.iter().find_map(|m| data.strip_prefix(m.prefix));
-    if let (Some(val), Some(text)) = (selected_value, msg.text()) {
+    if let Some(val) = selected_value {
         // For traveler-number callbacks, resolve the name for the echo;
         // for other callbacks, echo the raw value.
         let display_val =
@@ -95,11 +96,8 @@ pub async fn handle_stateless_callback(
             } else {
                 val.to_owned()
             };
-        let _ = bot
-            .edit_message_text(msg.chat.id, msg.id, format!("{text}\n✓ {display_val}"))
-            .await;
+        keyboard::echo_callback_selection(&bot, &msg, &display_val).await;
     }
-    let _ = bot.edit_message_reply_markup(msg.chat.id, msg.id).await;
 
     for mapping in mappings {
         if let Some(value) = data.strip_prefix(mapping.prefix) {

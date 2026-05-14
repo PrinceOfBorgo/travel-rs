@@ -14,6 +14,7 @@
 
 ### Changed
 - Updated `README.md` structure: added Deployment section linking to `DEPLOYMENT.md` and renumbered subsequent sections.
+- Querying the database for expenses by payer now returns expenses ordered by number.
 
 ### Fixed
 - The bot now pushes the command list to the global (default) scope at startup, so the command menu is available immediately in new chats without waiting for the first message.

@@ -305,15 +305,7 @@ pub async fn receive_from_callback(
     };
     let name = traveler.name;
 
-    // Echo the selected name and remove the inline keyboard.
-    if let Some(text) = msg.text() {
-        let _ = bot
-            .edit_message_text(msg.chat.id, msg.id, format!("{text}\n✓ {name}"))
-            .await;
-    }
-
-    // Remove the inline keyboard from the "from" prompt.
-    let _ = bot.edit_message_reply_markup(msg.chat.id, msg.id).await;
+    keyboard::echo_callback_selection(&bot, &msg, &name).await;
 
     transition_to_ask_to(db, &bot, &dialogue, msg.chat.id, name, ctx).await?;
     tracing::debug!("{LOG_DEBUG_SUCCESS}");
@@ -401,12 +393,7 @@ pub async fn receive_to_callback(
     };
     let name = traveler.name;
 
-    // Echo the selected name and remove the inline keyboard.
-    if let Some(text) = msg.text() {
-        let _ = bot
-            .edit_message_text(msg.chat.id, msg.id, format!("{text}\n✓ {name}"))
-            .await;
-    }
+    keyboard::echo_callback_selection(&bot, &msg, &name).await;
 
     transition_to_ask_amount(&bot, &dialogue, msg.chat.id, from, name, ctx).await?;
     tracing::debug!("{LOG_DEBUG_SUCCESS}");

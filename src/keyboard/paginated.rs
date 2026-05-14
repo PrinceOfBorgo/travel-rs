@@ -248,11 +248,7 @@ pub async fn handle_paginated_callback(
     }
 
     // Edit the original message to show which option was selected.
-    if let Some(text) = msg.text() {
-        let _ = bot
-            .edit_message_text(msg.chat.id, msg.id, format!("{text}\n✓ {value}"))
-            .await;
-    }
+    super::echo_callback_selection(bot, &msg, &value).await;
 
     Ok(PaginatedCallbackAction::Selection {
         value,
