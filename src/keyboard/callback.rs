@@ -83,17 +83,13 @@ pub async fn handle_callback_prelude(
     }
 
     // Strip the prefix to get the actual value selected by the user.
-    let value = data.strip_prefix(config.prefix).unwrap_or("").to_owned();
+    let value = data
+        .strip_prefix(config.prefix)
+        .unwrap_or("")
+        .to_owned();
     if value.is_empty() {
         tracing::warn!("Empty value in callback data: {data:?}");
         return Ok(CallbackAction::Handled);
-    }
-
-    // Edit the original message to show which option was selected.
-    if let Some(text) = msg.text() {
-        let _ = bot
-            .edit_message_text(msg.chat.id, msg.id, format!("{text}\n✓ {value}"))
-            .await;
     }
 
     Ok(CallbackAction::Selection {

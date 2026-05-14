@@ -313,6 +313,7 @@ pub static STATELESS_CALLBACKS: LazyLock<Vec<inline_keyboards::CallbackMapping>>
                         command: value.to_owned(),
                     })
                 },
+                resolve_traveler_number: false,
             },
             inline_keyboards::CallbackMapping {
                 prefix: LIST_TRANSFERS_CALLBACK_PREFIX,
@@ -323,6 +324,7 @@ pub static STATELESS_CALLBACKS: LazyLock<Vec<inline_keyboards::CallbackMapping>>
                             name: CommandArg::Provided(name),
                         })
                 },
+                resolve_traveler_number: true,
             },
             inline_keyboards::CallbackMapping {
                 prefix: SHOW_BALANCES_CALLBACK_PREFIX,
@@ -333,6 +335,7 @@ pub static STATELESS_CALLBACKS: LazyLock<Vec<inline_keyboards::CallbackMapping>>
                             name: CommandArg::Provided(name),
                         })
                 },
+                resolve_traveler_number: true,
             },
         ]
     });
@@ -588,12 +591,12 @@ mod tests {
 
         #[test]
         fn list_transfers_prefix_recognized() {
-            assert!(is_stateless_callback("lstxfr:Alice"));
+            assert!(is_stateless_callback("lstxfr:0"));
         }
 
         #[test]
         fn show_balances_prefix_recognized() {
-            assert!(is_stateless_callback("showbal:Bob"));
+            assert!(is_stateless_callback("showbal:1"));
         }
 
         #[test]

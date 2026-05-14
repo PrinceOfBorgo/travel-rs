@@ -106,7 +106,6 @@ pub fn paginated_keyboard(cfg: PaginatedKeyboardConfig<'_>) -> Option<InlineKeyb
     let end = (start + items_per_page).min(items.len());
     let page_items = &items[start..end];
 
-    // Build item buttons, then chunk into rows of `columns`.
     let buttons: Vec<InlineKeyboardButton> = page_items
         .iter()
         .map(|item| {

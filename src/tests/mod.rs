@@ -7,7 +7,7 @@ use crate::{
 use std::sync::{Arc, Mutex};
 use surrealdb::{Surreal, engine::any::Any};
 use teloxide::types::{Chat, ChatId};
-use teloxide_tests::{MockBot, MockMessageText, mock_bot::DistributionKey};
+use teloxide_tests::{MockBot, MockCallbackQuery, MockMessageText, mock_bot::DistributionKey};
 
 pub(crate) struct TestBot {
     bot: MockBot<Box<dyn std::error::Error + Send + Sync>, DistributionKey>,
@@ -40,6 +40,16 @@ impl TestBot {
     pub fn update(&mut self, text: &str) {
         let mock_msg = mock_text_from_chat_id(text, self.chat_id);
         self.bot.update(mock_msg);
+    }
+
+    /// Updates the bot with a callback query carrying `data`.
+    /// The callback message is tied to this bot's chat ID.
+    pub fn update_callback(&mut self, data: &str) {
+        let mock_msg = mock_text_from_chat_id("", self.chat_id).build();
+        let cb = MockCallbackQuery::new()
+            .data(data.to_owned())
+            .message(mock_msg);
+        self.bot.update(cb);
     }
 
     /// Dispatches the bot and checks the last message sent.

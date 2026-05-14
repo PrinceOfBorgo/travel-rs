@@ -11,7 +11,7 @@ use crate::{
     dialogues::pending_command_dialogue::{PendingCommandDialogue, PendingCommandState},
     i18n::{self, Translate, TranslateWithArgs},
     keyboard::{self, ConfirmAnswer, ConfirmConfig, confirmation_keyboard, parse_confirm_answer},
-    traveler::Name,
+    traveler::{Name, Traveler},
 };
 use macro_rules_attribute::apply;
 use maplit::hashmap;
@@ -29,8 +29,7 @@ use teloxide::{
 use tracing::Level;
 
 /// Prefix used to identify callback queries originating from the
-/// `/deletetraveler` inline keyboard. The remainder of the callback data is
-/// the selected traveler name (e.g. `deltrav:Alice`).
+/// `/deletetraveler` inline keyboard.
 pub const CALLBACK_PREFIX: &str = "deltrav:";
 
 /// Callback data used by the cancel button.
@@ -151,6 +150,7 @@ pub async fn receive_name(
 
 #[apply(trace_callback)]
 pub async fn receive_callback(
+    db: Arc<Surreal<Any>>,
     bot: Bot,
     dialogue: PendingCommandDialogue,
     q: CallbackQuery,
@@ -177,13 +177,20 @@ pub async fn receive_callback(
         return Ok(());
     };
 
-    let Ok(name) = Name::from_str(&raw) else {
-        tracing::warn!("Invalid name in callback data: {raw:?}");
+    let Some(traveler) =
+        Traveler::db_resolve_by_number(db, msg.chat.id, &raw).await
+    else {
+        tracing::warn!("Could not resolve traveler number from callback data: {raw:?}");
         return Ok(());
     };
+    let name = traveler.name;
 
-    // Remove the inline keyboard.
-    let _ = bot.edit_message_reply_markup(msg.chat.id, msg.id).await;
+    // Echo the selected name and remove the inline keyboard.
+    if let Some(text) = msg.text() {
+        let _ = bot
+            .edit_message_text(msg.chat.id, msg.id, format!("{text}\n✓ {name}"))
+            .await;
+    }
 
     ask_confirmation(&bot, &dialogue, msg.chat.id, name, ctx).await?;
     tracing::debug!("{LOG_DEBUG_SUCCESS}");

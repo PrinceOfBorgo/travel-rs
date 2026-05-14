@@ -3,7 +3,7 @@ mod cancel;
 mod clear_all;
 mod clear_expenses;
 mod clear_transfers;
-mod clear_travelers;
+pub(crate) mod clear_travelers;
 mod command;
 mod command_arg;
 mod command_outcome;

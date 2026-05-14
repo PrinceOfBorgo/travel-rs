@@ -18,7 +18,7 @@ pub struct TravelersKeyboardConfig<'a> {
     pub db: Arc<Surreal<Any>>,
     /// Chat to load travelers from.
     pub chat_id: ChatId,
-    /// Callback-data prefix prepended to each traveler name.
+    /// Callback-data prefix prepended to each traveler index.
     pub prefix: &'a str,
     /// Full callback data for the cancel button.
     pub cancel_callback: &'a str,
@@ -45,10 +45,9 @@ pub async fn travelers_keyboard(
     let items: Vec<PickerItem> = travelers
         .into_iter()
         .map(|t| {
-            let name = t.name.to_string();
             PickerItem {
-                label: name.clone(),
-                value: name,
+                label: t.name.to_string(),
+                value: t.number.to_string(),
             }
         })
         .collect();

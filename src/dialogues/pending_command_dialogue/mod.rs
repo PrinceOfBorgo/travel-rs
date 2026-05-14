@@ -157,9 +157,17 @@ pub fn handler_branch() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync
                     case![TransferState::AskAmount(from, to)].endpoint(transfer::receive_amount),
                 ),
         )
-        .branch(case![ClearTravelers(state)].branch(
-            case![ClearTravelersState::Confirm].endpoint(clear_travelers::receive_confirm_text),
-        ))
+        .branch(
+            case![ClearTravelers(state)]
+                .branch(
+                    case![ClearTravelersState::Confirm]
+                        .endpoint(clear_travelers::receive_confirm_text),
+                )
+                .branch(
+                    case![ClearTravelersState::ShowExpenses]
+                        .endpoint(clear_travelers::receive_confirm_text),
+                ),
+        )
         .branch(case![ClearExpenses(state)].branch(
             case![ClearExpensesState::Confirm].endpoint(clear_expenses::receive_confirm_text),
         ))
@@ -191,7 +199,9 @@ const CALLBACK_PREFIXES: &[&str] = &[
 /// Returns `true` if the callback data matches any pending-command dialogue
 /// prefix.
 pub fn is_pending_callback(data: &str) -> bool {
-    CALLBACK_PREFIXES.iter().any(|p| data.starts_with(p))
+    CALLBACK_PREFIXES
+        .iter()
+        .any(|p| data.starts_with(p))
 }
 
 /// Returns the dispatcher subtree that handles inline-keyboard callbacks for
@@ -254,9 +264,17 @@ pub fn callback_branch() -> UpdateHandler<Box<dyn std::error::Error + Send + Syn
                         .endpoint(delete_transfer::receive_confirm_callback),
                 ),
         )
-        .branch(case![ClearTravelers(state)].branch(
-            case![ClearTravelersState::Confirm].endpoint(clear_travelers::receive_confirm_callback),
-        ))
+        .branch(
+            case![ClearTravelers(state)]
+                .branch(
+                    case![ClearTravelersState::Confirm]
+                        .endpoint(clear_travelers::receive_confirm_callback),
+                )
+                .branch(
+                    case![ClearTravelersState::ShowExpenses]
+                        .endpoint(clear_travelers::receive_show_expenses_callback),
+                ),
+        )
         .branch(case![ClearExpenses(state)].branch(
             case![ClearExpensesState::Confirm].endpoint(clear_expenses::receive_confirm_callback),
         ))

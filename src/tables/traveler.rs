@@ -11,7 +11,11 @@ use std::{
     str::FromStr,
     sync::Arc,
 };
-use surrealdb::{RecordId, Surreal, engine::any::Any};
+use surrealdb::{
+    RecordId, Surreal,
+    engine::any::Any,
+    sql::statements::{BeginStatement, CommitStatement},
+};
 use teloxide::types::ChatId;
 use travel_rs_derive::Table;
 
@@ -80,6 +84,7 @@ pub struct Traveler {
     pub id: RecordId,
     pub chat: RecordId,
     pub name: Name,
+    pub number: i64,
 }
 
 impl Traveler {
@@ -90,18 +95,28 @@ impl Traveler {
     ) -> Result<Option<Self>, surrealdb::Error> {
         use super::chat::{ID as CHAT_ID, TABLE as CHAT_TB};
 
-        db.query(format!(
-            "CREATE {TABLE}
-            CONTENT {{
-                {CHAT}: ${CHAT_ID}, 
-                {NAME}: ${NAME},
-                {NAME_LOWER}: string::lowercase(${NAME}),
-            }}",
-        ))
-        .bind((CHAT_ID, RecordId::from_table_key(CHAT_TB, chat_id.0)))
-        .bind((NAME, name.clone()))
-        .await
-        .and_then(|mut response| response.take::<Option<Self>>(0))
+        db.query(BeginStatement::default())
+            .query(format!(
+                "LET $max = math::max(
+                    SELECT VALUE {NUMBER}
+                    FROM {TABLE}
+                    WHERE {CHAT} = ${CHAT_ID}
+                ) ?? 0"
+            ))
+            .query(format!(
+                "CREATE {TABLE}
+                CONTENT {{
+                    {CHAT}: ${CHAT_ID},
+                    {NAME}: ${NAME},
+                    {NAME_LOWER}: string::lowercase(${NAME}),
+                    {NUMBER}: $max + 1,
+                }}",
+            ))
+            .query(CommitStatement::default())
+            .bind((CHAT_ID, RecordId::from_table_key(CHAT_TB, chat_id.0)))
+            .bind((NAME, name.clone()))
+            .await
+            .and_then(|mut response| response.take::<Option<Self>>(1))
     }
 
     pub async fn db_count(
@@ -189,6 +204,38 @@ impl Traveler {
         .bind((NAME, name.clone()))
         .await
         .and_then(|mut response| response.take::<Option<Self>>(0))
+    }
+
+    pub async fn db_select_by_number(
+        db: Arc<Surreal<Any>>,
+        chat_id: ChatId,
+        number: i64,
+    ) -> Result<Option<Self>, surrealdb::Error> {
+        use super::chat::{ID as CHAT_ID, TABLE as CHAT_TB};
+
+        db.query(format!(
+            "SELECT *
+            FROM {TABLE}
+            WHERE
+                {CHAT} = ${CHAT_ID}
+                && {NUMBER} = ${NUMBER}",
+        ))
+        .bind((CHAT_ID, RecordId::from_table_key(CHAT_TB, chat_id.0)))
+        .bind((NUMBER, number))
+        .await
+        .and_then(|mut response| response.take::<Option<Self>>(0))
+    }
+
+    /// Parses a raw string as a traveler number and looks it up in the DB.
+    ///
+    /// Returns `None` if parsing fails or no traveler with that number exists.
+    pub async fn db_resolve_by_number(
+        db: Arc<Surreal<Any>>,
+        chat_id: ChatId,
+        raw_number: &str,
+    ) -> Option<Self> {
+        let number: i64 = raw_number.parse().ok()?;
+        Self::db_select_by_number(db, chat_id, number).await.ok()?
     }
 }
 

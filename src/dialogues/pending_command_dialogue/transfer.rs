@@ -297,10 +297,20 @@ pub async fn receive_from_callback(
         return Ok(());
     };
 
-    let Ok(name) = Name::from_str(&raw) else {
-        tracing::warn!("Invalid name in callback data: {raw:?}");
+    let Some(traveler) =
+        Traveler::db_resolve_by_number(db.clone(), msg.chat.id, &raw).await
+    else {
+        tracing::warn!("Could not resolve traveler number from callback data: {raw:?}");
         return Ok(());
     };
+    let name = traveler.name;
+
+    // Echo the selected name and remove the inline keyboard.
+    if let Some(text) = msg.text() {
+        let _ = bot
+            .edit_message_text(msg.chat.id, msg.id, format!("{text}\n✓ {name}"))
+            .await;
+    }
 
     // Remove the inline keyboard from the "from" prompt.
     let _ = bot.edit_message_reply_markup(msg.chat.id, msg.id).await;
@@ -355,7 +365,7 @@ pub async fn receive_to_text(
 
 #[apply(trace_callback)]
 pub async fn receive_to_callback(
-    _db: Arc<Surreal<Any>>,
+    db: Arc<Surreal<Any>>,
     bot: Bot,
     dialogue: PendingCommandDialogue,
     q: CallbackQuery,
@@ -383,13 +393,20 @@ pub async fn receive_to_callback(
         return Ok(());
     };
 
-    let Ok(name) = Name::from_str(&raw) else {
-        tracing::warn!("Invalid name in callback data: {raw:?}");
+    let Some(traveler) =
+        Traveler::db_resolve_by_number(db, msg.chat.id, &raw).await
+    else {
+        tracing::warn!("Could not resolve traveler number from callback data: {raw:?}");
         return Ok(());
     };
+    let name = traveler.name;
 
-    // Remove the inline keyboard from the "to" prompt.
-    let _ = bot.edit_message_reply_markup(msg.chat.id, msg.id).await;
+    // Echo the selected name and remove the inline keyboard.
+    if let Some(text) = msg.text() {
+        let _ = bot
+            .edit_message_text(msg.chat.id, msg.id, format!("{text}\n✓ {name}"))
+            .await;
+    }
 
     transition_to_ask_amount(&bot, &dialogue, msg.chat.id, from, name, ctx).await?;
     tracing::debug!("{LOG_DEBUG_SUCCESS}");
@@ -583,6 +600,7 @@ async fn transition_to_ask_amount(
 }
 
 /// Builds a traveler-picker keyboard excluding one specific name.
+/// Each button's callback value is the traveler's stable `number` field.
 async fn travelers_keyboard_excluding(
     db: Arc<Surreal<Any>>,
     chat_id: teloxide::types::ChatId,
@@ -591,13 +609,12 @@ async fn travelers_keyboard_excluding(
 ) -> Option<teloxide::types::InlineKeyboardMarkup> {
     let travelers = Traveler::db_select(db, chat_id).await.ok()?;
     let items: Vec<PickerItem> = travelers
-        .into_iter()
+        .iter()
         .filter(|t| t.name.to_lowercase() != exclude.to_lowercase())
         .map(|t| {
-            let name = t.name.to_string();
             PickerItem {
-                label: name.clone(),
-                value: name,
+                label: t.name.to_string(),
+                value: t.number.to_string(),
             }
         })
         .collect();

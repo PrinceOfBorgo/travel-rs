@@ -23,8 +23,7 @@ use teloxide::{
 use tracing::Level;
 
 /// Prefix used to identify callback queries originating from the
-/// `/setcurrency` inline keyboard. The remainder of the callback data is
-/// the selected currency code (e.g. `setcur:USD`).
+/// `/setcurrency` inline keyboard.
 pub const CALLBACK_PREFIX: &str = "setcur:";
 
 /// Callback data used by the cancel button in the `/setcurrency` inline

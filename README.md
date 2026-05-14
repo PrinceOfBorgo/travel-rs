@@ -140,7 +140,7 @@ The following commands are supported by Travel-RS Bot:
 * **`/showstats`** — Displays statistics for expenses, transfers and travelers.
 
   * Example: `/showstats`
-* **`/cleartravelers`** — Deletes all travelers from the travel plan. Transfers involving these travelers are also deleted. If any traveler has associated expenses, the command is refused until those expenses are deleted first. A confirmation prompt (Yes/No) is shown before executing.
+* **`/cleartravelers`** — Deletes all travelers from the travel plan. Transfers involving these travelers are also deleted. If any traveler has associated expenses, the command is refused until those expenses are deleted first; the bot shows an inline keyboard with the involved travelers (plus an "All" button) to show their expenses. A confirmation prompt (Yes/No) is shown before executing.
 
   * Example: `/cleartravelers`
 * **`/clearexpenses`** — Deletes all expenses from the travel plan. A confirmation prompt (Yes/No) is shown before executing.

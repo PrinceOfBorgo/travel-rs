@@ -415,11 +415,12 @@ The following table maps each release to the database migration scripts it intro
 >
 > Row format: `| v<version> | `001_script_name.surql`, `002_other_script.surql` | Brief description |`
 
-| Version | Required Migrations                                                                 | Notes                         |
-| ------- | ----------------------------------------------------------------------------------- | ----------------------------- |
-| v0.2.0  | `001_init.surql`                                                                    | Initial schema                |
-| v0.2.1  | `002_add_timestamps.surql`                                                          | Adds timestamp fields         |
-| v0.2.2  | `003_define_stats_functions.surql`                                                  | Statistics functions          |
-| v0.2.4  | `004_overwrite_traveler_stats_function.surql`                                       | Updated stats function        |
-| v0.2.5  | `005_fix_overwrite_stats_function.surql`                                            | Fix average per day stats     |
-| v0.3.0  | `006_add_validation_constraints.surql`, `007_case_insensitive_traveler_names.surql` | Schema validation constraints |
+| Version | Required Migrations                                                                 | Notes                           |
+| ------- | ----------------------------------------------------------------------------------- | ------------------------------- |
+| v0.2.0  | `001_init.surql`                                                                    | Initial schema                  |
+| v0.2.1  | `002_add_timestamps.surql`                                                          | Adds timestamp fields           |
+| v0.2.2  | `003_define_stats_functions.surql`                                                  | Statistics functions            |
+| v0.2.4  | `004_overwrite_traveler_stats_function.surql`                                       | Updated stats function          |
+| v0.2.5  | `005_fix_overwrite_stats_function.surql`                                            | Fix average per day stats       |
+| v0.3.0  | `006_add_validation_constraints.surql`, `007_case_insensitive_traveler_names.surql` | Schema validation constraints   |
+| v0.3.1  | `008_add_traveler_number.surql`                                                     | Stable numeric ID for travelers |

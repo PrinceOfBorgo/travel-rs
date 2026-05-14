@@ -407,58 +407,41 @@ pub async fn receive_paid_by_callback(
         return Ok(());
     }
 
-    // Strip prefix to get the selected name.
-    let raw = data.strip_prefix(CALLBACK_PREFIX).unwrap_or("").to_owned();
+    // Strip prefix to get the selected index.
+    let raw = data
+        .strip_prefix(CALLBACK_PREFIX)
+        .unwrap_or("")
+        .to_owned();
     if raw.is_empty() {
         tracing::warn!("Empty value in callback data: {data:?}");
         return Ok(());
     }
 
-    let Ok(name) = Name::from_str(&raw) else {
-        tracing::warn!("Invalid name in callback data: {raw:?}");
+    let Some(traveler) =
+        Traveler::db_resolve_by_number(Arc::clone(&db), msg.chat.id, &raw).await
+    else {
+        tracing::warn!("Could not resolve traveler number from callback data: {raw:?}");
         return Ok(());
     };
 
     // Remove the inline keyboard and show the selected name.
     if let Some(text) = msg.text() {
         let _ = bot
-            .edit_message_text(msg.chat.id, msg.id, format!("{text}\n✓ {raw}"))
+            .edit_message_text(msg.chat.id, msg.id, format!("{text}\n✓ {}", traveler.name))
             .await;
     }
     let _ = bot.edit_message_reply_markup(msg.chat.id, msg.id).await;
 
-    // Look up the traveler.
-    let select_res = Traveler::db_select_by_name(Arc::clone(&db), msg.chat.id, &name).await;
-    match select_res {
-        Ok(Some(traveler)) => {
-            let text = i18n::dialogues::ADD_EXPENSE_ASK_SHARES.translate(ctx.clone());
-            send_split_prompt(&bot, Arc::clone(&db), msg.chat.id, &text, false, ctx).await?;
-            dialogue
-                .update(AddExpenseState::StartSplitAmong {
-                    description,
-                    amount,
-                    paid_by: traveler,
-                })
-                .await?;
-            tracing::debug!("{LOG_DEBUG_SUCCESS}");
-        }
-        Ok(None) => {
-            tracing::warn!("Traveler from callback not found: {name}");
-            let reply = i18n::dialogues::ADD_EXPENSE_TRAVELER_NOT_FOUND.translate_with_args(
-                ctx.clone(),
-                &hashmap! {i18n::args::NAME.into() => name.into()},
-            );
-            reprompt_paid_by(&bot, db, msg.chat.id, ctx, &reply).await?;
-        }
-        Err(err) => {
-            tracing::error!("{err}");
-            let reply = i18n::dialogues::ADD_EXPENSE_TRAVELER_GENERIC_ERROR.translate_with_args(
-                ctx.clone(),
-                &hashmap! {i18n::args::NAME.into() => name.into()},
-            );
-            reprompt_paid_by(&bot, db, msg.chat.id, ctx, &reply).await?;
-        }
-    }
+    let text = i18n::dialogues::ADD_EXPENSE_ASK_SHARES.translate(ctx.clone());
+    send_split_prompt(&bot, Arc::clone(&db), msg.chat.id, &text, false, ctx).await?;
+    dialogue
+        .update(AddExpenseState::StartSplitAmong {
+            description,
+            amount,
+            paid_by: traveler,
+        })
+        .await?;
+    tracing::debug!("{LOG_DEBUG_SUCCESS}");
 
     Ok(())
 }

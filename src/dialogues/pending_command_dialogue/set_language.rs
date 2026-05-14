@@ -25,8 +25,7 @@ use tracing::Level;
 use unic_langid::LanguageIdentifier;
 
 /// Prefix used to identify callback queries originating from the
-/// `/setlanguage` inline keyboard. The remainder of the callback data is the
-/// selected language identifier (e.g. `setlang:it-IT`).
+/// `/setlanguage` inline keyboard.
 pub const CALLBACK_PREFIX: &str = "setlang:";
 
 /// Callback data used by the cancel button in the `/setlanguage` inline

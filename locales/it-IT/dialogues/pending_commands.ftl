@@ -58,6 +58,7 @@ transfer-invalid-amount = Hai inviato un importo non valido, per favore riprova.
 clear-travelers-confirm =
     Sei sicuro di voler eliminare tutti i viaggiatori?
     ⚠️ Tutti i trasferimenti che coinvolgono questi viaggiatori verranno eliminati.
+clear-travelers-show-expenses-prompt = Seleziona un viaggiatore per visualizzare le sue spese, oppure tocca "Tutti" per visualizzare tutte.
 
 ## /clearexpenses
 

@@ -376,5 +376,7 @@ DEFINE FIELD OVERWRITE name ON traveler TYPE string
         AND !string::contains($value, '"')
     PERMISSIONS FOR select, create, update WHERE FULL;
 DEFINE FIELD OVERWRITE name_lower ON traveler TYPE string PERMISSIONS FOR select, create, update WHERE FULL;
+DEFINE FIELD OVERWRITE number ON traveler TYPE int PERMISSIONS FOR select, create, update WHERE FULL;
 
 DEFINE INDEX OVERWRITE traveler_chat_name_lower_index ON traveler FIELDS chat, name_lower UNIQUE;
+DEFINE INDEX OVERWRITE traveler_chat_number_index ON traveler FIELDS chat, number UNIQUE;

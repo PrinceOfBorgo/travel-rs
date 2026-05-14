@@ -58,6 +58,7 @@ transfer-invalid-amount = You sent an invalid amount, please retry.
 clear-travelers-confirm =
     Are you sure you want to delete all travelers?
     ⚠️ All transfers involving these travelers will also be deleted.
+clear-travelers-show-expenses-prompt = Select a traveler to view their expenses, or tap "All" to view all.
 
 ## /clearexpenses
 
