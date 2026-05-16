@@ -2,10 +2,13 @@
 
 ## [0.3.2-SNAPSHOT] - Unreleased
 ### Added
-- N/A
+- Database chat-equality assertions on relation tables: both endpoints of every relation must belong to the same chat. This prevents cross-chat data corruption from direct DB writes. This requires [database](database) schema updates. Run the following script to migrate:
+  - [`009_assert_chat_equality.surql`](database/migrations/009_assert_chat_equality.surql)
 
 ### Changed
-- N/A
+- Refactored callback prefix constants: introduced the `callback_consts!` macro to derive `CALLBACK_PREFIX`, `CANCEL_CALLBACK`, `NOOP_CALLBACK`, `CONFIRM_CALLBACK`, and `DENY_CALLBACK` from a single prefix string, replacing scattered manual constant definitions across several modules.
+- Build script now validates at compile time that every migration script referenced in the CHANGELOG exists on disk and has a corresponding entry in the DEPLOYMENT.md migration reference table. This check covers all versions, not just the current one, replacing the equivalent validation previously done in the release workflow.
+- Improved comments on configuration/profiles files.
 
 ### Fixed
 - N/A
@@ -20,7 +23,7 @@
 - Confirmation step for destructive commands: `/deleteexpense`, `/deletetraveler`, and `/deletetransfer` now show a Yes/No inline keyboard asking the user to confirm before executing the deletion. This applies to both the interactive dialogue and the inline form (e.g. `/deleteexpense 5`). Pressing "No" cancels the operation.
 - Clear commands: `/clearexpenses`, `/cleartransfers`, `/cleartravelers`, and `/clearall` to bulk-delete all expenses, transfers, travelers, or everything at once. Each shows a confirmation prompt with a Yes/No keyboard before executing. `/cleartravelers` and `/clearall` warn that associated data will also be deleted.
 - `/cleartravelers`: when travelers with expenses exist, a traveler-picker inline keyboard is shown to view the blocking expenses per traveler (or all at once); if only one traveler has expenses, their expenses are listed directly without the keyboard.
-- Travelers now have a stable, auto-incremented `number` field (analogous to expenses and transfers). Inline-keyboard callbacks use this numeric ID instead of the traveler name to keep the callback messages short. This requires [database](database) schema updates. Run the following scripts to migrate:
+- Travelers now have a stable, auto-incremented `number` field (analogous to expenses and transfers). Inline-keyboard callbacks use this numeric ID instead of the traveler name to keep the callback messages short. This requires [database](database) schema updates. Run the following script to migrate:
   - [`008_add_traveler_number.surql`](database/migrations/008_add_traveler_number.surql)
 
 ### Changed

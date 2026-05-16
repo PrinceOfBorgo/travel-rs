@@ -24,9 +24,7 @@ use tracing::Level;
 
 // ─── Callback constants ──────────────────────────────────────────────────────
 
-pub const CALLBACK_PREFIX: &str = "clrtrav:";
-pub const CONFIRM_CALLBACK: &str = "clrtrav:__confirm__";
-pub const DENY_CALLBACK: &str = "clrtrav:__deny__";
+callback_consts!("clrtrav" => confirm, deny);
 /// Prefix for "show expenses of traveler" buttons.
 pub const SHOW_PREFIX: &str = "clrtrav:show:";
 /// Callback for the "All" button.

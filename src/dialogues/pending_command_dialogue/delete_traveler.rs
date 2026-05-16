@@ -28,18 +28,9 @@ use teloxide::{
 };
 use tracing::Level;
 
-/// Prefix used to identify callback queries originating from the
-/// `/deletetraveler` inline keyboard.
-pub const CALLBACK_PREFIX: &str = "deltrav:";
-
-/// Callback data used by the cancel button.
-pub const CANCEL_CALLBACK_DATA: &str = "deltrav:__cancel__";
-
-/// Callback data for blank spacer buttons.
-const NOOP_CALLBACK_DATA: &str = "deltrav:__noop__";
-
-pub const CONFIRM_CALLBACK: &str = "deltrav:__confirm__";
-pub const DENY_CALLBACK: &str = "deltrav:__deny__";
+// Prefix used to identify callback queries originating from the
+// `/deletetraveler` inline keyboard.
+callback_consts!("deltrav" => cancel, noop, confirm, deny);
 
 #[derive(Debug, Clone)]
 pub enum DeleteTravelerState {
@@ -89,8 +80,8 @@ pub async fn start(
         db,
         chat_id: msg.chat.id,
         prefix: CALLBACK_PREFIX,
-        cancel_callback: CANCEL_CALLBACK_DATA,
-        noop_callback: NOOP_CALLBACK_DATA,
+        cancel_callback: CANCEL_CALLBACK,
+        noop_callback: NOOP_CALLBACK,
         show_cancel: true,
         ctx,
     })
@@ -164,8 +155,8 @@ pub async fn receive_callback(
         &q,
         &ctx,
         &keyboard::CallbackConfig {
-            cancel_callback: CANCEL_CALLBACK_DATA,
-            noop_callback: NOOP_CALLBACK_DATA,
+            cancel_callback: CANCEL_CALLBACK,
+            noop_callback: NOOP_CALLBACK,
             prefix: CALLBACK_PREFIX,
             running_process_key: i18n::commands::RUNNING_PROCESS_DELETE_TRAVELER,
         },
@@ -177,9 +168,7 @@ pub async fn receive_callback(
         return Ok(());
     };
 
-    let Some(traveler) =
-        Traveler::db_resolve_by_number(db, msg.chat.id, &raw).await
-    else {
+    let Some(traveler) = Traveler::db_resolve_by_number(db, msg.chat.id, &raw).await else {
         tracing::warn!("Could not resolve traveler number from callback data: {raw:?}");
         return Ok(());
     };

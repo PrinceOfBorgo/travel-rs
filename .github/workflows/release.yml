@@ -83,57 +83,6 @@ jobs:
         run: |
           echo "repo_lower=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
 
-      - name: Validate DEPLOYMENT.md migration table
-        run: |
-          NEW_VERSION="${{ steps.bump_version.outputs.new_version }}"
-
-          # Extract migration scripts referenced in the CHANGELOG for this version
-          CURRENT_SECTION=$(sed -n "/^## \[${NEW_VERSION}\]/,/^## \[/p" CHANGELOG.md | head -n -1)
-          CHANGELOG_SCRIPTS=$(echo "$CURRENT_SECTION" | grep -oP '\d{3}_[A-Za-z0-9_]+\.surql' | sort -u || true)
-
-          if [ -n "$CHANGELOG_SCRIPTS" ]; then
-            echo "Migrations referenced in CHANGELOG for v${NEW_VERSION}:"
-            echo "$CHANGELOG_SCRIPTS"
-
-            # Check that DEPLOYMENT.md contains a row for this version
-            DEPLOY_ROW=$(grep -P "^\|\s*v${NEW_VERSION}\s*\|" DEPLOYMENT.md || true)
-            if [ -z "$DEPLOY_ROW" ]; then
-              echo ""
-              echo "::error::DEPLOYMENT.md migration reference table is missing an entry for v${NEW_VERSION}."
-              echo "The CHANGELOG references migration scripts for this release, but the migration"
-              echo "reference table in DEPLOYMENT.md has not been updated."
-              echo ""
-              echo "Add a row to the table in DEPLOYMENT.md before releasing:"
-              echo ""
-              MIGRATION_LIST=$(echo "$CHANGELOG_SCRIPTS" | sed 's/.*$/\`&\`/' | paste -sd ', ')
-              echo "  | v${NEW_VERSION} | ${MIGRATION_LIST} | <notes> |"
-              echo ""
-              echo "See DEPLOYMENT.md Migration Reference section for details."
-              exit 1
-            fi
-
-            # Verify every script from the CHANGELOG appears in the DEPLOYMENT.md row
-            MISSING=""
-            while IFS= read -r script; do
-              if ! echo "$DEPLOY_ROW" | grep -qF "$script"; then
-                MISSING="${MISSING}  - ${script}\n"
-              fi
-            done <<< "$CHANGELOG_SCRIPTS"
-
-            if [ -n "$MISSING" ]; then
-              echo ""
-              echo "::error::DEPLOYMENT.md migration table row for v${NEW_VERSION} is incomplete."
-              echo "The following migration scripts are in the CHANGELOG but missing from the DEPLOYMENT.md row:"
-              echo -e "$MISSING"
-              echo "Update the v${NEW_VERSION} row in DEPLOYMENT.md to include all migration scripts."
-              exit 1
-            fi
-
-            echo "DEPLOYMENT.md migration table entry for v${NEW_VERSION} is complete. ✓"
-          else
-            echo "No migration scripts referenced in CHANGELOG for v${NEW_VERSION}. Skipping check."
-          fi
-
       - name: Upload release files artifact
         uses: actions/upload-artifact@v4
         with:
@@ -323,51 +272,59 @@ jobs:
           cp database/build_travelers_db.surql "${BUNDLE_DIR}/database/"
           cp -r database/migrations "${BUNDLE_DIR}/database/"
 
-          # --- Config template ---
-          cp config/config.toml "${BUNDLE_DIR}/config/"
+          # --- Config pointing to prod profile ---
+          cat > "${BUNDLE_DIR}/config/config.toml" <<'CONFIG_EOF'
+          # profile: The name of the configuration profile to use.
+          #   This should match one of the profile files in the "profiles" directory (without the .toml extension).
+          #   For example, if you have a file named "prod.toml" in the "profiles" directory, you would set this to "prod".
+          profile = "prod"
+          CONFIG_EOF
+          # Remove leading whitespace added by heredoc indentation
+          sed -i 's/^          //' "${BUNDLE_DIR}/config/config.toml"
 
           # --- Sanitized production profile example ---
           cat > "${BUNDLE_DIR}/config/profiles/prod.toml.example" <<'PROFILE_EOF'
           # Profile: prod
           # Description: Example configuration file for production deployments.
-          # For a clean deployment, copy this to your profile TOML file (e.g., prod.toml) and fill in the required values before deploying.
-          # To update an existing deployment, compare this file with to your current profile TOML file (e.g., prod.toml) and apply any necessary changes (e.g., new config fields, updated database credentials, etc.).
-          # Check the repository config/profiles/ directory for example values for different environments (e.g., dev-local.toml, dev-cloud.toml) that can help guide your configuration.
+          #   For a clean deployment, copy this to your profile TOML file (e.g., prod.toml) and fill in the required values before deploying.
+          #   To update an existing deployment, compare this file with to your current profile TOML file (e.g., prod.toml) and apply any necessary changes (e.g., new config fields, updated database credentials, etc.).
+          #   Check the repository config/profiles/ directory for example values for different environments (e.g., dev-local.toml, dev-cloud.toml) that can help guide your configuration.
 
           [logging]
-          # path: Base folder for logs. The active profile name is appended automatically to create a per-profile subfolder.
+          # path: Base folder for logs.
+          #   The active profile name is appended automatically to create a per-profile subfolder.
           path = "logs"
           file_name_prefix = "travelrs.log"
           level = "info"
 
           [bot]
           # token_source: Specifies the source in which the bot token is provided.
-          # Allowed values:
-          # - "file": The token is read from a file.
-          # - "env": The token is read from an environment variable.
-          # - "string": The token is provided directly as a string.
+          #   Allowed values:
+          #   - "file": The token is read from a file.
+          #   - "env": The token is read from an environment variable.
+          #   - "string": The token is provided directly as a string.
           token_source = "file"
 
           # token: The bot token.
-          # If token_source is "file", this should be a path to a file containing the token.
-          # If token_source is "env", this should be the name of the environment variable containing the token.
-          # If token_source is "string", this should be the token itself.
+          #   If token_source is "file", this should be a path to a file containing the token.
+          #   If token_source is "env", this should be the name of the environment variable containing the token.
+          #   If token_source is "string", this should be the token itself.
           token = "config/prod-token.txt"
 
           # [optional] chat_whitelist_source: Specifies the source for the chat whitelist for dev purposes.
-          # Allowed values:
-          # - "file": The whitelist is read from a file.
-          # - "env": The whitelist is read from an environment variable.
-          # - "string": The whitelist is provided directly as a string.
+          #   Allowed values:
+          #   - "file": The whitelist is read from a file.
+          #   - "env": The whitelist is read from an environment variable.
+          #   - "string": The whitelist is provided directly as a string.
           # chat_whitelist_source = "file"
 
-          # [optional] chat_whitelist: list of allowed chat IDs for dev purposes.
-          # List format: IDs can be separated by commas, colons, spaces, or newlines. Example: 12345, 67890
-          # - If chat_whitelist_source is "file", this should be a path to a file containing the list of chat IDs.
-          # - If chat_whitelist_source is "env", this should be the name of the environment variable holding the list of chat IDs.
-          # - If chat_whitelist_source is "string", this should be the list of chat IDs as a string.
-          # If the array is missing or empty, all chats are allowed.
-          # If the array contains one or more IDs, only those chat IDs are allowed.
+          # [optional] chat_whitelist: List of allowed chat IDs for dev purposes.
+          #   List format: IDs can be separated by commas, colons, spaces, or newlines. Example: 12345, 67890
+          #   - If chat_whitelist_source is "file", this should be a path to a file containing the list of chat IDs.
+          #   - If chat_whitelist_source is "env", this should be the name of the environment variable holding the list of chat IDs.
+          #   - If chat_whitelist_source is "string", this should be the list of chat IDs as a string.
+          #   If the array is missing or empty, all chats are allowed.
+          #   If the array contains one or more IDs, only those chat IDs are allowed.
           # chat_whitelist = "config/chat-whitelist.txt"
 
           [database]
@@ -381,11 +338,12 @@ jobs:
           default_locale = "en-US"
           locales_path = "locales"
           default_currency = "USD"
-          # popular_currencies: list of currency codes shown as quick-pick buttons in the /setcurrency inline keyboard.
-          # If omitted, defaults to: ["USD", "EUR", "GBP", "JPY", "CHF", "CAD", "AUD", "CNY"]
+          # [optional] popular_currencies: List of currency codes shown as quick-pick buttons in the /setcurrency inline keyboard.
+          #   If omitted, defaults to: ["USD", "EUR", "GBP", "JPY", "CHF", "CAD", "AUD", "CNY"]
           popular_currencies = ["USD", "EUR", "GBP", "JPY", "CHF", "CAD", "AUD", "CNY"]
 
           PROFILE_EOF
+          # Remove leading whitespace added by heredoc indentation
           sed -i 's/^          //' "${BUNDLE_DIR}/config/profiles/prod.toml.example"
 
           # --- Deployment guide ---

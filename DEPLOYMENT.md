@@ -3,8 +3,6 @@
 
 This document covers production deployment, upgrades, and database migration procedures for Travel-RS Bot. The recommended deployment method is **Docker**; a manual (binary) deployment path is also documented for environments where Docker is not available.
 
-For general Docker setup, volume configuration, and running the container, see the [Docker Setup](README.md#10-docker-setup) section in the README.
-
 <!-- omit from toc -->
 ## Table of Contents
 - [1. Prerequisites](#1-prerequisites)
@@ -413,14 +411,14 @@ The following table maps each release to the database migration scripts it intro
 
 > **For contributors:** If your release introduces new database migration scripts (referenced in `CHANGELOG.md`), you **must** add a corresponding row to this table before pushing the release commit. The release workflow validates this and will fail if the entry is missing.
 >
-> Row format: `| v<version> | `001_script_name.surql`, `002_other_script.surql` | Brief description |`
+> Row format: ``| v<version> | `001_script_name.surql`, `002_other_script.surql` | Brief description |``
 
-| Version | Required Migrations                                                                 | Notes                           |
-| ------- | ----------------------------------------------------------------------------------- | ------------------------------- |
-| v0.2.0  | `001_init.surql`                                                                    | Initial schema                  |
-| v0.2.1  | `002_add_timestamps.surql`                                                          | Adds timestamp fields           |
-| v0.2.2  | `003_define_stats_functions.surql`                                                  | Statistics functions            |
-| v0.2.4  | `004_overwrite_traveler_stats_function.surql`                                       | Updated stats function          |
-| v0.2.5  | `005_fix_overwrite_stats_function.surql`                                            | Fix average per day stats       |
-| v0.3.0  | `006_add_validation_constraints.surql`, `007_case_insensitive_traveler_names.surql` | Schema validation constraints   |
-| v0.3.1  | `008_add_traveler_number.surql`                                                     | Stable numeric ID for travelers |
+| Version | Required Migrations                                                                 | Notes                                       |
+| ------- | ----------------------------------------------------------------------------------- | ------------------------------------------- |
+| v0.2.0  | `001_init.surql`                                                                    | Initial schema                              |
+| v0.2.3  | ~~`002_add_timestamps.surql`~~, `003_define_stats_functions.surql`                  | Timestamps and statistics functions         |
+| v0.2.4  | `002_add_timestamps.surql`, `004_overwrite_traveler_stats_function.surql`           | Updated stats function; timestamps fix      |
+| v0.2.5  | `005_fix_overwrite_stats_function.surql`                                            | Fix average per day stats                   |
+| v0.3.0  | `006_add_validation_constraints.surql`, `007_case_insensitive_traveler_names.surql` | Schema validation constraints               |
+| v0.3.1  | `008_add_traveler_number.surql`                                                     | Stable numeric ID for travelers             |
+| v0.3.2  | `009_assert_chat_equality.surql`                                                    | Chat-equality assertions on relation tables |

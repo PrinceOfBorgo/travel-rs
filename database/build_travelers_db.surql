@@ -306,8 +306,12 @@ DEFINE INDEX OVERWRITE expense_chat_number_index ON expense FIELDS chat, number 
 DEFINE TABLE OVERWRITE owes TYPE RELATION IN traveler OUT traveler SCHEMAFULL PERMISSIONS NONE;
 
 DEFINE FIELD OVERWRITE amount ON owes TYPE decimal PERMISSIONS FOR select, create, update WHERE FULL;
-DEFINE FIELD OVERWRITE in ON owes TYPE record<traveler> PERMISSIONS FULL;
-DEFINE FIELD OVERWRITE out ON owes TYPE record<traveler> PERMISSIONS FULL;
+DEFINE FIELD OVERWRITE in ON owes TYPE record<traveler>
+    ASSERT $value.chat == $this.out.chat
+    PERMISSIONS FULL;
+DEFINE FIELD OVERWRITE out ON owes TYPE record<traveler>
+    ASSERT $value.chat == $this.in.chat
+    PERMISSIONS FULL;
 
 DEFINE INDEX OVERWRITE owes_unique_relationships ON owes FIELDS in, out UNIQUE;
 
@@ -318,8 +322,12 @@ DEFINE INDEX OVERWRITE owes_unique_relationships ON owes FIELDS in, out UNIQUE;
 
 DEFINE TABLE OVERWRITE paid_for TYPE RELATION IN traveler OUT expense SCHEMAFULL PERMISSIONS NONE;
 
-DEFINE FIELD OVERWRITE in ON paid_for TYPE record<traveler> PERMISSIONS FULL;
-DEFINE FIELD OVERWRITE out ON paid_for TYPE record<expense> PERMISSIONS FULL;
+DEFINE FIELD OVERWRITE in ON paid_for TYPE record<traveler>
+    ASSERT $value.chat == $this.out.chat
+    PERMISSIONS FULL;
+DEFINE FIELD OVERWRITE out ON paid_for TYPE record<expense>
+    ASSERT $value.chat == $this.in.chat
+    PERMISSIONS FULL;
 
 DEFINE INDEX OVERWRITE paid_for_unique_expense ON paid_for FIELDS out UNIQUE;
 
@@ -333,8 +341,12 @@ DEFINE TABLE OVERWRITE split TYPE RELATION IN traveler OUT expense SCHEMAFULL PE
 DEFINE FIELD OVERWRITE amount ON split TYPE decimal
     ASSERT $value > 0dec
     PERMISSIONS FOR select, create, update WHERE FULL;
-DEFINE FIELD OVERWRITE in ON split TYPE record<traveler> PERMISSIONS FULL;
-DEFINE FIELD OVERWRITE out ON split TYPE record<expense> PERMISSIONS FULL;
+DEFINE FIELD OVERWRITE in ON split TYPE record<traveler>
+    ASSERT $value.chat == $this.out.chat
+    PERMISSIONS FULL;
+DEFINE FIELD OVERWRITE out ON split TYPE record<expense>
+    ASSERT $value.chat == $this.in.chat
+    PERMISSIONS FULL;
 
 DEFINE INDEX OVERWRITE split_unique_relationships ON split FIELDS in, out UNIQUE;
 
@@ -350,10 +362,12 @@ DEFINE FIELD OVERWRITE amount ON transferred_to TYPE decimal
     PERMISSIONS FOR select, create, update WHERE FULL;
 DEFINE FIELD OVERWRITE in ON transferred_to TYPE record<traveler>
     ASSERT $value != $this.out
+        AND $value.chat == $this.out.chat
     PERMISSIONS FULL;
 DEFINE FIELD OVERWRITE number ON transferred_to TYPE int PERMISSIONS FULL;
 DEFINE FIELD OVERWRITE out ON transferred_to TYPE record<traveler>
     ASSERT $value != $this.in
+        AND $value.chat == $this.in.chat
     PERMISSIONS FULL;
 DEFINE FIELD OVERWRITE timestamp_utc ON transferred_to VALUE time::now() PERMISSIONS FOR select FULL, FOR create, update NONE;
 

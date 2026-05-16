@@ -32,9 +32,7 @@ const EXPENSES_PER_ROW: usize = 1;
 
 // ─── Callback constants ──────────────────────────────────────────────────────
 
-pub const CALLBACK_PREFIX: &str = "shwexp:";
-pub const CANCEL_CALLBACK: &str = "shwexp:__cancel__";
-const NOOP_CALLBACK: &str = "shwexp:__noop__";
+callback_consts!("shwexp" => cancel, noop);
 
 // ─── State ───────────────────────────────────────────────────────────────────
 

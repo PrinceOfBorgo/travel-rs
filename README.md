@@ -391,7 +391,6 @@ This repository has two main workflows under `.github/workflows/`:
 When the release trigger matches, the workflow:
 - bumps `Cargo.toml` version (`cargo set-version`) according to release type
 - updates `CHANGELOG.md` by converting `x.y.z-SNAPSHOT` to the real release heading and section
-- validates that `DEPLOYMENT.md` migration reference table has been updated if migration scripts are referenced in the changelog (fails the build otherwise)
 - builds and pushes the Docker image (multi-arch, GHCR tags)
 - builds a **deploy bundle** (`deploy-v<version>.zip`) containing a version-pinned `docker-compose.yml`, locale files, database scripts, a sanitized config template, and a `MIGRATIONS.md` manifest
 - commits and tags release as `v<version>`

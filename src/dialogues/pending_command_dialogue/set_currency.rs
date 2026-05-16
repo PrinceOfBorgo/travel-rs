@@ -22,16 +22,9 @@ use teloxide::{
 };
 use tracing::Level;
 
-/// Prefix used to identify callback queries originating from the
-/// `/setcurrency` inline keyboard.
-pub const CALLBACK_PREFIX: &str = "setcur:";
-
-/// Callback data used by the cancel button in the `/setcurrency` inline
-/// keyboard.
-pub const CANCEL_CALLBACK_DATA: &str = "setcur:__cancel__";
-
-/// Callback data for blank spacer buttons in the `/setcurrency` keyboard.
-const NOOP_CALLBACK_DATA: &str = "setcur:__noop__";
+// Prefix used to identify callback queries originating from the
+// `/setcurrency` inline keyboard.
+callback_consts!("setcur" => cancel, noop);
 
 /// Number of currency buttons per row in the inline keyboard.
 const CURRENCIES_PER_ROW: usize = 2;
@@ -60,8 +53,8 @@ fn popular_currencies_keyboard(ctx: Arc<Mutex<Context>>) -> InlineKeyboardMarkup
         columns: CURRENCIES_PER_ROW,
         rows_per_page: DEFAULT_ROWS_PER_PAGE,
         prefix: CALLBACK_PREFIX,
-        cancel_callback: CANCEL_CALLBACK_DATA,
-        noop_callback: NOOP_CALLBACK_DATA,
+        cancel_callback: CANCEL_CALLBACK,
+        noop_callback: NOOP_CALLBACK,
         action_buttons: &[],
         show_cancel: true,
         ctx,
@@ -149,8 +142,8 @@ pub async fn receive_callback(
         &q,
         &ctx,
         &keyboard::CallbackConfig {
-            cancel_callback: CANCEL_CALLBACK_DATA,
-            noop_callback: NOOP_CALLBACK_DATA,
+            cancel_callback: CANCEL_CALLBACK,
+            noop_callback: NOOP_CALLBACK,
             prefix: CALLBACK_PREFIX,
             running_process_key: i18n::commands::RUNNING_PROCESS_SET_CURRENCY,
         },

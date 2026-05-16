@@ -22,9 +22,7 @@ use tracing::Level;
 
 // ─── Callback constants ──────────────────────────────────────────────────────
 
-pub const CALLBACK_PREFIX: &str = "clrexp:";
-pub const CONFIRM_CALLBACK: &str = "clrexp:__confirm__";
-pub const DENY_CALLBACK: &str = "clrexp:__deny__";
+callback_consts!("clrexp" => confirm, deny);
 
 // ─── State ───────────────────────────────────────────────────────────────────
 

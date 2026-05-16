@@ -1,23 +1,25 @@
 # Profile: unit-tests
 # Description: Configuration for unit tests.
-# Use this for running automated tests with in-memory database and mock values.
+#   Use this for running automated tests with in-memory database and mock values.
 
 [logging]
+# path: Base folder for logs.
+#   The active profile name is appended automatically to create a per-profile subfolder.
 path = ""
 file_name_prefix = ""
 level = ""
 
 [bot]
 # token_source: Specifies the source in which the bot token is provided.
-# Allowed values:
-# - "file": The token is read from a file.
-# - "env": The token is read from an environment variable.
-# - "string": The token is provided directly as a string.
+#   Allowed values:
+#   - "file": The token is read from a file.
+#   - "env": The token is read from an environment variable.
+#   - "string": The token is provided directly as a string.
 token_source = "string"
 # token: The bot token.
-# If token_source is "file", this should be a path to a file containing the token.
-# If token_source is "env", this should be the name of the environment variable holding the token.
-# If token_source is "string", this should be the token itself.
+#   If token_source is "file", this should be a path to a file containing the token.
+#   If token_source is "env", this should be the name of the environment variable holding the token.
+#   If token_source is "string", this should be the token itself.
 token = "MOCK_TOKEN"
 
 [database]
@@ -31,6 +33,6 @@ database = "test"
 default_locale = "en-US"
 locales_path = "locales"
 default_currency = "USD"
-# popular_currencies: list of currency codes shown as quick-pick buttons in the /setcurrency inline keyboard.
-# If omitted, defaults to: ["USD", "EUR", "GBP", "JPY", "CHF", "CAD", "AUD", "CNY"]
+# [optional] popular_currencies: List of currency codes shown as quick-pick buttons in the /setcurrency inline keyboard.
+#   If omitted, defaults to: ["USD", "EUR", "GBP", "JPY", "CHF", "CAD", "AUD", "CNY"]
 popular_currencies = ["USD", "EUR", "GBP", "JPY", "CHF", "CAD", "AUD", "CNY"]

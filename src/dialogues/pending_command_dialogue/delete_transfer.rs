@@ -35,11 +35,7 @@ const TRANSFERS_PER_ROW: usize = 1;
 
 // ─── Callback constants ──────────────────────────────────────────────────────
 
-pub const CALLBACK_PREFIX: &str = "delxfr:";
-pub const CANCEL_CALLBACK: &str = "delxfr:__cancel__";
-const NOOP_CALLBACK: &str = "delxfr:__noop__";
-pub const CONFIRM_CALLBACK: &str = "delxfr:__confirm__";
-pub const DENY_CALLBACK: &str = "delxfr:__deny__";
+callback_consts!("delxfr" => cancel, noop, confirm, deny);
 
 // ─── State ───────────────────────────────────────────────────────────────────
 

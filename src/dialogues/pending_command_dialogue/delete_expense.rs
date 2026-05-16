@@ -35,11 +35,7 @@ const EXPENSES_PER_ROW: usize = 1;
 
 // ─── Callback constants ──────────────────────────────────────────────────────
 
-pub const CALLBACK_PREFIX: &str = "delexp:";
-pub const CANCEL_CALLBACK: &str = "delexp:__cancel__";
-const NOOP_CALLBACK: &str = "delexp:__noop__";
-pub const CONFIRM_CALLBACK: &str = "delexp:__confirm__";
-pub const DENY_CALLBACK: &str = "delexp:__deny__";
+callback_consts!("delexp" => cancel, noop, confirm, deny);
 
 // ─── State ───────────────────────────────────────────────────────────────────
 

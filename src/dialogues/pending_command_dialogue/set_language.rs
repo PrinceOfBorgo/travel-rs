@@ -24,16 +24,9 @@ use teloxide::{
 use tracing::Level;
 use unic_langid::LanguageIdentifier;
 
-/// Prefix used to identify callback queries originating from the
-/// `/setlanguage` inline keyboard.
-pub const CALLBACK_PREFIX: &str = "setlang:";
-
-/// Callback data used by the cancel button in the `/setlanguage` inline
-/// keyboard.
-pub const CANCEL_CALLBACK_DATA: &str = "setlang:__cancel__";
-
-/// Callback data for blank spacer buttons in the `/setlanguage` keyboard.
-const NOOP_CALLBACK_DATA: &str = "setlang:__noop__";
+// Prefix used to identify callback queries originating from the
+// `/setlanguage` inline keyboard.
+callback_consts!("setlang" => cancel, noop);
 
 /// Number of language buttons per row in the inline keyboard.
 const LANGS_PER_ROW: usize = 2;
@@ -66,8 +59,8 @@ fn available_langs_keyboard(ctx: Arc<Mutex<Context>>) -> InlineKeyboardMarkup {
         columns: LANGS_PER_ROW,
         rows_per_page: DEFAULT_ROWS_PER_PAGE,
         prefix: CALLBACK_PREFIX,
-        cancel_callback: CANCEL_CALLBACK_DATA,
-        noop_callback: NOOP_CALLBACK_DATA,
+        cancel_callback: CANCEL_CALLBACK,
+        noop_callback: NOOP_CALLBACK,
         action_buttons: &[],
         show_cancel: true,
         ctx,
@@ -158,8 +151,8 @@ pub async fn receive_callback(
         &q,
         &ctx,
         &keyboard::CallbackConfig {
-            cancel_callback: CANCEL_CALLBACK_DATA,
-            noop_callback: NOOP_CALLBACK_DATA,
+            cancel_callback: CANCEL_CALLBACK,
+            noop_callback: NOOP_CALLBACK,
             prefix: CALLBACK_PREFIX,
             running_process_key: i18n::commands::RUNNING_PROCESS_SET_LANGUAGE,
         },

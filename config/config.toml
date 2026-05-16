@@ -1,1 +1,4 @@
+# profile: The name of the configuration profile to use.
+#   This should match one of the profile files in the "profiles" directory (without the .toml extension).
+#   For example, if you have a file named "prod.toml" in the "profiles" directory, you would set this to "prod".
 profile = "dev-local"
