@@ -6,6 +6,7 @@
   - [`009_assert_chat_equality.surql`](database/migrations/009_assert_chat_equality.surql)
 
 ### Changed
+- Updated dependencies.
 - Refactored callback prefix constants: introduced the `callback_consts!` macro to derive `CALLBACK_PREFIX`, `CANCEL_CALLBACK`, `NOOP_CALLBACK`, `CONFIRM_CALLBACK`, and `DENY_CALLBACK` from a single prefix string, replacing scattered manual constant definitions across several modules.
 - Build script now validates at compile time that every migration script referenced in the CHANGELOG exists on disk and has a corresponding entry in the DEPLOYMENT.md migration reference table. This check covers all versions, not just the current one, replacing the equivalent validation previously done in the release workflow.
 - Improved comments on configuration/profiles files.

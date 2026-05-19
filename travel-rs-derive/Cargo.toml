@@ -1,11 +1,12 @@
 [package]
 name = "travel-rs-derive"
 version = "0.1.0"
-edition = "2021"
+authors = ["Michele Medori <michele.medori93@gmail.com>"]
+edition = "2024"
 
 [lib]
 proc-macro = true
 
 [dependencies]
-quote = "1.0.40"
-syn = "2.0.104"
+quote = "1.0.45"
+syn = "2.0.117"

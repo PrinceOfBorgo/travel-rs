@@ -1,0 +1,57 @@
+# Profile: prod
+# Description: Example configuration file for production deployments.
+#   For a clean deployment, copy this to your profile TOML file (e.g., prod.toml) and fill in the required values before deploying.
+#   To update an existing deployment, compare this file with your current profile TOML file (e.g., prod.toml) and apply any necessary changes (e.g., new config fields, updated database credentials, etc.).
+#   Check the repository config/profiles/ directory for example values for different environments (e.g., dev-local.toml, dev-cloud.toml) that can help guide your configuration.
+
+[logging]
+# path: Base folder for logs.
+#   The active profile name is appended automatically to create a per-profile subfolder.
+path = "logs"
+file_name_prefix = "travelrs.log"
+level = "info"
+
+[bot]
+# token_source: Specifies the source in which the bot token is provided.
+#   Allowed values:
+#   - "file": The token is read from a file.
+#   - "env": The token is read from an environment variable.
+#   - "string": The token is provided directly as a string.
+token_source = "file"
+
+# token: The bot token.
+#   If token_source is "file", this should be a path to a file containing the token.
+#   If token_source is "env", this should be the name of the environment variable containing the token.
+#   If token_source is "string", this should be the token itself.
+token = "config/prod-token.txt"
+
+# [optional] chat_whitelist_source: Specifies the source for the chat whitelist for dev purposes.
+#   Allowed values:
+#   - "file": The whitelist is read from a file.
+#   - "env": The whitelist is read from an environment variable.
+#   - "string": The whitelist is provided directly as a string.
+# chat_whitelist_source = "file"
+
+# [optional] chat_whitelist: List of allowed chat IDs for dev purposes.
+#   List format: IDs can be separated by commas, colons, spaces, or newlines. Example: 12345, 67890
+#   - If chat_whitelist_source is "file", this should be a path to a file containing the list of chat IDs.
+#   - If chat_whitelist_source is "env", this should be the name of the environment variable holding the list of chat IDs.
+#   - If chat_whitelist_source is "string", this should be the list of chat IDs as a string.
+#   If the array is missing or empty, all chats are allowed.
+#   If the array contains one or more IDs, only those chat IDs are allowed.
+# chat_whitelist = "config/chat-whitelist.txt"
+
+[database]
+address = "<database_address>"
+username = "<your_username>"
+password = "<your_password>"
+namespace = "<your_namespace>"
+database = "<your_database>"
+
+[i18n]
+default_locale = "en-US"
+locales_path = "locales"
+default_currency = "USD"
+# [optional] popular_currencies: List of currency codes shown as quick-pick buttons in the /setcurrency inline keyboard.
+#   If omitted, defaults to: ["USD", "EUR", "GBP", "JPY", "CHF", "CAD", "AUD", "CNY"]
+popular_currencies = ["USD", "EUR", "GBP", "JPY", "CHF", "CAD", "AUD", "CNY"]
