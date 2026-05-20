@@ -128,18 +128,25 @@ async fn main() -> anyhow::Result<()> {
     let file_appender = daily(path, file_name_prefix);
     let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
 
-    let log_layer = tracing_subscriber::fmt::layer()
+    let file_layer = tracing_subscriber::fmt::layer()
         .with_timer(UtcTime::rfc_3339())
         .with_line_number(true)
         .compact()
         .with_writer(non_blocking);
+
+    let stdout_layer = tracing_subscriber::fmt::layer()
+        .with_timer(UtcTime::rfc_3339())
+        .with_line_number(true)
+        .compact()
+        .with_writer(std::io::stdout);
 
     tracing_subscriber::registry()
         .with(EnvFilter::new(format!(
             "{}={level}",
             env!("CARGO_PKG_NAME").replace("-", "_"),
         )))
-        .with(log_layer)
+        .with(file_layer)
+        .with(stdout_layer)
         .init();
 
     tracing::info!(
@@ -149,8 +156,6 @@ async fn main() -> anyhow::Result<()> {
     );
     tracing::info!("Using profile {}", SETTINGS.profile);
     tracing::debug!("Settings: {:#?}", SETTINGS);
-    println!("Using profile {}", SETTINGS.profile);
-    println!("Settings: {:#?}", SETTINGS);
 
     // Start the bot
     start_bot().await;

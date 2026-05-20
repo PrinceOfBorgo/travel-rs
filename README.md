@@ -369,7 +369,7 @@ This modular structure allows users to easily configure the bot's behavior for d
 
 ### 6.3. Logging Configuration
 
-Logs are written to files within a **profile-specific subfolder** located under the **path** specified in the `[logging]` section of your profile's `.toml` file. For instance, if the specified profile is `dev` and the `path` in `dev.toml` is set to `logs`, you'll find your logs in `./logs/dev/`. Each log file is timestamped for easy reference. You can customize logging behavior, including the log directory and log level, directly within your profile-specific configuration.
+Logs are written both to `stdout` and to files within a **profile-specific subfolder** located under the **path** specified in the `[logging]` section of your profile's `.toml` file. For instance, if the specified profile is `dev` and the `path` in `dev.toml` is set to `logs`, you'll find your logs in `./logs/dev/`. Each log file is timestamped for easy reference. You can customize logging behavior, including the log directory and log level, directly within your profile-specific configuration.
 
 Every instrumented handler span includes a monotonically increasing `trace_id` field that uniquely identifies each invocation and propagates to nested spans, making it easy to correlate related log lines.
 
