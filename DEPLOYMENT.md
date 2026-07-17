@@ -72,16 +72,17 @@ The extracted bundle contains everything needed to run the bot. See [Deploy Bund
    ```
 
    Edit `config/profiles/prod.toml` to set:
-   - Bot token source and value (file path, environment variable, or direct string).
+   - Bot token source and value (file path or direct string).
    - Database connection details (address, username, password, namespace, database).
    - Logging preferences.
    - Default locale and currency.
+
+   > Every field value can also contain environment variables `${VAR_NAME}` that will be resolved at runtime. Referencing an undefined variable causes the bot to fail fast at startup with an error identifying the offending property path.
 
 3. **Provide the bot token:**
 
    Depending on your `token_source` setting, either:
    - Create a file (e.g., `config/prod-token.txt`) containing only the token, or
-   - Set an environment variable before starting the container, or
    - Embed the token directly as a string in the profile (not recommended — the token will be stored in plain text in the configuration file).
 
 ### 2.3. Initialize the Database

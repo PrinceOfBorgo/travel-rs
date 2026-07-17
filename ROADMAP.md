@@ -15,19 +15,12 @@
 - [ ] Improve error handling: distinguish errors resulting from DB queries.
   - [x] Delete from DB always returns OK even if the entry doesn't exist. Should return WARN with a dedicated message.
 - [ ] Refactor code to make it more readable and maintainable (constantly on-going).
-- [x] Add database assertion/events to check if `in.chat = out.chat` for relationships.
 - [ ] Improve user experience:
   - [ ] Implement a Telegram Mini App.
   - [x] Add inline keyboard support.
   - [x] Interactive prompts for commands invoked without their arguments.
 - [ ] Add `EditExpense` command.
 - [ ] Change `ListExpenses` command so that the filter matches the string representation of the expense.
-- [x] Refactor callback prefix using macros.
-- [x] Add "clear" commands:
-  - [x] `ClearTravelers`
-  - [x] `ClearExpenses`
-  - [x] `ClearTransfers`
-  - [x] `ClearAll` (clears travelers, expenses, and transfers)
 - [ ] Handle multiple travel plans in one chat.
 - [ ] Create a deployment wizard tool for guided install/setup/update of the bot.
 
@@ -48,3 +41,10 @@
 - [x] Factor callback dispatch branches out of `main.rs` into their dialogue modules.
 - [x] Logs with trace_id.
 - [x] Add confirmation step to delete commands before executing the deletion.
+- [x] Add database assertion/events to check if `in.chat = out.chat` for relationships.
+- [x] Refactor callback prefix using macros.
+- [x] Add "clear" commands:
+  - [x] `ClearTravelers`
+  - [x] `ClearExpenses`
+  - [x] `ClearTransfers`
+  - [x] `ClearAll` (clears travelers, expenses, and transfers)

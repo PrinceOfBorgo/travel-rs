@@ -1,6 +1,8 @@
 # Profile: unit-tests
 # Description: Configuration for unit tests.
 #   Use this for running automated tests with in-memory database and mock values.
+#
+#   Use ${VAR_NAME} syntax in field values to retrieve values from environment variables.
 
 [logging]
 # path: Base folder for logs.
@@ -13,21 +15,24 @@ level = ""
 # token_source: Specifies the source in which the bot token is provided.
 #   Allowed values:
 #   - "file": The token is read from a file.
-#   - "env": The token is read from an environment variable.
 #   - "string": The token is provided directly as a string.
 token_source = "string"
 # token: The bot token.
 #   If token_source is "file", this should be a path to a file containing the token.
-#   If token_source is "env", this should be the name of the environment variable holding the token.
 #   If token_source is "string", this should be the token itself.
-token = "MOCK_TOKEN"
+#
+# Sourced from the TRAVELRS_TEST_BOT_TOKEN environment variable (default: "MOCK_TOKEN")
+# to exercise ${VAR_NAME} expansion during tests.
+token = "${TRAVELRS_TEST_BOT_TOKEN}"
 
 [database]
 address = "memory"
 username = ""
 password = ""
-namespace = "test"
-database = "test"
+# namespace / database are also sourced from environment variables to demonstrate
+# ${VAR_NAME} expansion. Defaults ("test") are seeded by the test harness.
+namespace = "${TRAVELRS_TEST_DB_NAMESPACE}"
+database = "${TRAVELRS_TEST_DB_NAME}"
 
 [i18n]
 default_locale = "en-US"

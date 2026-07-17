@@ -343,13 +343,23 @@ The profile-specific configuration files are structured into sections, each serv
   * **`token_source`**: Determines how the bot token is provided. Possible values:
 
     * `"file"`: Reads the token from a file.
-    * `"env"`: Reads the token from an environment variable.
     * `"string"`: Uses the token directly as a string.
   * **`token`**: Specifies the bot token. Its value depends on `token_source`:
 
     * If `"file"`, this is the path to the file containing the token.
-    * If `"env"`, this is the name of the environment variable holding the token.
     * If `"string"`, this is the token itself.
+  * **`chat_whitelist_source`** *(optional)*: Determines how the list of allowed chat IDs is provided. Possible values:
+
+    * `"file"`: Reads the list from a file (IDs separated by commas, semicolons, spaces, or newlines).
+    * `"string"`: Uses the list directly as a string with the same separators.
+
+    If omitted (together with `chat_whitelist`), all chats are allowed.
+  * **`chat_whitelist`** *(optional)*: Specifies the list of allowed chat IDs. Its value depends on `chat_whitelist_source`:
+
+    * If `"file"`, this is the path to a file containing the list (e.g., `config/dev-chat-whitelist.txt`).
+    * If `"string"`, this is the list itself (e.g., `"12345, 67890"`).
+
+    If omitted, empty, or if `chat_whitelist_source` is missing, all chats are allowed. When populated, only the listed chats can interact with the bot.
 
 * `[database]`
 
@@ -364,8 +374,13 @@ The profile-specific configuration files are structured into sections, each serv
   * **`default_locale`**: Specifies the default locale for the bot (e.g., `"en-US"`).
   * **`locales_path`**: Path to the directory containing localization files.
   * **`default_currency`**: Sets the default currency for formatting purposes (e.g., `"USD"`).
+  * **`popular_currencies`** *(optional)*: List of currency codes surfaced as quick-pick buttons in the `/setcurrency` inline keyboard. If omitted, defaults to `["USD", "EUR", "GBP", "JPY", "CHF", "CAD", "AUD", "CNY"]`.
 
 This modular structure allows users to easily configure the bot's behavior for different environments or use cases.
+
+> Fields marked *(optional)* can be omitted entirely from the profile file — the bot will fall back to the documented default (or disable the corresponding feature when no default applies).
+
+> Every field value can also contain environment variables `${VAR_NAME}` that will be resolved at runtime. Referencing an undefined variable causes the bot to fail fast at startup with an error identifying the offending property path.
 
 ### 6.3. Logging Configuration
 

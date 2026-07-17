@@ -5,101 +5,50 @@ on:
     branches: [ main ]
 
 jobs:
-  # Job 1: Prepare the release (bump version, update changelog).
-  prepare_release_data:
-    concurrency:
-      group: ${{ github.workflow }}-${{ github.ref }}
-      cancel-in-progress: true
+  # Job 1: Determine release type based on commit message
+  prepare:
+    runs-on: ubuntu-latest
     if: |
       contains(github.event.head_commit.message, '[release]') ||
       contains(github.event.head_commit.message, '[release:patch]') ||
       contains(github.event.head_commit.message, '[release:fix]') ||
       contains(github.event.head_commit.message, '[release:minor]') ||
       contains(github.event.head_commit.message, '[release:major]')
-    runs-on: ubuntu-latest
+    outputs:
+      release_type: ${{ steps.determine_type.outputs.type }}
+    steps:
+      - name: Determine release type
+        id: determine_type
+        run: |
+          COMMIT_MSG="${{ github.event.head_commit.message }}"
+          if [[ "$COMMIT_MSG" == *"[release:major]"* ]]; then
+            echo "type=major" >> "$GITHUB_OUTPUT"
+          elif [[ "$COMMIT_MSG" == *"[release:minor]"* ]]; then
+            echo "type=minor" >> "$GITHUB_OUTPUT"
+          else
+            echo "type=patch" >> "$GITHUB_OUTPUT"
+          fi
+
+  # Job 2: Bump version, update changelog
+  bump_and_changelog:
+    needs: prepare
+    uses: PrinceOfBorgo/rust-github-workflows/.github/workflows/bump-version.yml@v1.0.0
+    with:
+      release_type: ${{ needs.prepare.outputs.release_type }}
     permissions:
       contents: write
-      packages: write
-      id-token: write
 
-    outputs:
-      new_version: ${{ steps.bump_version.outputs.new_version }}
-      repo_lower: ${{ steps.repo_lower_case.outputs.repo_lower }}
-      changelog_section_heading: ${{ steps.update_changelog.outputs.section_heading }}
-
+  # Job 3: Build and push Docker image
+  build_and_push_docker:
+    needs: bump_and_changelog
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
-        with:
-          fetch-depth: 0 # Need full history to avoid issues with git operations
-
-      - name: Set up Git user
-        run: |
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git config --global user.name "github-actions[bot]"
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Install cargo-edit
-        uses: taiki-e/install-action@v2
-        with:
-          tool: cargo-edit
-
-      - name: Bump version
-        id: bump_version
-        run: |
-          if [[ "${{ github.event.head_commit.message }}" == *"[release:major]"* ]]; then
-            cargo set-version --bump major
-          elif [[ "${{ github.event.head_commit.message }}" == *"[release:minor]"* ]]; then
-            cargo set-version --bump minor
-          else
-            cargo set-version --bump patch
-          fi
-          new_version=$(grep '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
-          # Output the new version so subsequent jobs can use it
-          echo "new_version=$new_version" >> "$GITHUB_OUTPUT"
-
-      - name: Update CHANGELOG.md
-        id: update_changelog
-        run: |
-          DATE=$(date +%Y-%m-%d)
-          if [[ "${{ github.event.head_commit.message }}" == *"[release:major]"* ]]; then
-            RELEASE_TYPE="### 💥 Major Release"
-          elif [[ "${{ github.event.head_commit.message }}" == *"[release:minor]"* ]]; then
-            RELEASE_TYPE="### ✨ Minor Release"
-          else
-            RELEASE_TYPE="### 🔧 Patch Release"
-          fi
-          # Capture the full section heading that will be used in CHANGELOG.md
-          SECTION_HEADING="[${{ steps.bump_version.outputs.new_version }}] - $DATE"
-          NEW_CONTENT="## ${SECTION_HEADING}\n$RELEASE_TYPE"
-          sed -i "0,/^## \[.*-SNAPSHOT\].*/s|^## \[.*-SNAPSHOT\].*|$NEW_CONTENT|" CHANGELOG.md
-          
-          echo "section_heading=$SECTION_HEADING" >> "$GITHUB_OUTPUT"
+        uses: actions/checkout@v6
 
       - name: Set lowercase repository name
         id: repo_lower_case
-        run: |
-          echo "repo_lower=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
-
-      - name: Upload release files artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-files
-          path: |
-            Cargo.toml
-            Cargo.lock
-            CHANGELOG.md
-          retention-days: 1 # Keep artifact for a short period
-
-  # Job 2: Build and Push Docker Image
-  build_and_push_docker:
-    needs: prepare_release_data
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
+        run: echo "repo_lower=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -119,7 +68,7 @@ jobs:
         with:
           tool: cargo-zigbuild
 
-      - name: Build Binaries
+      - name: Build binaries
         run: |
           cargo zigbuild --release --target x86_64-unknown-linux-musl
           cargo zigbuild --release --target aarch64-unknown-linux-musl
@@ -145,112 +94,41 @@ jobs:
             linux/arm/v7
           push: true
           tags: |
-            ghcr.io/${{ needs.prepare_release_data.outputs.repo_lower }}:latest
-            ghcr.io/${{ needs.prepare_release_data.outputs.repo_lower }}:v${{ needs.prepare_release_data.outputs.new_version }}
+            ghcr.io/${{ steps.repo_lower_case.outputs.repo_lower }}:latest
+            ghcr.io/${{ steps.repo_lower_case.outputs.repo_lower }}:v${{ needs.bump_and_changelog.outputs.new_version }}
           build-args: |
             BIN_PATH_AMD64=target/x86_64-unknown-linux-musl/release/travel-rs
             BIN_PATH_ARM64=target/aarch64-unknown-linux-musl/release/travel-rs
             BIN_PATH_ARMV7=target/armv7-unknown-linux-musleabihf/release/travel-rs
 
-  # Job 3: Finalize Release
-  finalize_release:
-    needs: [build_and_push_docker, prepare_release_data]
+  # Job 4: Prepare release bundle
+  prepare_bundle:
+    needs: [bump_and_changelog, build_and_push_docker]
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      packages: write
-      id-token: write
-
+    outputs:
+      bundle_file_name: ${{ steps.deploy_bundle.outputs.bundle_file_name }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
-          fetch-depth: 0 # Ensure full history for tagging and pushing
+          fetch-depth: 0
 
-      - name: Download release files artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: release-files
-          path: .
-
-      - name: Set up Git user
-        run: |
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git config --global user.name "github-actions[bot]"
-
-      - name: Install cargo-edit
-        uses: taiki-e/install-action@v2
-        with:
-          tool: cargo-edit
-
-      - name: Commit and Tag Release
-        run: |
-          NEW_VERSION="${{ needs.prepare_release_data.outputs.new_version }}"
-          git add Cargo.toml CHANGELOG.md
-          git add -f Cargo.lock
-          git commit -m "chore: release version ${NEW_VERSION} [skip ci]"
-          git tag -a "v${NEW_VERSION}" -m "Release version ${NEW_VERSION}"
-
-      - name: Generate and Modify Release Notes
-        id: generate_release_notes
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          NEW_VERSION="${{ needs.prepare_release_data.outputs.new_version }}"
-          SECTION_HEADING="${{ needs.prepare_release_data.outputs.changelog_section_heading }}"
-          FULL_REPO_NAME="${{ github.repository }}"
-
-          # 1. Generate release notes using GitHub API endpoint
-          # This API call returns JSON with the 'body' field containing the generated notes.
-          GENERATED_NOTES_JSON=$(gh api \
-            --raw-field tag_name="v${NEW_VERSION}" \
-            --raw-field target_commitish="main" \
-            /repos/${FULL_REPO_NAME}/releases/generate-notes)
-          
-          # Extract the 'body' field from the JSON response using jq
-          AUTO_GENERATED_NOTES=$(echo "$GENERATED_NOTES_JSON" | jq -r '.body')
-
-          # --- Start of Logic to generate the CHANGELOG link's section ID ---
-          # Apply GitHub's heading ID rules (based on official docs):
-          # https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#section-links
-          
-          # 1. Lowercase conversion
-          SECTION_ID=$(echo "$SECTION_HEADING" | tr '[:upper:]' '[:lower:]')
-          # 2. Remove leading/trailing whitespaces
-          SECTION_ID=$(echo "$SECTION_ID" | sed 's/^ *//;s/ *$//g')
-          # 3. Replace whitespaces with hyphens
-          SECTION_ID=$(echo "$SECTION_ID" | sed 's/ /-/g')
-          # 4. Remove other punctuation/special characters (dots, brackets, etc.)
-          SECTION_ID=$(echo "$SECTION_ID" | sed 's/[^a-z0-9-]\+//g')
-
-          # Construct the full link to the CHANGELOG.md section
-          CHANGELOG_LINK="https://github.com/${FULL_REPO_NAME}/blob/main/CHANGELOG.md#${SECTION_ID}"
-          
-          echo "Generated CHANGELOG link: ${CHANGELOG_LINK}"
-          # --- End of Logic to generate the CHANGELOG link's section ID ---
-
-          # Combine custom link and auto-generated notes
-          # Use echo -e to interpret newline characters correctly
-          FINAL_NOTES_CONTENT="See the full [CHANGELOG](${CHANGELOG_LINK}) for details.\n\n${AUTO_GENERATED_NOTES}"
-          
-          # Write the final notes content to a file
-          echo -e "$FINAL_NOTES_CONTENT" > FINAL_RELEASE_NOTES.md
-
-          # Pass the final notes file path as an output for the next step
-          echo "release_notes_file=FINAL_RELEASE_NOTES.md" >> "$GITHUB_OUTPUT"
+      - name: Set lowercase repository name
+        id: repo_lower_case
+        run: echo "repo_lower=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
 
       - name: Build deploy bundle
         id: deploy_bundle
         run: |
-          NEW_VERSION="${{ needs.prepare_release_data.outputs.new_version }}"
-          REPO_LOWER="${{ needs.prepare_release_data.outputs.repo_lower }}"
+          NEW_VERSION="${{ needs.bump_and_changelog.outputs.new_version }}"
+          REPO_LOWER="${{ steps.repo_lower_case.outputs.repo_lower }}"
           BUNDLE_DIR="deploy-v${NEW_VERSION}"
+          BUNDLE_FILE="deploy-v${NEW_VERSION}.zip"
 
           mkdir -p "${BUNDLE_DIR}/config/profiles"
           mkdir -p "${BUNDLE_DIR}/database"
           mkdir -p "${BUNDLE_DIR}/locales"
 
-          # --- Version-pinned docker-compose.yml ---
           cat > "${BUNDLE_DIR}/docker-compose.yml" <<EOF
           services:
             travel-rs:
@@ -262,34 +140,23 @@ jobs:
                 - ./logs:/app/logs
               restart: unless-stopped
           EOF
-          # Remove leading whitespace added by heredoc indentation
           sed -i 's/^          //' "${BUNDLE_DIR}/docker-compose.yml"
 
-          # --- Locale files ---
           cp -r locales/* "${BUNDLE_DIR}/locales/"
-
-          # --- Database files ---
           cp database/build_travelers_db.surql "${BUNDLE_DIR}/database/"
           cp -r database/migrations "${BUNDLE_DIR}/database/"
 
-          # --- Config pointing to prod profile ---
           cat > "${BUNDLE_DIR}/config/config.toml" <<'CONFIG_EOF'
           # profile: The name of the configuration profile to use.
           #   This should match one of the profile files in the "profiles" directory (without the .toml extension).
           #   For example, if you have a file named "prod.toml" in the "profiles" directory, you would set this to "prod".
           profile = "prod"
           CONFIG_EOF
-          # Remove leading whitespace added by heredoc indentation
           sed -i 's/^          //' "${BUNDLE_DIR}/config/config.toml"
 
-          # --- Sanitized production profile example ---
           cp config/profiles/prod.toml.example "${BUNDLE_DIR}/config/profiles/prod.toml.example"
-
-          # --- Deployment guide ---
           cp DEPLOYMENT.md "${BUNDLE_DIR}/"
 
-          # --- MIGRATIONS.md (new scripts for this release from DEPLOYMENT.md) ---
-          # Extract the migration scripts from the DEPLOYMENT.md table row for this version
           DEPLOY_ROW=$(grep -P "^\|\s*v${NEW_VERSION}\s*\|" DEPLOYMENT.md || true)
           MIGRATION_SCRIPTS=$(echo "$DEPLOY_ROW" | grep -oP '\d{3}_[A-Za-z0-9_]+\.surql' | sort -u || true)
 
@@ -314,84 +181,76 @@ jobs:
             } > "${BUNDLE_DIR}/MIGRATIONS.md"
           fi
 
-          # --- Create the zip archive ---
-          zip -r "deploy-v${NEW_VERSION}.zip" "${BUNDLE_DIR}"
+          zip -r "${BUNDLE_FILE}" "${BUNDLE_DIR}"
 
-          echo "bundle_path=deploy-v${NEW_VERSION}.zip" >> "$GITHUB_OUTPUT"
-          echo "Deploy bundle created: deploy-v${NEW_VERSION}.zip"
+          echo "bundle_file_name=${BUNDLE_FILE}" >> "$GITHUB_OUTPUT"
+          echo "Deploy bundle created: ${BUNDLE_FILE}"
 
-      - name: Bump to next snapshot version
-        run: |
-          # Get the current version components from the *just-released* version
-          CURRENT_RELEASE_VERSION=$(grep '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
-          IFS='.' read -r major minor patch <<< "${CURRENT_RELEASE_VERSION}"
+      - name: Upload bundle artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-bundle
+          path: ${{ steps.deploy_bundle.outputs.bundle_file_name }}
+          retention-days: 1
 
-          next_version="${major}.${minor}.$((patch + 1))-SNAPSHOT"
+  # Job 5: Finalize release - update Cargo.toml, Cargo.lock, CHANGELOG.md
+  finalize_release:
+    needs: [bump_and_changelog, prepare_bundle]
+    uses: PrinceOfBorgo/rust-github-workflows/.github/workflows/finalize-release.yml@v1.0.0
+    with:
+      version: ${{ needs.bump_and_changelog.outputs.new_version }}
+    permissions:
+      contents: write
 
-          cargo set-version "${next_version}"
-          NEW_SNAPSHOT="## [${next_version}] - Unreleased\n### Added\n- N/A\n\n### Changed\n- N/A\n\n### Fixed\n- N/A"
-          sed -i "1s|^# Changelog|# Changelog\n\n${NEW_SNAPSHOT}|" CHANGELOG.md
+  # Job 6: Create GitHub release with changelog and bundled assets
+  create_github_release:
+    needs: [finalize_release, bump_and_changelog, prepare_bundle]
+    uses: PrinceOfBorgo/rust-github-workflows/.github/workflows/create-release.yml@v1.0.0
+    with:
+      version: ${{ needs.bump_and_changelog.outputs.new_version }}
+      changelog_section_heading: ${{ needs.bump_and_changelog.outputs.changelog_section_heading }}
+      release_assets: ${{ format('["release-assets/release-bundle/{0}"]', needs.prepare_bundle.outputs.bundle_file_name) }}
+    permissions:
+      contents: write
 
-          git add Cargo.toml CHANGELOG.md
-          git add -f Cargo.lock
-          git commit -m "chore: prepare for next development iteration [skip ci]"
+  # Job 7: Prepare for next development iteration by bumping to next snapshot version
+  prepare_next_iteration:
+    needs: create_github_release
+    uses: PrinceOfBorgo/rust-github-workflows/.github/workflows/open-next-snapshot.yml@v1.0.0
+    permissions:
+      contents: write
 
-      - name: FINAL PUSH
-        if: success()
-        run: git push origin main --tags
-      
-      - name: Create GitHub Release
-        if: success()
+  # Job 8: Rollback release if any of the previous steps fail
+  rollback_on_failure:
+    if: failure()
+    needs: [bump_and_changelog, build_and_push_docker, create_github_release]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - name: Cleanup release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          NEW_VERSION="${{ needs.prepare_release_data.outputs.new_version }}"
-          # Create the actual release using the modified notes file
-          # The deploy bundle zip is attached as a release asset
-          gh release create "v${NEW_VERSION}" \
-            --title "Release v${NEW_VERSION}" \
-            --notes-file ${{ steps.generate_release_notes.outputs.release_notes_file }} \
-            ${{ steps.deploy_bundle.outputs.bundle_path }}
-
-      - name: Rollback on failure
-        if: failure()
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # Only clean up if Job 1 & 2 actually finished
-          NEW_VERSION="${{ needs.prepare_release_data.outputs.new_version }}"
+          NEW_VERSION="${{ needs.bump_and_changelog.outputs.new_version }}"
           REPO_OWNER="${{ github.repository_owner }}"
-          PACKAGE_NAME=$(echo "${{ github.repository }}" | cut -d '/' -f 2)
+          PACKAGE_NAME="${{ github.event.repository.name }}"
 
           if gh release view "v${NEW_VERSION}" >/dev/null 2>&1; then
             gh release delete "v${NEW_VERSION}" --yes || true
-          else
-            echo "Release v${NEW_VERSION} not found, skipping release delete"
           fi
 
-          # Delete the container image if it exists
           if gh api --method GET "/orgs/${REPO_OWNER}/packages/container/${PACKAGE_NAME}" >/dev/null 2>&1; then
             VERSION_ID=$(gh api "/orgs/${REPO_OWNER}/packages/container/${PACKAGE_NAME}/versions" | jq -r ".[] | select(.name == \"v${NEW_VERSION}\") | .id" | head -1)
             if [ -n "$VERSION_ID" ]; then
               gh api --method DELETE "/orgs/${REPO_OWNER}/packages/container/${PACKAGE_NAME}/versions/$VERSION_ID" || true
-            else
-              echo "Package version v${NEW_VERSION} not found in org packages; skipping container delete"
             fi
           elif gh api --method GET "/users/${REPO_OWNER}/packages/container/${PACKAGE_NAME}" >/dev/null 2>&1; then
             VERSION_ID=$(gh api "/users/${REPO_OWNER}/packages/container/${PACKAGE_NAME}/versions" | jq -r ".[] | select(.name == \"v${NEW_VERSION}\") | .id" | head -1)
             if [ -n "$VERSION_ID" ]; then
               gh api --method DELETE "/users/${REPO_OWNER}/packages/container/${PACKAGE_NAME}/versions/$VERSION_ID" || true
-            else
-              echo "Package version v${NEW_VERSION} not found in user packages; skipping container delete"
             fi
-          else
-            echo "Package ${PACKAGE_NAME} not found in org/user packages; skipping container delete"
           fi
 
           echo "Rollback completed"
-          exit 1
-
-      - name: Mark release as successful
-        id: mark_success
-        if: success()
-        run: echo "success=true" >> "$GITHUB_OUTPUT"
