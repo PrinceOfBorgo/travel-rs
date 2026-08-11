@@ -6,11 +6,13 @@
   - [`009_assert_chat_equality.surql`](database/migrations/009_assert_chat_equality.surql)
 - Logs are also printed to `stdout`.
 - Support for environment variables `${VAR_NAME}` expansion in every field in configuration files.
+- The `release.yml` workflow now re-pins the repository's [`docker-compose.yml`](docker-compose.yml) image tag to the just-released version on every release.
 
 ### Changed
 - Updated dependencies.
 - Updated GitHub actions versions.
-- Refactored `release.yml` workflow to delegate version bumping, changelog updates, release finalization, GitHub release creation, and the next-snapshot bump to reusable workflows from [`PrinceOfBorgo/rust-github-workflows`](https://github.com/PrinceOfBorgo/rust-github-workflows), keeping only the project-specific Docker build and deployment-bundle steps in this repository.
+- Refactored `release.yml` workflow to delegate several steps to to reusable workflows from [`PrinceOfBorgo/rust-github-workflows`](https://github.com/PrinceOfBorgo/rust-github-workflows), keeping only the project-specific deployment-bundle assembly and `docker-compose.yml` version-pinning steps in this repository.
+- The deployment [`docker-compose.yml`](docker-compose.yml) now references a pinned release tag instead of `latest` and uses `restart: always`.
 - Refactored callback prefix constants: introduced the `callback_consts!` macro to derive `CALLBACK_PREFIX`, `CANCEL_CALLBACK`, `NOOP_CALLBACK`, `CONFIRM_CALLBACK`, and `DENY_CALLBACK` from a single prefix string, replacing scattered manual constant definitions across several modules.
 - Build script now validates at compile time that every migration script referenced in the CHANGELOG exists on disk and has a corresponding entry in the DEPLOYMENT.md migration reference table. This check covers all versions, not just the current one, replacing the equivalent validation previously done in the release workflow.
 - Improved comments on configuration/profiles files.

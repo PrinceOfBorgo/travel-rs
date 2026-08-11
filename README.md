@@ -398,7 +398,7 @@ This repository has two main workflows under `.github/workflows/`:
   - `cargo build` and `cargo test` on `stable`, `beta`, and `nightly`
   - coverage generation via `cargo llvm-cov` and upload to Codecov
 
-- `release.yml`: runs on `push` to the `main` branch and has a gated release path. The `prepare_release_data` job only executes when the commit message includes one of:
+- `release.yml`: runs on `push` to the `main` branch and has a gated release path. The `determine_release_type` job only executes when the commit message includes one of:
   - `[release]`, `[release:patch]`, or `[release:fix]` (patch bump)
   - `[release:minor]` (minor bump)
   - `[release:major]` (major bump)
@@ -410,6 +410,7 @@ When the release trigger matches, the workflow:
 - builds a **deploy bundle** (`deploy-v<version>.zip`) containing a version-pinned `docker-compose.yml`, locale files, database scripts, a sanitized config template, and a `MIGRATIONS.md` manifest
 - commits and tags release as `v<version>`
 - generates GitHub release notes, attaches the deploy bundle, and publishes the release
+- re-pins the repository's `docker-compose.yml` to the released image tag and commits it back to `main`, so the deployment file always tracks the latest published release
 - bumps the next snapshot version in `Cargo.toml` and pre-populates `CHANGELOG.md` for ongoing development
 
 See [DEPLOYMENT.md](DEPLOYMENT.md) for how to use the deploy bundle for production deployments and upgrades.
@@ -491,20 +492,20 @@ Using Docker Compose simplifies managing the Travel-RS Bot container and its vol
     ```
 
     This command will:
-    * Pull the `ghcr.io/princeofborgo/travel-rs:latest` image if it's not already present.
+    * Pull the pinned `ghcr.io/princeofborgo/travel-rs:v<version>` image (the tag set in `docker-compose.yml`) if it's not already present.
     * Create and start a container named `travel-rs`.
     * Mount the local directories (as defined in your `docker-compose.yml`) to `/app/config`, `/app/locales`, and `/app/logs` inside the container, respectively.
-    * Configure the container to restart automatically unless explicitly stopped (`restart: unless-stopped`).
+    * Configure the container to restart automatically on crash, manual stop, and Docker/host restart (`restart: always`).
 
-4. **Update to the Latest Image:**
-    If you are already running the bot and want to ensure you have the absolute latest version of the `ghcr.io/princeofborgo/travel-rs:latest` image, use the following commands:
+4. **Update to a New Release:**
+    The `docker-compose.yml` is pinned to a specific release tag so a restart never pulls an image whose migrations, config, or locales aren't yet in place. To upgrade, set the `image:` tag to the new version — or replace `docker-compose.yml` with the version-pinned one shipped in that release's `deploy-v<version>.zip` bundle — then recreate the container:
 
     ```bash
-    docker compose pull travel-rs # Pulls the latest image for the 'travel-rs' service
+    docker compose pull travel-rs # Pulls the pinned image for the 'travel-rs' service
     docker compose up -d          # Recreates the container using the newly pulled image
     ```
 
-    The `docker compose pull` command explicitly downloads the freshest image from the registry. Then, `docker compose up -d` will detect that the image has changed and recreate the `travel-rs` container with the new image, while preserving your data volumes.
+    See [`DEPLOYMENT.md`](DEPLOYMENT.md) for the full upgrade procedure, including any database migrations and config/locale updates required before starting the new version.
 
 5. **Stop the container:**
     To stop and remove the container, run:

@@ -1,9 +1,10 @@
 services:
   travel-rs:
-    image: ghcr.io/princeofborgo/travel-rs:latest
+    # Version tag pinned by the release.yml workflow
+    image: ghcr.io/princeofborgo/travel-rs:v0.3.1
     container_name: travel-rs
     volumes:
       - ./config:/app/config
       - ./locales:/app/locales
       - ./logs:/app/logs
-    restart: unless-stopped # Automatically restart if it stops unexpectedly
+    restart: always
