@@ -1,7 +1,7 @@
 services:
   travel-rs:
     # Version tag pinned by the release.yml workflow
-    image: ghcr.io/princeofborgo/travel-rs:v0.3.1
+    image: ghcr.io/princeofborgo/travel-rs:v0.3.2
     container_name: travel-rs
     volumes:
       - ./config:/app/config
