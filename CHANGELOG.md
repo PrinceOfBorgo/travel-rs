@@ -1,6 +1,7 @@
 # Changelog
 
-## [0.3.2-SNAPSHOT] - Unreleased
+## [0.3.2] - 2026-08-11
+### 🔧 Patch Release
 ### Added
 - Database chat-equality assertions on relation tables: both endpoints of every relation must belong to the same chat. This prevents cross-chat data corruption from direct DB writes. This requires [database](database) schema updates. Run the following script to migrate:
   - [`009_assert_chat_equality.surql`](database/migrations/009_assert_chat_equality.surql)
