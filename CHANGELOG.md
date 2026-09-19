@@ -1,6 +1,7 @@
 # Changelog
 
-## [0.3.3-SNAPSHOT] - Unreleased
+## [0.4.0] - 2026-09-19
+### ✨ Minor Release
 ### Added
 - The deployment bundle (`deploy-v<version>.zip`) now ships the Archanist update-engine files under `archanist/`, so an operator can stand Archanist up from the release zip alone. Two categories are included:
   - **Synced on every update** - the recipes (`archanist/components/*.toml`) and main config (`archanist/config.toml`). The `travel-rs` recipe copies these back over the running Archanist instance on each update, keeping its automation current just by releasing the bot.
