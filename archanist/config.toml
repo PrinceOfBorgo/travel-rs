@@ -1,0 +1,32 @@
+# Archanist main config - Travel-RS production deployment.
+# =========================================================
+# Bring this file (together with components/) to the target host the first
+# time. From then on it is refreshed automatically by the travel-rs recipe's
+# `sync_archanist_config` step, so every bot release can ship updated
+# automation.
+#
+# Paths are resolved relative to this file, i.e. relative to /app/data inside
+# the Archanist container (see docker-compose.yml).
+
+schema = 1
+
+# Console log level: trace | debug | info | warn | error
+log_level = "info"
+
+# File logging: written under <log_dir>/<log_file_prefix>.<date>.log.
+log_dir = "logs"
+log_file_prefix = "archanist"
+log_file_level = "debug"
+log_rotation = "daily"
+
+# State file (versions, last attempt, blocklist). Lives in the data volume so
+# it survives container replacement / self-update.
+state_file = "state.toml"
+
+# Directory holding the component recipes (travel-rs.toml, archanist.toml).
+components_dir = "components"
+
+# This Archanist manages its own container: the `self = true` docker_swap in
+# components/archanist.toml exits the process cleanly after the swap so the
+# new image takes over.
+self_component = "archanist"

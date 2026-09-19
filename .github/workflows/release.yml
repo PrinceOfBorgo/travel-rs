@@ -97,6 +97,34 @@ jobs:
           cp config/profiles/prod.toml.example "${BUNDLE_DIR}/config/profiles/prod.toml.example"
           cp DEPLOYMENT.md "${BUNDLE_DIR}/"
 
+          # Ship the Archanist automation (recipes + main config) inside the
+          # bundle so the deployment self-maintains: the travel-rs recipe's
+          # sync_archanist_* steps copy these back over the running Archanist
+          # instance on every update. See archanist/README.md.
+          mkdir -p "${BUNDLE_DIR}/archanist/components"
+          cp archanist/config.toml "${BUNDLE_DIR}/archanist/config.toml"
+          cp archanist/components/travel-rs.toml "${BUNDLE_DIR}/archanist/components/travel-rs.toml"
+          cp archanist/components/archanist.toml "${BUNDLE_DIR}/archanist/components/archanist.toml"
+
+          # Ship the first-time bootstrap files too, so an operator can stand
+          # Archanist up from the bundle alone. These are NOT synced on update
+          # (no recipe step copies them back); a fresh copy just seeds the
+          # initial install. Never ship a real .env - only the template.
+          cp archanist/docker-compose.yml "${BUNDLE_DIR}/archanist/docker-compose.yml"
+          cp archanist/.env.example "${BUNDLE_DIR}/archanist/.env.example"
+          cp archanist/README.md "${BUNDLE_DIR}/archanist/README.md"
+
+          # Pin the migrate container's SurrealDB image to the same version the
+          # bot links against, straight from Cargo.toml, so the recipe can't
+          # drift from the client.
+          SURREAL_VERSION=$(grep -oP '^\s*surrealdb\b.*?version = "\K[^"]+' Cargo.toml | head -n1)
+          if [ -z "$SURREAL_VERSION" ]; then
+            echo "Could not read surrealdb version from Cargo.toml" >&2
+            exit 1
+          fi
+          sed -i "s/^surreal_version = \".*\"/surreal_version = \"${SURREAL_VERSION}\"/" \
+            "${BUNDLE_DIR}/archanist/components/travel-rs.toml"
+
           DEPLOY_ROW=$(grep -P "^\|\s*v${NEW_VERSION}\s*\|" DEPLOYMENT.md || true)
           MIGRATION_SCRIPTS=$(echo "$DEPLOY_ROW" | grep -oP '\d{3}_[A-Za-z0-9_]+\.surql' | sort -u || true)
 

@@ -47,7 +47,7 @@ This document covers production deployment, upgrades, and database migration pro
 Go to the [latest GitHub Release](https://github.com/PrinceOfBorgo/travel-rs/releases/latest) and download the **`deploy-v<version>.zip`** asset. Extract it to your desired deployment directory:
 
 ```bash
-mkdir -p /opt/travel-rs && cd /opt/travel-rs
+mkdir -p /example/path/to/travel-rs && cd /example/path/to/travel-rs
 unzip deploy-v<version>.zip
 ```
 
@@ -136,7 +136,7 @@ If you prefer to run the binary directly without Docker:
 2. **Place the binary** in your deployment directory alongside the `config/` and `locales/` directories:
 
    ```
-   /opt/travel-rs/
+   /example/path/to/travel-rs/
    ├── travel-rs              # the binary
    ├── config/
    │   ├── config.toml
@@ -150,7 +150,7 @@ If you prefer to run the binary directly without Docker:
 3. **Run the bot:**
 
    ```bash
-   cd /opt/travel-rs
+   cd /example/path/to/travel-rs
    ./travel-rs
    ```
 
@@ -170,8 +170,8 @@ If you prefer to run the binary directly without Docker:
 
    [Service]
    Type=simple
-   WorkingDirectory=/opt/travel-rs
-   ExecStart=/opt/travel-rs/travel-rs
+   WorkingDirectory=/example/path/to/travel-rs
+   ExecStart=/example/path/to/travel-rs/travel-rs
    Restart=on-failure
    RestartSec=5
    Environment=RUST_LOG=info
@@ -282,8 +282,8 @@ If running the binary directly:
 
    ```bash
    # Build the new version (see section 2.5 step 1)
-   cp target/release/travel-rs /opt/travel-rs/travel-rs
-   chmod +x /opt/travel-rs/travel-rs
+   cp target/release/travel-rs /example/path/to/travel-rs/travel-rs
+   chmod +x /example/path/to/travel-rs/travel-rs
    ```
 
 3. **Restart:**
@@ -400,10 +400,18 @@ deploy-v<version>/
 │       ├── 001_init.surql
 │       ├── 002_add_timestamps.surql
 │       └── ...
-└── config/
-    ├── config.toml                      # Main config (set your profile here)
-    └── profiles/
-        └── prod.toml.example            # Sanitized profile template
+├── config/
+│   ├── config.toml                      # Main config (set your profile here)
+│   └── profiles/
+│       └── prod.toml.example            # Sanitized profile template
+└── archanist/                           # Archanist update-engine automation (see archanist/README.md)
+    ├── config.toml                      # Archanist main config (synced on every update)
+    ├── docker-compose.yml               # First-time bootstrap only (not synced)
+    ├── .env.example                     # First-time bootstrap template (not synced)
+    ├── README.md                        # Archanist bootstrap & usage guide (not synced)
+    └── components/
+        ├── archanist.toml               # Recipe: self-update Archanist (synced on every update)
+        └── travel-rs.toml               # Recipe: upgrade the bot (synced on every update)
 ```
 
 ## 6. Migration Reference

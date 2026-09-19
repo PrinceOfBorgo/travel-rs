@@ -40,11 +40,11 @@ token = "config/prod-token.txt"
 # chat_whitelist = "config/chat-whitelist.txt"
 
 [database]
-address = "${DB_ADDRESS}"
-username = "${DB_USERNAME}"
-password = "${DB_PASSWORD}"
-namespace = "${DB_NAMESPACE}"
-database = "${DB_NAME}"
+address = "${TRAVELRS_DB_ADDRESS}"
+username = "${TRAVELRS_DB_USERNAME}"
+password = "${TRAVELRS_DB_PASSWORD}"
+namespace = "${TRAVELRS_DB_NAMESPACE}"
+database = "${TRAVELRS_DB_NAME}"
 
 [i18n]
 default_locale = "en-US"

@@ -22,7 +22,6 @@
 - [ ] Add `EditExpense` command.
 - [ ] Change `ListExpenses` command so that the filter matches the string representation of the expense.
 - [ ] Handle multiple travel plans in one chat.
-- [ ] Create a deployment wizard tool for guided install/setup/update of the bot.
 
 ## Done
 
@@ -48,3 +47,4 @@
   - [x] `ClearExpenses`
   - [x] `ClearTransfers`
   - [x] `ClearAll` (clears travelers, expenses, and transfers)
+- [x] Create a deployment wizard tool for guided install/setup/update of the bot: managed by Archanist.

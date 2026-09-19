@@ -2,10 +2,14 @@
 
 ## [0.3.3-SNAPSHOT] - Unreleased
 ### Added
-- N/A
+- The deployment bundle (`deploy-v<version>.zip`) now ships the Archanist update-engine files under `archanist/`, so an operator can stand Archanist up from the release zip alone. Two categories are included:
+  - **Synced on every update** - the recipes (`archanist/components/*.toml`) and main config (`archanist/config.toml`). The `travel-rs` recipe copies these back over the running Archanist instance on each update, keeping its automation current just by releasing the bot.
+  - **First-time bootstrap only** - `archanist/docker-compose.yml`, `archanist/.env.example`, and `archanist/README.md`. These seed the initial install and are not synced on subsequent updates.
 
 ### Changed
-- N/A
+- Updated dependencies.
+- Updated placeholders for environment variables in profile template files.
+- Updated `DEPLOYMENT.md`.
 
 ### Fixed
 - N/A

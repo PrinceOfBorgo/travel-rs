@@ -1,0 +1,35 @@
+# Component: Archanist self-update
+# ================================
+# Replaces the Archanist container with a newer image, then exits so the
+# orchestrator (docker-compose restart policy) brings the new image up.
+# `self = true` makes the pipeline stop cleanly right after the swap.
+#
+# Pair this with `self_component = "archanist"` in config.toml.
+
+schema = 1
+description = "Archanist itself"
+
+[release]
+type = "ghcr_auto"
+image = "ghcr.io/princeofborgo/archanist"
+
+[vars]
+# host_data_dir: MUST match the host path bind-mounted at /app/data in the
+# Archanist container (see archanist/docker-compose.yml). The docker daemon
+# resolves the self-swap volume on the HOST, so a container-view path here
+# would lose Archanist's state across the swap. Sourced from .env via compose
+# so `sync_archanist_recipes` can safely overwrite this file on every update.
+host_data_dir = "${env.ARCHANIST_HOST_DATA_DIR}"
+
+[[steps]]
+id = "self_swap"
+type = "docker_swap"
+image = "ghcr.io/princeofborgo/archanist"
+tag = "v${version}"
+container = "archanist"
+self = true
+volumes = [
+    "/var/run/docker.sock:/var/run/docker.sock",
+    "${vars.host_data_dir}:/app/data",
+]
+restart_policy = "unless-stopped"

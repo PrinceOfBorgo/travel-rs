@@ -1,0 +1,184 @@
+# Component: Travel-RS Telegram bot
+# ==================================
+# Automated equivalent of the manual upgrade documented in DEPLOYMENT.md:
+#   1. Download deploy-v<version>.zip from the GitHub release
+#   2. Extract it
+#   3. Parse DEPLOYMENT.md and pick the migrations introduced AFTER the
+#      currently-deployed version
+#   4. Snapshot the DB, then run those migrations
+#   5. Sync locale files
+#   6. Merge new keys into the active profile
+#   7. Refresh Archanist's OWN recipes + main config from the bundle, so the
+#      next update always uses the latest automation shipped with the bot
+#   8. Pull + recreate the bot container
+#
+# Runs inside the dockerized Archanist (archanist/docker-compose.yml), which
+# needs nothing but its own binary and the mounted docker socket. Component
+# tools run in their own images: busybox for the unzip step, and a throwaway
+# surrealdb container for migrate/backup/restore that imports into the real DB
+# at ${vars.surreal_import_url}.
+
+schema = 1
+description = "Travel-RS Bot"
+
+[release]
+type = "github"
+repo = "PrinceOfBorgo/travel-rs"
+
+# ============================================================================
+# OPERATOR KNOBS - all values come from the .env file next to docker-compose.yml.
+# Nothing to edit here per deployment: `sync_archanist_recipes` overwrites this
+# file on every update, so operator-specific values must live outside git.
+# ============================================================================
+[vars]
+# Host path bind-mounted at /app/data (see docker-compose.yml). The daemon
+# resolves bind sources on the host, so any path we hand to a sibling
+# container (migrate, swap) has to be this host path, not /app/data.
+host_data_dir = "${env.ARCHANIST_HOST_DATA_DIR}"
+
+# Active profile file under config/profiles/, without the .toml.
+profile = "${env.TRAVELRS_PROFILE}"
+
+# DB connection - the same env vars the bot's profile uses, so one .env
+# feeds both (see config/profiles/prod.toml.example). compose passes them
+# in and Archanist errors out if any is missing. TRAVELRS_DB_ADDRESS can be
+# ws/wss/http/https.
+surreal_import_url = "${env.TRAVELRS_DB_ADDRESS}"
+surreal_user = "${env.TRAVELRS_DB_USERNAME}"
+surreal_pass = "${env.TRAVELRS_DB_PASSWORD}"
+surreal_ns = "${env.TRAVELRS_DB_NAMESPACE}"
+surreal_db = "${env.TRAVELRS_DB_NAME}"
+
+# Image for the throwaway migrate/backup/restore containers - one place so it
+# can't drift from the bot's client. release.yml rewrites surreal_version from
+# Cargo.toml when it builds the bundle; this literal is the manual-run default.
+surreal_version = "2.3.5"
+surreal_image = "surrealdb/surrealdb:v${vars.surreal_version}"
+
+# Derived paths - usually no need to touch.
+install_dir = "/app/data/travel-rs"                  # container view
+install_dir_host = "${vars.host_data_dir}/travel-rs" # host view, for swap mounts
+
+# Archanist's own config + recipes sit at the volume root.
+archanist_components_dir = "/app/data/components"
+archanist_config = "/app/data/config.toml"
+
+# Bundle staging inside the volume.
+staging_zip = "/app/data/staging/travel-rs-deploy-v${version}.zip"
+staging_root = "/app/data/staging/travel-rs-v${version}"
+bundle_extracted = "/app/data/staging/travel-rs-v${version}/deploy-v${version}"
+
+# ============================================================================
+# Steps (executed in order). Each step's state is persisted, so a failed run
+# can be retried (already-applied steps are skipped where safe) and
+# `archanist rollback travel-rs` can undo the completed ones in reverse:
+# copy/merge steps restore their pre-run backups, swap goes back to the old
+# image, and migrate restores the whole-DB snapshot taken before it ran.
+# ============================================================================
+
+# Grab the release zip.
+[[steps]]
+id = "download_bundle"
+type = "download"
+url = "https://github.com/PrinceOfBorgo/travel-rs/releases/download/v${version}/deploy-v${version}.zip"
+dest = "${vars.staging_zip}"
+
+# Unzip it in a throwaway busybox - Archanist itself carries no unzip. The
+# data volume is mounted at /app/data so the zip/output paths line up.
+[[steps]]
+id = "extract_bundle"
+type = "container_run"
+image = "busybox"
+binds = ["${vars.host_data_dir}:/app/data"]
+command = ["unzip", "-o", "${vars.staging_zip}", "-d", "${vars.staging_root}"]
+
+# Work out which migrations are new. DEPLOYMENT.md's Migration Reference
+# table lists them per release; keep the rows after the deployed version,
+# drop the ~~struck-through~~ ones, and collect the *.surql names. On a
+# fresh install ${current_version} is "(none)", so start_after matches
+# nothing and every migration runs.
+[[steps]]
+id = "select_migrations"
+type = "parse_text"
+file = "${vars.bundle_extracted}/DEPLOYMENT.md"
+section = { start = "## (\\d+\\.\\s+)?Migration Reference", start_after = "^\\|\\s*v${current_version}\\s*\\|[^\\n]*\\n", end = "^## " }
+strip = ["~~`[^`]+`~~"]
+[[steps.extract]]
+pattern = "`(?<migrations>[^`]+\\.surql)`"
+prefix = "vars."
+dedupe = true
+sort = true
+join = "\n"
+required = true
+
+# Apply them in a throwaway surreal container (Archanist needs no surreal CLI).
+# db_migrate creates it through the docker socket; the data volume is bound at
+# /app/data so {file} - each not-yet-applied migration - resolves inside it.
+[[steps]]
+id = "migrate"
+type = "db_migrate"
+files = "${vars.migrations}"
+base = "${vars.bundle_extracted}/database/migrations"
+image = "${vars.surreal_image}"
+extra_hosts = ["host.docker.internal:host-gateway"]
+binds = ["${vars.host_data_dir}:/app/data"]
+command = ["import", "--conn", "${vars.surreal_import_url}", "--user", "${vars.surreal_user}", "--pass", "${vars.surreal_pass}", "--ns", "${vars.surreal_ns}", "--db", "${vars.surreal_db}", "{file}"]
+# Snapshot the DB before migrating so rollback can restore it - migrations are
+# forward-only, there are no down-scripts. {backup} is a per-attempt dir under
+# .archanist-backups, on the mounted volume so the container can write it.
+backup_command = ["export", "--conn", "${vars.surreal_import_url}", "--user", "${vars.surreal_user}", "--pass", "${vars.surreal_pass}", "--ns", "${vars.surreal_ns}", "--db", "${vars.surreal_db}", "{backup}/pre-migrate.surql"]
+# Rollback: drop the DB (reset DDL on stdin) then reimport the snapshot - a
+# plain import won't remove objects newer migrations added. Two ordered
+# container runs, no shell.
+[[steps.restore]]
+command = ["sql", "--conn", "${vars.surreal_import_url}", "--user", "${vars.surreal_user}", "--pass", "${vars.surreal_pass}", "--ns", "${vars.surreal_ns}"]
+stdin = "REMOVE DATABASE IF EXISTS ${vars.surreal_db}; DEFINE DATABASE ${vars.surreal_db};"
+
+[[steps.restore]]
+command = ["import", "--conn", "${vars.surreal_import_url}", "--user", "${vars.surreal_user}", "--pass", "${vars.surreal_pass}", "--ns", "${vars.surreal_ns}", "--db", "${vars.surreal_db}", "{backup}/pre-migrate.surql"]
+
+# Refresh locales (adds and overwrites; stale files stay).
+[[steps]]
+id = "locales"
+type = "copy_files"
+src = "${vars.bundle_extracted}/locales"
+dest = "${vars.install_dir}/locales"
+
+# Pull new keys into the active profile. Heads up: config_merge overwrites
+# matching keys rather than only filling gaps, so keep secrets as ${ENV}
+# placeholders (prod.toml.example already does) and the merge just adds new
+# fields. Backs up the profile for rollback.
+[[steps]]
+id = "profile_keys"
+type = "config_merge"
+target = "${vars.install_dir}/config/profiles/${vars.profile}.toml"
+patch = "${vars.bundle_extracted}/config/profiles/prod.toml.example"
+
+# Pull the latest recipes from the bundle so the next run uses them.
+# Overwrites components/*.toml, including this file (already loaded, fine).
+[[steps]]
+id = "sync_archanist_recipes"
+type = "copy_files"
+src = "${vars.bundle_extracted}/archanist/components"
+dest = "${vars.archanist_components_dir}"
+
+# Same for archanist's own config (no secrets, plain merge).
+[[steps]]
+id = "sync_archanist_config"
+type = "config_merge"
+target = "${vars.archanist_config}"
+patch = "${vars.bundle_extracted}/archanist/config.toml"
+
+# Pull the new image and recreate the bot. Volume sources use the host path
+# (the daemon resolves them; a container path would mount an empty dir and
+# the bot would crash on missing config). env feeds the DB_* placeholders in
+# the profile at runtime.
+[[steps]]
+id = "swap"
+type = "docker_swap"
+image = "ghcr.io/princeofborgo/travel-rs"
+tag = "v${version}"
+container = "travel-rs"
+volumes = ["${vars.install_dir_host}/config:/app/config", "${vars.install_dir_host}/locales:/app/locales", "${vars.install_dir_host}/logs:/app/logs"]
+env = ["TRAVELRS_DB_ADDRESS=${env.TRAVELRS_DB_ADDRESS}", "TRAVELRS_DB_USERNAME=${env.TRAVELRS_DB_USERNAME}", "TRAVELRS_DB_PASSWORD=${env.TRAVELRS_DB_PASSWORD}", "TRAVELRS_DB_NAMESPACE=${env.TRAVELRS_DB_NAMESPACE}", "TRAVELRS_DB_NAME=${env.TRAVELRS_DB_NAME}"]
+restart_policy = "always"

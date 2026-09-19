@@ -1,0 +1,38 @@
+# Archanist - Travel-RS Bot production deployment (dockerized)
+# ============================================================
+# Bring this file plus config.toml and components/ to the target host, put
+# them next to an `archanist-data/` directory (see README.md), then:
+#
+#   docker compose run --rm archanist update
+#
+# The Archanist container drives the host docker daemon through the mounted
+# socket to (re)create the bot container and ephemeral migration containers.
+
+services:
+  archanist:
+    image: ${ARCHANIST_IMAGE:-ghcr.io/princeofborgo/archanist}:${ARCHANIST_TAG:-latest}
+    container_name: archanist
+    # Run on demand (`docker compose run --rm archanist update`); the default
+    # entrypoint is the Archanist binary. restart policy applies to the
+    # container that a `self` swap recreates.
+    restart: unless-stopped
+    working_dir: /app/data
+    command: ["--config", "/app/data/config.toml", "update"]
+    # Values feed both the recipe's `migrate` step and the bot container the
+    # `swap` step recreates. `:?` refuses to start if a value is
+    # missing.
+    environment:
+      # MUST equal the absolute host path that `./archanist-data` below
+      # resolves to on this host.
+      # The recipes hand this path to sibling containers, and the docker daemon
+      # resolves bind sources on the host, not inside Archanist.
+      ARCHANIST_HOST_DATA_DIR: ${ARCHANIST_HOST_DATA_DIR:?set ARCHANIST_HOST_DATA_DIR in .env}
+      TRAVELRS_PROFILE: ${TRAVELRS_PROFILE:?set TRAVELRS_PROFILE in .env}
+      TRAVELRS_DB_ADDRESS: ${TRAVELRS_DB_ADDRESS:?set TRAVELRS_DB_ADDRESS in .env}
+      TRAVELRS_DB_USERNAME: ${TRAVELRS_DB_USERNAME:?set TRAVELRS_DB_USERNAME in .env}
+      TRAVELRS_DB_PASSWORD: ${TRAVELRS_DB_PASSWORD:?set TRAVELRS_DB_PASSWORD in .env}
+      TRAVELRS_DB_NAMESPACE: ${TRAVELRS_DB_NAMESPACE:?set TRAVELRS_DB_NAMESPACE in .env}
+      TRAVELRS_DB_NAME: ${TRAVELRS_DB_NAME:?set TRAVELRS_DB_NAME in .env}
+    volumes:
+      - ./archanist-data:/app/data
+      - /var/run/docker.sock:/var/run/docker.sock

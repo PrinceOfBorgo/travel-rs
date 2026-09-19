@@ -30,6 +30,9 @@ target/
 # Telegram bot token
 *token.txt
 
+# Archanist runtime env
+archanist/.env
+
 # Logs folder
 logs/
 
