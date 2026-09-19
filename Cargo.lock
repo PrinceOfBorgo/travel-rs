@@ -6370,7 +6370,7 @@ dependencies = [
 
 [[package]]
 name = "travel-rs"
-version = "0.4.0"
+version = "0.4.1-SNAPSHOT"
 dependencies = [
  "anyhow",
  "chrono",
