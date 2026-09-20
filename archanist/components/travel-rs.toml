@@ -97,12 +97,14 @@ command = ["unzip", "-o", "${vars.staging_zip}", "-d", "${vars.staging_root}"]
 # table lists them per release; keep the rows after the deployed version,
 # drop the ~~struck-through~~ ones, and collect the *.surql names. On a
 # fresh install ${current_version} is "(none)", so start_after matches
-# nothing and every migration runs.
+# nothing and every migration runs. The section starts at the table header
+# row (not the "## Migration Reference" heading) so the intro prose - which
+# includes an example row-format line - is never scanned.
 [[steps]]
 id = "select_migrations"
 type = "parse_text"
 file = "${vars.bundle_extracted}/DEPLOYMENT.md"
-section = { start = "## (\\d+\\.\\s+)?Migration Reference", start_after = "^\\|\\s*v${current_version}\\s*\\|[^\\n]*\\n", end = "^## " }
+section = { start = "^\\|\\s*Version\\s*\\|", start_after = "^\\|\\s*v${current_version}\\s*\\|[^\\n]*\\n", end = "^## " }
 strip = ["~~`[^`]+`~~"]
 [[steps.extract]]
 pattern = "`(?<migrations>[^`]+\\.surql)`"

@@ -5,10 +5,10 @@
 - N/A
 
 ### Changed
-- N/A
+- Updated Codecov.
 
 ### Fixed
-- N/A
+- Fixed the Archanist `select_migrations` step parsing the row-format *example* in `DEPLOYMENT.md`'s Migration Reference intro as if it listed real migration files, which made the `migrate` step fail with `file not found`. The step now scans only the table body (anchored on its header row), so the intro prose is ignored. The table still lists only releases that ship migration scripts.
 
 ## [0.4.1] - 2026-09-20
 ### 🔧 Patch Release
