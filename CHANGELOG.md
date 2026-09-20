@@ -8,7 +8,7 @@
 - N/A
 
 ### Fixed
-- N/A
+- Enabled the `protocol-http` feature on the `surrealdb` dependency so the bot can connect to SurrealDB over `http`/`https` (previously only `ws`/`wss` worked). This is required because the Archanist `migrate` step runs `surreal export`/`import`, which SurrealDB does not support over WebSocket connections.
 
 ## [0.4.0] - 2026-09-19
 ### ✨ Minor Release

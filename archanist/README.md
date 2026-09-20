@@ -84,12 +84,14 @@ If Archanist has not been deployed yet, the very first update is seeded by hand.
    ARCHANIST_HOST_DATA_DIR=/example/path/to/travel-rs/archanist/archanist-data  # absolute host path of ./archanist-data
    # TRAVELRS_PROFILE=your-profile
 
-   TRAVELRS_DB_ADDRESS=wss://your-surreal-endpoint                              # ws:// wss:// http:// or https://
+   TRAVELRS_DB_ADDRESS=https://your-surreal-endpoint                            # http:// or https:// ONLY (see note below)
    TRAVELRS_DB_USERNAME=your-db-user
    TRAVELRS_DB_PASSWORD=your-db-password
    TRAVELRS_DB_NAMESPACE=travel_rs
    TRAVELRS_DB_NAME=travel_rs_db
    ```
+
+   > **`TRAVELRS_DB_ADDRESS` must use `http://` or `https://`, not `ws://`/`wss://`.** The `migrate` step runs `surreal export`/`import`, and SurrealDB does not support those over WebSocket. SurrealDB serves HTTP and WS on the same port, so the http(s) scheme works for both the migration CLI and the bot (which uses the transport-agnostic `any` engine).
 
    `TRAVELRS_DB_*` must match the active profile's `[database]`. Compose refuses to start if any required value is missing, and Archanist injects them both into the `migrate` step and into the recreated bot container.
 

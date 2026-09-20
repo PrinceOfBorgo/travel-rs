@@ -25,7 +25,7 @@ rust-fuzzy-search = "0.1.1"
 rusty-money = { version = "0.5.0", features = ["iso", "crypto"] }
 serde = "1.0.229"
 strum = { version = "0.28.0", features = ["derive"] }
-surrealdb = { version = "2.3.5", features = ["kv-mem"] }
+surrealdb = { version = "2.3.5", features = ["kv-mem", "protocol-http"] }
 teloxide = { version = "0.17.0", default-features = false, features = ["macros", "rustls", "ctrlc_handler"] }
 tokio = { version = "1.53.1", features = ["rt-multi-thread", "macros"] }
 tracing = "0.1.44"
@@ -35,7 +35,7 @@ travel-rs-derive = { version = "0.1.0", path = "travel-rs-derive" }
 unic-langid = { version = "0.9.6", features = ["serde"] }
 
 [dev-dependencies]
-rand = "0.10.2"
+rand = "0.10.3"
 teloxide_tests = "0.4.0"
 
 [build-dependencies]

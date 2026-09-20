@@ -35,7 +35,7 @@ chat_whitelist_source = "file"
 chat_whitelist = "config/dev-chat-whitelist.txt"
 
 [database]
-address = "wss://${TRAVELRS_DEV_DB_CLOUD_ADDRESS}"
+address = "https://${TRAVELRS_DEV_DB_CLOUD_ADDRESS}"
 username = "${TRAVELRS_DEV_DB_USERNAME}"
 password = "${TRAVELRS_DEV_DB_PASSWORD}"
 namespace = "${TRAVELRS_DEV_DB_NAMESPACE}"

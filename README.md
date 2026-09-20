@@ -363,7 +363,9 @@ The profile-specific configuration files are structured into sections, each serv
 
 * `[database]`
 
-  * **`address`**: The address of the database server (e.g., `ws://127.0.0.1:8000`).
+  * **`address`**: The address of the database server (e.g., `http://127.0.0.1:8000`).
+
+    > **Use an `http://` or `https://` address, not `ws://`/`wss://`.** The bot connects fine over both, but the Archanist `migrate` step (and any manual `surreal export`/`import`) does not work over WebSocket.
   * **`username`**: The username for database authentication.
   * **`password`**: The password for database authentication.
   * **`namespace`**: The namespace used in the database.

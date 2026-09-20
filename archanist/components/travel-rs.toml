@@ -41,8 +41,9 @@ profile = "${env.TRAVELRS_PROFILE}"
 
 # DB connection - the same env vars the bot's profile uses, so one .env
 # feeds both (see config/profiles/prod.toml.example). compose passes them
-# in and Archanist errors out if any is missing. TRAVELRS_DB_ADDRESS can be
-# ws/wss/http/https.
+# in and Archanist errors out if any is missing. TRAVELRS_DB_ADDRESS MUST be
+# http/https, NOT ws/wss: the migrate step's export/import go through the
+# surreal CLI, which SurrealDB refuses over WebSocket.
 surreal_import_url = "${env.TRAVELRS_DB_ADDRESS}"
 surreal_user = "${env.TRAVELRS_DB_USERNAME}"
 surreal_pass = "${env.TRAVELRS_DB_PASSWORD}"

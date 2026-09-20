@@ -441,7 +441,7 @@ name = "travelrs"
 currencies = ["USD", "${TRAVELRS_TEST_E2E_CUR}"]
 
 [database]
-address = "wss://${TRAVELRS_TEST_HOST}:8000"
+address = "https://${TRAVELRS_TEST_HOST}:8000"
 password = "${TRAVELRS_TEST_E2E_PWD}"
 port = 8000
 "#;
@@ -458,7 +458,7 @@ port = 8000
             RootFixture {
                 name: "travelrs".into(),
                 database: DbFixture {
-                    address: "wss://db.example.com:8000".into(),
+                    address: "https://db.example.com:8000".into(),
                     password: "hunter2".into(),
                     port: 8000,
                 },
