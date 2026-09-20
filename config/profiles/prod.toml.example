@@ -18,12 +18,12 @@ level = "info"
 #   Allowed values:
 #   - "file": The token is read from a file.
 #   - "string": The token is provided directly as a string.
-token_source = "file"
+token_source = "string"
 
 # token: The bot token.
 #   If token_source is "file", this should be a path to a file containing the token.
 #   If token_source is "string", this should be the token itself.
-token = "config/prod-token.txt"
+token = "${TRAVELRS_BOT_TOKEN}"
 
 # [optional] chat_whitelist_source: Specifies the source for the chat whitelist for dev purposes.
 #   Allowed values:

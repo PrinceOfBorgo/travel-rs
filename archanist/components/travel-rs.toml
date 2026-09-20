@@ -183,8 +183,10 @@ patch = "${vars.bundle_extracted}/archanist/config.toml"
 
 # Pull the new image and recreate the bot. Volume sources use the host path
 # (the daemon resolves them; a container path would mount an empty dir and
-# the bot would crash on missing config). env feeds the DB_* placeholders in
-# the profile at runtime.
+# the bot would crash on missing config). `env` feeds the bot token and the
+# DB_* placeholders in the profile at runtime. `extra_hosts` maps
+# host.docker.internal to the
+# host gateway so the bot can reach SurrealDB at ${vars.surreal_url}
 [[steps]]
 id = "swap"
 type = "docker_swap"
@@ -192,5 +194,6 @@ image = "ghcr.io/princeofborgo/travel-rs"
 tag = "v${version}"
 container = "travel-rs"
 volumes = ["${vars.install_dir_host}/config:/app/config", "${vars.install_dir_host}/locales:/app/locales", "${vars.install_dir_host}/logs:/app/logs"]
-env = ["TRAVELRS_DB_ADDRESS=${env.TRAVELRS_DB_ADDRESS}", "TRAVELRS_DB_USERNAME=${env.TRAVELRS_DB_USERNAME}", "TRAVELRS_DB_PASSWORD=${env.TRAVELRS_DB_PASSWORD}", "TRAVELRS_DB_NAMESPACE=${env.TRAVELRS_DB_NAMESPACE}", "TRAVELRS_DB_NAME=${env.TRAVELRS_DB_NAME}"]
+env = ["TRAVELRS_BOT_TOKEN=${env.TRAVELRS_BOT_TOKEN}", "TRAVELRS_DB_ADDRESS=${env.TRAVELRS_DB_ADDRESS}", "TRAVELRS_DB_USERNAME=${env.TRAVELRS_DB_USERNAME}", "TRAVELRS_DB_PASSWORD=${env.TRAVELRS_DB_PASSWORD}", "TRAVELRS_DB_NAMESPACE=${env.TRAVELRS_DB_NAMESPACE}", "TRAVELRS_DB_NAME=${env.TRAVELRS_DB_NAME}"]
+extra_hosts = ["host.docker.internal:host-gateway"]
 restart_policy = "always"

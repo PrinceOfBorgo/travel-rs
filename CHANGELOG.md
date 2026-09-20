@@ -5,7 +5,8 @@
 - N/A
 
 ### Changed
-- N/A
+- The production profile (`prod.toml.example`) now reads the bot token from the `TRAVELRS_BOT_TOKEN` environment variable (`token_source = "string"`, `token = "${TRAVELRS_BOT_TOKEN}"`) instead of the `config/prod-token.txt` file. The Archanist deployment injects the token into the bot container via the `swap` step, sourcing it from the `.env` (`archanist/docker-compose.yml`, `archanist/.env.example`), so no secret file needs to be seeded on the host.
+- The Archanist `swap` step now sets `extra_hosts = ["host.docker.internal:host-gateway"]` on the recreated bot container, so the bot can reach a SurrealDB instance running on the host.
 
 ### Fixed
 - N/A
