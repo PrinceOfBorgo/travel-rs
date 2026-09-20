@@ -2,7 +2,7 @@
 
 ## [0.4.2-SNAPSHOT] - Unreleased
 ### Added
-- N/A
+- `version_filter` in Archanist `select_migrations` step to select migration scripts version-aware: only rows in the `DEPLOYMENT.md` Migration Reference table whose version is strictly newer than the currently-deployed version are picked (semver comparison). Updating from a release that shipped no migrations no longer re-selects older, already-applied scripts, and a fresh install (`(none)`) still runs them all. Requires Archanist `>= 0.1.1`.
 
 ### Changed
 - Updated Codecov.

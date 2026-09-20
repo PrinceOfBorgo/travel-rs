@@ -94,17 +94,24 @@ binds = ["${vars.host_data_dir}:/app/data"]
 command = ["unzip", "-o", "${vars.staging_zip}", "-d", "${vars.staging_root}"]
 
 # Work out which migrations are new. DEPLOYMENT.md's Migration Reference
-# table lists them per release; keep the rows after the deployed version,
-# drop the ~~struck-through~~ ones, and collect the *.surql names. On a
-# fresh install ${current_version} is "(none)", so start_after matches
-# nothing and every migration runs. The section starts at the table header
-# row (not the "## Migration Reference" heading) so the intro prose - which
-# includes an example row-format line - is never scanned.
+# table lists only releases that ship migrations; keep the rows strictly
+# newer than the deployed version, drop the ~~struck-through~~ ones, and
+# collect the *.surql names.
+#
+# `version_filter` keeps only table rows whose version is greater than 
+# ${current_version}(semver). On a fresh install ${current_version} is
+# "(none)" (not semver), so the filter is a no-op and every row is kept.
+#
+# `section.start` anchors on the table header (not the "## Migration
+# Reference" heading) so the intro prose - including an example row-format
+# line - is never scanned. `start_after` is kept only as a fallback for
+# older Archanist builds that predate `version_filter`.
 [[steps]]
 id = "select_migrations"
 type = "parse_text"
 file = "${vars.bundle_extracted}/DEPLOYMENT.md"
 section = { start = "^\\|\\s*Version\\s*\\|", start_after = "^\\|\\s*v${current_version}\\s*\\|[^\\n]*\\n", end = "^## " }
+version_filter = { pattern = "^\\|\\s*v(?<version>\\d+\\.\\d+\\.\\d+)\\s*\\|", newer_than = "${current_version}" }
 strip = ["~~`[^`]+`~~"]
 [[steps.extract]]
 pattern = "`(?<migrations>[^`]+\\.surql)`"
@@ -112,7 +119,9 @@ prefix = "vars."
 dedupe = true
 sort = true
 join = "\n"
-required = true
+# Zero new migrations is a valid outcome (e.g. a release with no schema
+# changes), so don't fail the step when nothing matches.
+required = false
 
 # Apply them in a throwaway surreal container (Archanist needs no surreal CLI).
 # db_migrate creates it through the docker socket; the data volume is bound at
