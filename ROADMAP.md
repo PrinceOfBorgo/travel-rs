@@ -9,7 +9,7 @@
   - [ ] Add languages:
     - [x] en-US
     - [x] it-IT
-  - [ ] Add currency input formatting (decimal separators).
+  - [x] Add currency input formatting (decimal separators).
   - [x] Add `SetLanguage` command.
 - [ ] Formatting of bot responses (bold, italic, etc.). https://docs.rs/teloxide/latest/teloxide/types/enum.ParseMode.html
 - [ ] Improve error handling: distinguish errors resulting from DB queries.
@@ -19,7 +19,8 @@
   - [ ] Implement a Telegram Mini App.
   - [x] Add inline keyboard support.
   - [x] Interactive prompts for commands invoked without their arguments.
-- [ ] Add `EditExpense` command.
+- [ ] Add `EditExpense` and `EditTransfer` command.
+- [ ] Add `ShowTraveler` command.
 - [ ] Change `ListExpenses` command so that the filter matches the string representation of the expense.
 - [ ] Handle multiple travel plans in one chat.
 

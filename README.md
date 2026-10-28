@@ -21,6 +21,7 @@ The primary goal of Travel-RS Bot is to simplify the management of shared expens
 - [2. Key Functionalities](#2-key-functionalities)
 - [3. Use Cases and Examples](#3-use-cases-and-examples)
 - [4. Available Commands](#4-available-commands)
+  - [4.1. Amount Input Format](#41-amount-input-format)
 - [5. Detailed Usage Examples](#5-detailed-usage-examples)
 - [6. Configuration](#6-configuration)
   - [6.1. Main Configuration File](#61-main-configuration-file)
@@ -64,6 +65,7 @@ Once added and configured, the bot will be ready to assist with managing travel-
 * **Debt Tracking**: Track debts between travelers and manage repayments.
 * **Balance Calculation**: Simplify balances to minimize the number of transfers among participants, ensuring transparency and efficiency.
 * **Currency Support**: Handle different currencies with specific precision.
+* **Flexible Amount Input**: Amounts can be typed with either `.` or `,` as decimal separator, with optional thousands separators, according to the selected currency's format.
 * **Localization**: Support for multiple languages, including English (`en-US`) and Italian (`it-IT`).
 * **Command-Based Interaction**: Use commands to interact with the bot, such as adding travelers, setting currencies, or viewing balances.
 * **Database Integration**: Persistent storage of data using a database backend.
@@ -123,6 +125,7 @@ The following commands are supported by Travel-RS Bot:
 * **`/transfer`** — Transfers the specified amount from one traveler to another. If invoked without arguments (or with partial arguments), the bot guides through an interactive multi-step dialogue with traveler-picker inline keyboards. Non-existent travelers are caught and re-prompted.
 
   * Example: `/transfer Alice Bob 25.00`
+  * Example: `/transfer Alice Bob 1.234,50`
   * Example: `/transfer Alice` (the bot will ask for the receiver and amount)
   * Example: `/transfer` (the bot will ask for sender, receiver, and amount)
 * **`/deletetransfer`** — Deletes the transfer with the specified identifier from the travel plan. A confirmation prompt (Yes/No) is shown before the deletion is executed. If invoked without an identifier, the bot shows a paginated inline keyboard listing the chat's transfers for quick selection; free-text input is also accepted.
@@ -157,6 +160,28 @@ The following commands are supported by Travel-RS Bot:
   * Example: `/cancel`
 
 These commands provide a comprehensive way to interact with the bot and effectively manage travel-related expenses.
+
+### 4.1. Amount Input Format
+
+Wherever the bot asks for an amount (`/addexpense`, split shares, `/transfer`), both `.` and `,` are accepted as decimal separator, regardless of the chat currency. Thousands separators are optional. The rules are:
+
+* **Single separator** → decimal separator: `123.45` and `123,45` are both `123.45`.
+* **Both `.` and `,`** → the last one is the decimal separator: `1.234,56` and `1,234.56` are both `1234.56`.
+* **Repeated separator** → thousands separator: `1.234.567` and `1,234,567` are both `1234567`.
+* **Spaces, apostrophes (`'`, `’`) and the Arabic thousands separator (`٬`)** are always treated as thousands separators and simply ignored: `1 234,5` and `1'234.5` are both `1234.5`.
+* **Ambiguous input** (a single separator followed by exactly 3 digits, e.g. `1.234`) is resolved with the chat currency's format: it is a thousands separator only if it matches the currency's thousands separator and the currency has fewer than 3 decimal digits ([ISO 4217](https://en.wikipedia.org/wiki/ISO_4217) minor unit).
+
+  | Input   | EUR     | USD     | BTC     |
+  | ------- | ------- | ------- | ------- |
+  | `1.234` | `1234`  | `1.234` | `1.234` |
+  | `1,234` | `1.234` | `1234`  | `1.234` |
+  | `0,500` | `0.5`   | `0.5`   | `0.5`   |
+
+* **Indian grouping** is supported: `1,00,000` is `100000`.
+* **Non-Latin input**: the Arabic decimal separator `٫` and Arabic-Indic (`٠١٢…`), Persian (`۰۱۲…`) and Devanagari (`०१२…`) digits are accepted.
+* Malformed grouping (e.g. `1.2.3`, `1234.567,8`) is rejected and the bot asks again.
+
+Percentages in split shares (e.g. `Alice: 12,5%`) accept either decimal separator but no thousands separators.
 
 ## 5. Detailed Usage Examples
 

@@ -5,6 +5,7 @@ use crate::{
     expense::Expense,
     i18n::{self, Translate, TranslateWithArgs},
     keyboard,
+    money_wrapper::parse_amount,
     traveler::{Name, Traveler},
     update_debts,
 };
@@ -59,9 +60,8 @@ const HELP_CALLBACK_SPLIT: &str = "addexp_split:__help__";
 
 static SPLIT_AMONG_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        format!(r"^\s*(?P<{SPLIT_AMONG_REGEX_NAME_GRP}>[^{name_amount_sep}]+)(\s*{name_amount_sep}\s*(?P<{SPLIT_AMONG_REGEX_AMOUNT_GRP}>\d+({decimal_sep}\d+)?\s*(?P<{SPLIT_AMONG_REGEX_PERCENTAGE_GRP}>%)?))?\s*$",
+        format!(r"^\s*(?P<{SPLIT_AMONG_REGEX_NAME_GRP}>[^{name_amount_sep}]+)(\s*{name_amount_sep}\s*(?P<{SPLIT_AMONG_REGEX_AMOUNT_GRP}>\d[\d.,]*\s*(?P<{SPLIT_AMONG_REGEX_PERCENTAGE_GRP}>%)?))?\s*$",
             name_amount_sep = regex::escape(&SPLIT_AMONG_NAME_AMOUNT_SEP.to_string()) ,
-            decimal_sep = regex::escape(&DECIMAL_SEP.to_string())
         ).as_str()
     ).unwrap()
 });
@@ -200,9 +200,10 @@ pub async fn receive_amount(
     ctx: Arc<Mutex<Context>>,
 ) -> HandlerResult {
     tracing::debug!("{LOG_DEBUG_START}");
-    let parsed_text = msg.text().map(|text| text.parse::<Decimal>());
+    let currency = ctx.lock().expect("Failed to lock context").currency.clone();
+    let parsed_text = msg.text().map(|text| parse_amount(text, &currency));
     match parsed_text {
-        Some(Ok(amount)) => {
+        Some(Some(amount)) => {
             if amount <= Decimal::ZERO {
                 tracing::warn!("Invalid amount: non-positive value `{amount}`.");
                 bot.send_message(
@@ -408,17 +409,13 @@ pub async fn receive_paid_by_callback(
     }
 
     // Strip prefix to get the selected index.
-    let raw = data
-        .strip_prefix(CALLBACK_PREFIX)
-        .unwrap_or("")
-        .to_owned();
+    let raw = data.strip_prefix(CALLBACK_PREFIX).unwrap_or("").to_owned();
     if raw.is_empty() {
         tracing::warn!("Empty value in callback data: {data:?}");
         return Ok(());
     }
 
-    let Some(traveler) =
-        Traveler::db_resolve_by_number(Arc::clone(&db), msg.chat.id, &raw).await
+    let Some(traveler) = Traveler::db_resolve_by_number(Arc::clone(&db), msg.chat.id, &raw).await
     else {
         tracing::warn!("Could not resolve traveler number from callback data: {raw:?}");
         return Ok(());
@@ -583,7 +580,8 @@ async fn receive_split_callback_inner(
         let label = i18n::labels::ALL_BUTTON.translate(ctx.clone());
         keyboard::echo_callback_selection(&bot, &msg, &label).await;
         // Simulate "all" text input
-        let result = parse_split_among(db.clone(), ALL_KWORD, msg.chat.id, &mut split_among).await;
+        let result =
+            parse_split_among(db.clone(), ALL_KWORD, msg.chat.id, &mut split_among, "").await;
         match result {
             Ok(SplitAmongEnum::End) => {
                 match end(
@@ -739,7 +737,10 @@ async fn handle_split_among_input(input: SplitAmongInput) -> HandlerResult {
     match msg.text() {
         Some(text) => {
             tracing::debug!("Received text: `{text}`.");
-            match parse_split_among(db.clone(), text, msg.chat.id, &mut split_among).await {
+            let currency = ctx.lock().expect("Failed to lock context").currency.clone();
+            match parse_split_among(db.clone(), text, msg.chat.id, &mut split_among, &currency)
+                .await
+            {
                 Ok(SplitAmongEnum::List) => {
                     let prompt = i18n::dialogues::ADD_EXPENSE_CONTINUE_SPLIT.translate(ctx.clone());
                     send_split_prompt(&bot, Arc::clone(&db), msg.chat.id, &prompt, true, ctx)
@@ -932,6 +933,7 @@ async fn parse_split_among(
     text: &str,
     chat_id: ChatId,
     split_among: &mut BTreeMap<Name, AmountEnum>,
+    currency: &str,
 ) -> Result<SplitAmongEnum, AddExpenseError> {
     let text = text.trim();
     let text_lower = text.to_lowercase();
@@ -982,14 +984,20 @@ async fn parse_split_among(
             }
 
             if let Some(amount) = caps.name(SPLIT_AMONG_REGEX_AMOUNT_GRP) {
-                let amount = amount.as_str().replace(DECIMAL_SEP, "."); // Replace decimal separator with '.' so Decimal::from_str won't fail
-                let amount = amount.trim_end_matches(|c: char| c.is_whitespace() || c == '%'); // Remove whitespaces and '%' at the end of the amount
-                let amount = Decimal::from_str(amount)
-                    .expect("The string should represent a positive number"); // Can unwrap since the regex only matches positive numbers
+                let amount = amount
+                    .as_str()
+                    .trim_end_matches(|c: char| c.is_whitespace() || c == '%');
+                let invalid_format = || AddExpenseError::InvalidFormat {
+                    input: entry.to_owned(),
+                };
 
                 if caps.name(SPLIT_AMONG_REGEX_PERCENTAGE_GRP).is_some() {
+                    // Percentages are not currency amounts: no thousands separators.
+                    let amount = Decimal::from_str(&amount.replace(',', "."))
+                        .map_err(|_| invalid_format())?;
                     split_among.insert(name, AmountEnum::Percentage(amount));
                 } else {
+                    let amount = parse_amount(amount, currency).ok_or_else(invalid_format)?;
                     split_among.insert(name, AmountEnum::Fixed(amount));
                 }
             } else {

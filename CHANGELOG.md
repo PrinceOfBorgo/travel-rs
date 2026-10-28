@@ -5,7 +5,7 @@
 - N/A
 
 ### Changed
-- N/A
+- Locale-aware amount input. Wherever an amount is entered, both `.` and `,` are accepted as decimal separator and thousands separators are optional. Ambiguous input is resolved using the chat currency's format and ISO 4217 minor unit. The Arabic separators `٫`/`٬` and Arabic-Indic, Persian and Devanagari digits are also accepted.
 
 ### Fixed
 - N/A

@@ -76,13 +76,11 @@ static LOCALES: LazyLock<ArcLoader> = LazyLock::new(|| {
 
             let consts = formatdoc!(
                 "
-                {I18N_DECIMAL_SEP} = {decimal_sep}
                 {I18N_SPLIT_AMONG_ENTRIES_SEP} = {split_among_entries_sep}
                 {I18N_SPLIT_AMONG_NAME_AMOUNT_SEP} = {split_among_name_amount_sep}
                 {I18N_ALL_KWORD} = {all_kword}
                 {I18N_END_KWORD} = {end_kword}
                 ",
-                decimal_sep = DECIMAL_SEP,
                 split_among_entries_sep = SPLIT_AMONG_ENTRIES_SEP,
                 split_among_name_amount_sep = SPLIT_AMONG_NAME_AMOUNT_SEP,
                 all_kword = ALL_KWORD,

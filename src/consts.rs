@@ -1,4 +1,3 @@
-pub const DECIMAL_SEP: char = '.';
 pub const SPLIT_AMONG_ENTRIES_SEP: char = ';';
 pub const SPLIT_AMONG_NAME_AMOUNT_SEP: char = ':';
 

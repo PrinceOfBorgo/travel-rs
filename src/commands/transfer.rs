@@ -122,8 +122,11 @@ mod tests {
         db::db,
         i18n::{self, Translate, TranslateWithArgs},
         tests::{TestBot, helpers},
+        transfer::Transfer,
     };
     use maplit::hashmap;
+    use rust_decimal::Decimal;
+    use std::str::FromStr;
 
     test! { transfer_ok,
         let db = db().await;
@@ -193,6 +196,22 @@ mod tests {
                 i18n::args::NAME.into() => "Alice".into(),
             });
         bot.test_last_message(&ask_amount).await;
+    }
+
+    test! { transfer_amount_with_spaces,
+        let db = db().await;
+        let mut bot = TestBot::new(db.clone(), "");
+
+        helpers::add_traveler(&mut bot, "Alice").await;
+        helpers::add_traveler(&mut bot, "Bob").await;
+
+        bot.update("/transfer Alice Bob 1 234,5");
+        let response = i18n::commands::TRANSFER_OK.translate_default();
+        bot.test_last_message(&response).await;
+
+        let transfers = Transfer::transfers(db, bot.chat_id()).await.unwrap();
+        assert_eq!(transfers.len(), 1);
+        assert_eq!(transfers[0].amount, Decimal::from_str("1234.5").unwrap());
     }
 
     test! { transfer_same_sender_receiver_case_insensitive,

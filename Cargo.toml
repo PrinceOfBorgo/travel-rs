@@ -10,24 +10,24 @@ edition = "2024"
 anyhow = "1.0.104"
 chrono = "0.4.45"
 clap = { version = "4.6.7", features = ["derive"] }
-config = "0.15.25"
+config = "0.15.27"
 fluent = "=0.16.1"                                                                                            # dependi: disable-check
 fluent-datetime = "=0.1.0"                                                                                    # dependi: disable-check
 fluent-templates = "=0.13.0"                                                                                  # dependi: disable-check
 icu_calendar = "=1.5.2"                                                                                       # dependi: disable-check
-indoc = "2.0.7"
+indoc = "2.0.8"
 log = "0.4.34"
 macro_rules_attribute = "0.2.3"
 maplit = "1.0.2"
 regex = "1.13.1"
 rust_decimal = "1.43.0"
 rust-fuzzy-search = "0.1.1"
-rusty-money = { version = "0.5.0", features = ["iso", "crypto"] }
+rusty-money = { version = "0.5.1", features = ["iso", "crypto"] }
 serde = "1.0.229"
 strum = { version = "0.28.0", features = ["derive"] }
 surrealdb = { version = "2.3.5", features = ["kv-mem", "protocol-http"] }
 teloxide = { version = "0.17.0", default-features = false, features = ["macros", "rustls", "ctrlc_handler"] }
-tokio = { version = "1.53.1", features = ["rt-multi-thread", "macros"] }
+tokio = { version = "1.54.1", features = ["rt-multi-thread", "macros"] }
 tracing = "0.1.44"
 tracing-appender = "0.2.5"
 tracing-subscriber = { version = "0.3.23", features = ["local-time", "env-filter"] }

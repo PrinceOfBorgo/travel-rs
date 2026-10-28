@@ -9,10 +9,10 @@ use crate::{
     consts::MIN_SIMILARITY_SCORE,
     i18n::{self, Translate, TranslateWithArgs, help::*},
     keyboard,
+    money_wrapper::parse_amount,
     traveler::Name,
 };
 use maplit::hashmap;
-use rust_decimal::Decimal;
 use rust_fuzzy_search::fuzzy_search_best_n;
 use std::str::FromStr;
 use std::sync::LazyLock;
@@ -477,9 +477,10 @@ pub async fn command_reply(
                     return invalid_transfer_usage(cmd, ctx);
                 }
             };
-            let amount = match Decimal::from_str(parts[2]) {
-                Ok(d) => d,
-                Err(_) => {
+            let currency = ctx.lock().expect("Failed to lock context").currency.clone();
+            let amount = match parse_amount(parts[2], &currency) {
+                Some(d) => d,
+                None => {
                     return invalid_transfer_usage(cmd, ctx);
                 }
             };

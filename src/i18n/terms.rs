@@ -19,7 +19,6 @@ pub const CLEAR_EXPENSES_COMMAND: &str = "-clear-expenses-command";
 pub const CLEAR_TRANSFERS_COMMAND: &str = "-clear-transfers-command";
 pub const CLEAR_ALL_COMMAND: &str = "-clear-all-command";
 
-pub const I18N_DECIMAL_SEP: &str = "-decimal-sep";
 pub const I18N_SPLIT_AMONG_ENTRIES_SEP: &str = "-split-among-entries-sep";
 pub const I18N_SPLIT_AMONG_NAME_AMOUNT_SEP: &str = "-split-among-name-amount-sep";
 pub const I18N_ALL_KWORD: &str = "-all-kword";

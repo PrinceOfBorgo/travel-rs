@@ -10,10 +10,10 @@ use crate::{
     dialogues::pending_command_dialogue::{PendingCommandDialogue, PendingCommandState},
     i18n::{self, Translate, TranslateWithArgs},
     keyboard::{self, DEFAULT_ROWS_PER_PAGE, PaginatedKeyboardConfig, PickerItem},
+    money_wrapper::parse_amount,
     traveler::{Name, Traveler},
 };
 use macro_rules_attribute::apply;
-use rust_decimal::Decimal;
 use std::{
     str::FromStr,
     sync::{Arc, Mutex},
@@ -413,10 +413,11 @@ pub async fn receive_amount(
 ) -> HandlerResult {
     tracing::debug!("{LOG_DEBUG_START}");
 
-    let text = msg.text().map(str::trim).unwrap_or("");
-    let amount = match Decimal::from_str(text) {
-        Ok(d) => d,
-        Err(_) => {
+    let text = msg.text().unwrap_or("");
+    let currency = ctx.lock().expect("Failed to lock context").currency.clone();
+    let amount = match parse_amount(text, &currency) {
+        Some(d) => d,
+        None => {
             bot.send_message(
                 msg.chat.id,
                 i18n::dialogues::TRANSFER_INVALID_AMOUNT.translate(ctx),
