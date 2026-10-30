@@ -6,6 +6,7 @@ use crate::{
 use macro_rules_attribute::apply;
 use maplit::hashmap;
 use std::sync::{Arc, Mutex};
+use crate::Bot;
 use teloxide::prelude::*;
 use tracing::Level;
 

@@ -32,7 +32,7 @@ pub async fn set_language(
                     i18n::args::LANGID.into() => langid.to_string().into(),
                     i18n::args::AVAILABLE_LANGS.into() =>
                         i18n::available_langs()
-                        .map(|lang| format!("- {lang}"))
+                        .map(|lang| format!("• {lang}"))
                         .collect::<Vec<_>>()
                         .join("\n")
                         .into(),
@@ -111,7 +111,7 @@ mod tests {
                 i18n::args::LANGID.into() => "ab-CD".into(),
                 i18n::args::AVAILABLE_LANGS.into() =>
                     i18n::available_langs()
-                    .map(|lang| format!("- {lang}"))
+                    .map(|lang| format!("• {lang}"))
                     .collect::<Vec<_>>()
                     .join("\n")
                     .into(),

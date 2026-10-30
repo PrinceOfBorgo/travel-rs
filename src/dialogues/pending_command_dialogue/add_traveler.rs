@@ -16,7 +16,8 @@ use std::{
     sync::{Arc, Mutex},
 };
 use surrealdb::{Surreal, engine::any::Any};
-use teloxide::{Bot, requests::Requester, types::Message};
+use crate::Bot;
+use teloxide::{requests::Requester, types::Message};
 use tracing::Level;
 
 #[derive(Debug, Clone)]

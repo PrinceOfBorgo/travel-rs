@@ -2,7 +2,7 @@
 
 ## [0.4.4-SNAPSHOT] - Unreleased
 ### Added
-- N/A
+- HTML formatting support for bot responses. User-provided values passed as Fluent args are HTML-escaped automatically, except for args carrying pre-rendered fragments (`MARKUP_ARGS` in `i18n/translate.rs`); text composed outside Fluent must be escaped with `i18n::escape_html`.
 
 ### Changed
 - Locale-aware amount input. Wherever an amount is entered, both `.` and `,` are accepted as decimal separator and thousands separators are optional. Ambiguous input is resolved using the chat currency's format and ISO 4217 minor unit. The Arabic separators `٫`/`٬` and Arabic-Indic, Persian and Devanagari digits are also accepted.

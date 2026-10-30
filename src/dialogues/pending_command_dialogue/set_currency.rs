@@ -14,8 +14,8 @@ use crate::{
 use macro_rules_attribute::apply;
 use std::sync::{Arc, Mutex};
 use surrealdb::{Surreal, engine::any::Any};
+use crate::Bot;
 use teloxide::{
-    Bot,
     payloads::SendMessageSetters,
     requests::Requester,
     types::{CallbackQuery, InlineKeyboardMarkup, Message},

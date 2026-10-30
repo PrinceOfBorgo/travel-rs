@@ -22,8 +22,8 @@ use macro_rules_attribute::apply;
 use maplit::hashmap;
 use std::sync::{Arc, Mutex};
 use surrealdb::{Surreal, engine::any::Any};
+use crate::Bot;
 use teloxide::{
-    Bot,
     payloads::{EditMessageReplyMarkupSetters, SendMessageSetters},
     requests::Requester,
     types::{CallbackQuery, Message},

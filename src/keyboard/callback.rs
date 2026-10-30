@@ -6,8 +6,9 @@ use crate::{
     i18n::{self, Translate, TranslateWithArgs},
 };
 use std::sync::{Arc, Mutex};
-use teloxide::Bot;
+use crate::Bot;
 use teloxide::types::Message;
+use teloxide::utils::render::RenderMessageTextHelper;
 use teloxide::{requests::Requester, types::CallbackQuery};
 
 /// Outcome of the common callback pre-processing performed by
@@ -42,7 +43,8 @@ pub struct CallbackConfig<'a> {
 /// the original prompt is kept, and the chosen option is appended below it.
 /// Best-effort: errors (e.g. message already deleted) are silently ignored.
 pub async fn echo_callback_selection(bot: &Bot, msg: &Message, label: &str) {
-    if let Some(text) = msg.text() {
+    if let Some(text) = msg.html_text() {
+        let label = i18n::escape_html(label);
         let _ = bot
             .edit_message_text(msg.chat.id, msg.id, format!("{text}\n✓ {label}"))
             .await;

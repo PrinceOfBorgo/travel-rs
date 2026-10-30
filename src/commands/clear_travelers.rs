@@ -30,7 +30,7 @@ pub async fn clear_travelers(
             if !with_expenses.is_empty() {
                 let names = with_expenses
                     .iter()
-                    .map(|(t, _)| t.name.to_string())
+                    .map(|(t, _)| format!("• {}", t.name))
                     .collect::<Vec<_>>()
                     .join("\n");
                 tracing::warn!(
@@ -131,7 +131,7 @@ mod tests {
         bot.update("yes");
         let has_expenses = i18n::commands::CLEAR_TRAVELERS_HAS_EXPENSES
             .translate_with_args_default(
-                &hashmap! { i18n::args::TRAVELERS.into() => "Alice".into() },
+                &hashmap! { i18n::args::TRAVELERS.into() => "• Alice".into() },
             );
         // Single traveler with expenses — expenses shown directly (no keyboard).
         let alice = Traveler::db_select_by_name(db.clone(), bot.chat_id(), &"Alice".parse().unwrap())
@@ -162,7 +162,7 @@ mod tests {
         bot.update("yes");
         let has_expenses = i18n::commands::CLEAR_TRAVELERS_HAS_EXPENSES
             .translate_with_args_default(
-                &hashmap! { i18n::args::TRAVELERS.into() => "Alice\nBob".into() },
+                &hashmap! { i18n::args::TRAVELERS.into() => "• Alice\n• Bob".into() },
             );
         let prompt = i18n::dialogues::CLEAR_TRAVELERS_SHOW_EXPENSES_PROMPT.translate_default();
         let response = format!("{has_expenses}\n\n{prompt}");
@@ -308,7 +308,7 @@ mod tests {
                     .map(|e| e.translate(bot.context()))
                     .collect::<Vec<_>>()
                     .join("\n");
-                sections.push(format!("{}:\n{formatted}", t.name));
+                sections.push(format!("<b>{}</b>:\n{formatted}", t.name));
             }
         }
         let expected = sections.join("\n\n");

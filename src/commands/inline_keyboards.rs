@@ -13,8 +13,8 @@ use crate::{
 };
 use std::sync::{Arc, Mutex};
 use surrealdb::{Surreal, engine::any::Any};
+use crate::Bot;
 use teloxide::{
-    Bot,
     requests::Requester,
     types::{CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup},
 };

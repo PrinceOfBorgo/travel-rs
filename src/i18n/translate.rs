@@ -1,13 +1,54 @@
 use fluent::FluentValue;
 use fluent_templates::Loader;
 
-use crate::{Context, i18n::LOCALES};
+use crate::{
+    Context,
+    i18n::{LOCALES, args::*, escape_html},
+};
 use std::{
     borrow::Cow,
     collections::HashMap,
     hash::RandomState,
     sync::{Arc, Mutex},
 };
+
+/// Args whose values are already-rendered (and escaped) HTML fragments, e.g.
+/// nested translations. Every other string arg is HTML-escaped.
+const MARKUP_ARGS: &[&str] = &[
+    AVERAGE_PER_DAY,
+    EXPENSE_STATS,
+    EXPENSES,
+    HELP_MESSAGE,
+    MAJOR_CREDITORS,
+    MAJOR_DEBTORS,
+    MAX,
+    MIN,
+    NEWEST,
+    OLDEST,
+    SHARES,
+    TRANSFER_STATS,
+    TRAVELER_STATS,
+    TRAVELERS_PAID_LEAST,
+    TRAVELERS_PAID_MOST,
+    TRAVELERS_PAYS_LEAST_FREQUENTLY,
+    TRAVELERS_PAYS_MOST_FREQUENTLY,
+];
+
+fn escape_args<'a>(
+    args: &HashMap<Cow<'static, str>, FluentValue<'a>, RandomState>,
+) -> HashMap<Cow<'static, str>, FluentValue<'a>, RandomState> {
+    args.iter()
+        .map(|(key, value)| {
+            let value = match value {
+                FluentValue::String(s) if !MARKUP_ARGS.contains(&key.as_ref()) => {
+                    FluentValue::String(Cow::Owned(escape_html(s)))
+                }
+                other => other.clone(),
+            };
+            (key.clone(), value)
+        })
+        .collect()
+}
 
 /// Strict Fluent lookup: returns the localized string when the key is
 /// defined for the active locale (or its in-language fallback chain),
@@ -156,7 +197,7 @@ impl<T: AsRef<str>> TryTranslateWithArgs for T {
         };
         let indentation = " ".repeat(indent_lvl * 4); // 4 spaces per indent level
         LOCALES
-            .lookup_no_default_fallback(&langid, self.as_ref(), Some(args))
+            .lookup_no_default_fallback(&langid, self.as_ref(), Some(&escape_args(args)))
             .map(|s| format!("{indentation}{s}"))
     }
 }
@@ -188,7 +229,7 @@ impl<T: AsRef<str>> TranslateWithArgs for T {
         };
         let indentation = " ".repeat(indent_lvl * 4); // 4 spaces per indent level
         LOCALES
-            .try_lookup_with_args(&langid, self.as_ref(), args)
+            .try_lookup_with_args(&langid, self.as_ref(), &escape_args(args))
             .map(|s| format!("{indentation}{s}"))
             .unwrap_or_else(|| self.as_ref().to_owned())
     }

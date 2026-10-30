@@ -76,7 +76,7 @@ impl Translate for AddExpenseError {
             NoTravelersSpecified => i18n::errors::ADD_EXPENSE_ERROR_NO_TRAVELERS_SPECIFIED
                 .translate_with_indent(ctx, indent_lvl),
             NameValidation(err) => err.translate_with_indent(ctx, indent_lvl),
-            Generic(err) => err.to_string(),
+            Generic(err) => i18n::escape_html(&err.to_string()),
         }
     }
 }
@@ -112,7 +112,7 @@ impl Translate for EndError {
                 i18n::errors::END_ERROR_EXPENSE_CREATED.translate_with_indent(ctx, indent_lvl)
             }
             AddExpense(err) => err.translate_with_indent(ctx, indent_lvl),
-            Generic(err) => err.to_string(),
+            Generic(err) => i18n::escape_html(&err.to_string()),
         }
     }
 }

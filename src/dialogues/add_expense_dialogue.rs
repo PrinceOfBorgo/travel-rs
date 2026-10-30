@@ -24,8 +24,8 @@ use surrealdb::{
     engine::any::Any,
     sql::statements::{BeginStatement, CommitStatement},
 };
+use crate::Bot;
 use teloxide::{
-    Bot,
     dispatching::{HandlerExt, UpdateHandler, dialogue::InMemStorage},
     payloads::SendMessageSetters,
     prelude::Dialogue,

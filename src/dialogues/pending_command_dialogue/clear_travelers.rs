@@ -1,5 +1,6 @@
 //! `/cleartravelers` confirmation dialogue.
 
+use crate::Bot;
 use crate::{
     Context, HandlerResult,
     commands::{Command, command_reply},
@@ -15,7 +16,6 @@ use maplit::hashmap;
 use std::sync::{Arc, Mutex};
 use surrealdb::{Surreal, engine::any::Any};
 use teloxide::{
-    Bot,
     payloads::SendMessageSetters,
     requests::Requester,
     types::{CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message},
@@ -114,7 +114,7 @@ async fn handle_confirm_yes(
             let has_expenses_msg = i18n::commands::CLEAR_TRAVELERS_HAS_EXPENSES
                 .translate_with_args(
                     ctx.clone(),
-                    &hashmap! { i18n::args::TRAVELERS.into() => traveler.name.to_string().into() },
+                    &hashmap! { i18n::args::TRAVELERS.into() => format!("• {}", traveler.name).into() },
                 );
             let expenses_reply = format_expenses(expenses, ctx);
             let reply = format!("{has_expenses_msg}\n\n{expenses_reply}");
@@ -122,7 +122,7 @@ async fn handle_confirm_yes(
             dialogue.exit().await?;
         }
         Ok(list) if !list.is_empty() => {
-            let names: Vec<String> = list.iter().map(|(t, _)| t.name.to_string()).collect();
+            let names: Vec<String> = list.iter().map(|(t, _)| format!("• {}", t.name)).collect();
             let has_expenses_msg = i18n::commands::CLEAR_TRAVELERS_HAS_EXPENSES
                 .translate_with_args(
                     ctx.clone(),
@@ -299,7 +299,13 @@ pub async fn receive_show_expenses_callback(
                 let sections: Vec<String> = list
                     .iter()
                     .filter(|(_, exps)| !exps.is_empty())
-                    .map(|(t, exps)| format!("{}:\n{}", t.name, format_expenses(exps, ctx.clone())))
+                    .map(|(t, exps)| {
+                        format!(
+                            "<b>{}</b>:\n{}",
+                            i18n::escape_html(&t.name),
+                            format_expenses(exps, ctx.clone())
+                        )
+                    })
                     .collect();
                 if sections.is_empty() {
                     tracing::info!("No expenses found (race condition or already deleted)");

@@ -12,6 +12,10 @@ mod translate;
 pub use to_fluent_datetime::ToFluentDateTime;
 pub use translate::{Translate, TranslateWithArgs, TryTranslate, TryTranslateWithArgs};
 
+/// Escapes `<`, `>` and `&` so that user-provided text is safe to embed in
+/// messages sent with HTML parse mode.
+pub use teloxide::utils::html::escape as escape_html;
+
 use crate::{commands::Command, consts::*, settings::SETTINGS};
 use commands::COMMAND_DESCRIPTIONS;
 use fluent::FluentResource;

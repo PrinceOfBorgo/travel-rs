@@ -1,32 +1,32 @@
 ## /add_traveler
 
-add-traveler-ask-name = Qual è il nome del viaggiatore? Il processo può essere interrotto in qualsiasi momento inviando `/{-cancel-command}`.
+add-traveler-ask-name = Qual è il nome del viaggiatore? Il processo può essere interrotto in qualsiasi momento inviando <code>/{-cancel-command}</code>.
 add-traveler-invalid-name = Hai inviato un nome non valido, per favore riprova.
 
 ## /delete_traveler
 
-delete-traveler-ask-name = Quale viaggiatore vuoi eliminare? Il processo può essere interrotto in qualsiasi momento inviando `/{-cancel-command}`.
+delete-traveler-ask-name = Quale viaggiatore vuoi eliminare? Il processo può essere interrotto in qualsiasi momento inviando <code>/{-cancel-command}</code>.
 delete-traveler-invalid-name = Hai inviato un nome non valido, per favore riprova.
 delete-traveler-confirm =
-    Sei sicuro di voler eliminare il viaggiatore "{$name}"?
-    ⚠️ Tutti i trasferimenti che coinvolgono questo viaggiatore verranno eliminati.
+    Sei sicuro di voler eliminare il viaggiatore <b>{$name}</b>?
+    ⚠️ <i>Tutti i trasferimenti che coinvolgono questo viaggiatore verranno eliminati.</i>
 
 ## /delete_expense
 
-delete-expense-ask-number = Quale spesa vuoi eliminare? Invia il numero della spesa. Il processo può essere interrotto in qualsiasi momento inviando `/{-cancel-command}`.
+delete-expense-ask-number = Quale spesa vuoi eliminare? Invia il numero della spesa. Il processo può essere interrotto in qualsiasi momento inviando <code>/{-cancel-command}</code>.
 delete-expense-invalid-number = Hai inviato un numero non valido, per favore riprova.
-delete-expense-confirm = Sei sicuro di voler eliminare la spesa #{$number}?
+delete-expense-confirm = Sei sicuro di voler eliminare la spesa <b>#{$number}</b>?
 
 ## /show_expense
 
-show-expense-ask-number = Quale spesa vuoi visualizzare? Invia il numero della spesa. Il processo può essere interrotto in qualsiasi momento inviando `/{-cancel-command}`.
+show-expense-ask-number = Quale spesa vuoi visualizzare? Invia il numero della spesa. Il processo può essere interrotto in qualsiasi momento inviando <code>/{-cancel-command}</code>.
 show-expense-invalid-number = Hai inviato un numero non valido, per favore riprova.
 
 ## /delete_transfer
 
-delete-transfer-ask-number = Quale trasferimento vuoi eliminare? Invia il numero del trasferimento. Il processo può essere interrotto in qualsiasi momento inviando `/{-cancel-command}`.
+delete-transfer-ask-number = Quale trasferimento vuoi eliminare? Invia il numero del trasferimento. Il processo può essere interrotto in qualsiasi momento inviando <code>/{-cancel-command}</code>.
 delete-transfer-invalid-number = Hai inviato un numero non valido, per favore riprova.
-delete-transfer-confirm = Sei sicuro di voler eliminare il trasferimento #{$number}?
+delete-transfer-confirm = Sei sicuro di voler eliminare il trasferimento <b>#{$number}</b>?
 
 ## /set_language
 
@@ -44,32 +44,32 @@ list-expenses-ask-description = Invia una descrizione (o parte di essa) per filt
 
 ## /transfer
 
-transfer-ask-from = Chi è il mittente? Il processo può essere interrotto in qualsiasi momento inviando `/{-cancel-command}`.
+transfer-ask-from = Chi è il mittente? Il processo può essere interrotto in qualsiasi momento inviando <code>/{-cancel-command}</code>.
 transfer-ask-from-reprompt = Hai inviato un nome non valido, per favore riprova. Chi è il mittente?
-transfer-from-not-found = Viaggiatore "{$name}" non trovato. Chi è il mittente?
-transfer-ask-to = Chi è il destinatario del trasferimento da {$name}?
+transfer-from-not-found = Viaggiatore <b>{$name}</b> non trovato. Chi è il mittente?
+transfer-ask-to = Chi è il destinatario del trasferimento da <b>{$name}</b>?
 transfer-ask-to-reprompt = Hai inviato un nome non valido, per favore riprova. Chi è il destinatario?
-transfer-to-not-found = Viaggiatore "{$name}" non trovato. Chi è il destinatario?
-transfer-ask-amount = Quanto ha trasferito {$name}?
+transfer-to-not-found = Viaggiatore <b>{$name}</b> non trovato. Chi è il destinatario?
+transfer-ask-amount = Quanto ha trasferito <b>{$name}</b>?
 transfer-invalid-amount = Hai inviato un importo non valido, per favore riprova.
 
 ## /cleartravelers
 
 clear-travelers-confirm =
-    Sei sicuro di voler eliminare tutti i viaggiatori?
-    ⚠️ Tutti i trasferimenti che coinvolgono questi viaggiatori verranno eliminati.
-clear-travelers-show-expenses-prompt = Seleziona un viaggiatore per visualizzare le sue spese, oppure tocca "Tutti" per visualizzare tutte.
+    Sei sicuro di voler eliminare <b>tutti i viaggiatori</b>?
+    ⚠️ <i>Tutti i trasferimenti che coinvolgono questi viaggiatori verranno eliminati.</i>
+clear-travelers-show-expenses-prompt = Seleziona un viaggiatore per visualizzare le sue spese, oppure tocca <b>Tutti</b> per visualizzare tutte.
 
 ## /clearexpenses
 
-clear-expenses-confirm = Sei sicuro di voler eliminare tutte le spese?
+clear-expenses-confirm = Sei sicuro di voler eliminare <b>tutte le spese</b>?
 
 ## /cleartransfers
 
-clear-transfers-confirm = Sei sicuro di voler eliminare tutti i trasferimenti?
+clear-transfers-confirm = Sei sicuro di voler eliminare <b>tutti i trasferimenti</b>?
 
 ## /clearall
 
 clear-all-confirm =
-    Sei sicuro di voler eliminare tutti i viaggiatori, spese e trasferimenti?
-    ⚠️ Questa azione non può essere annullata.
+    Sei sicuro di voler eliminare <b>tutti i viaggiatori, spese e trasferimenti</b>?
+    ⚠️ <i>Questa azione non può essere annullata.</i>

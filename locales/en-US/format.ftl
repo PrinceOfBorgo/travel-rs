@@ -1,67 +1,67 @@
-format-share-details = - {$traveler-name}: {$amount}
+format-share-details = • <b>{$traveler-name}</b>: {$amount}
 format-expense-details =
-    Number: {$number} - Description: {$description}
-    Registered on: {DATETIME($datetime, dateStyle: "long")}
-    Amount: {$amount}
-    Paid by: {$creditor}
-    Shares:
+    <b>Number:</b> {$number} - <b>Description:</b> <i>{$description}</i>
+    <b>Registered on:</b> {DATETIME($datetime, dateStyle: "long")}
+    <b>Amount:</b> {$amount}
+    <b>Paid by:</b> {$creditor}
+    <b>Shares:</b>
     {$shares}
-format-expense = [{DATETIME($datetime, dateStyle: "short")}] Expense #{$number}: {$description} - {$amount}
-format-transfer = [{DATETIME($datetime, dateStyle: "short")}] Transfer #{$number}: {$sender} sent {$amount} to {$receiver}
-format-traveler-stats-amount = {$traveler-name}: {$amount}
+format-expense = [{DATETIME($datetime, dateStyle: "short")}] <b>Expense #{$number}</b>: <i>{$description}</i> - <b>{$amount}</b>
+format-transfer = [{DATETIME($datetime, dateStyle: "short")}] <b>Transfer #{$number}</b>: <b>{$sender}</b> sent <b>{$amount}</b> to <b>{$receiver}</b>
+format-traveler-stats-amount = ◦ <b>{$traveler-name}</b>: {$amount}
 format-traveler-stats-frequency = 
-    {$traveler-name}: {$count ->
+    ◦ <b>{$traveler-name}</b>: {$count ->
         [one] {$count} expense
        *[other] {$count} expenses
     }
 format-average-per-day = {$amount} per day [from {DATETIME($oldest-timestamp, dateStyle: "short")} to date {DATETIME($now, dateStyle: "short")}]
 format-expense-stats =
-    Expense statistics:
+    <b>Expense statistics:</b>
     { $count ->
-        [0] - Count: {$count}
+        [0] • <b>Count:</b> {$count}
         *[other]
-            - Count: {$count}
-            - Sum: {$sum}
-            - Mean: {$mean}
-            - Maximum expenses: {$max}
-            - Minimum expenses: {$min}
-            - Average per day: {$average-per-day}
-            - Oldest: {$oldest}
-            - Newest: {$newest}
+            • <b>Count:</b> {$count}
+            • <b>Sum:</b> {$sum}
+            • <b>Mean:</b> {$mean}
+            • <b>Maximum expenses:</b> {$max}
+            • <b>Minimum expenses:</b> {$min}
+            • <b>Average per day:</b> {$average-per-day}
+            • <b>Oldest:</b> {$oldest}
+            • <b>Newest:</b> {$newest}
     }
 format-transfer-stats =
-    Transfer statistics:
+    <b>Transfer statistics:</b>
     { $count ->
-        [0] - Count: {$count}
+        [0] • <b>Count:</b> {$count}
         *[other]
-            - Count: {$count}
-            - Sum: {$sum}
-            - Mean: {$mean}
-            - Maximum transfers: {$max}
-            - Minimum transfers: {$min}
-            - Average per day: {$average-per-day}
-            - Oldest: {$oldest}
-            - Newest: {$newest}
+            • <b>Count:</b> {$count}
+            • <b>Sum:</b> {$sum}
+            • <b>Mean:</b> {$mean}
+            • <b>Maximum transfers:</b> {$max}
+            • <b>Minimum transfers:</b> {$min}
+            • <b>Average per day:</b> {$average-per-day}
+            • <b>Oldest:</b> {$oldest}
+            • <b>Newest:</b> {$newest}
     }
 format-traveler-stats =
-    Traveler statistics:
+    <b>Traveler statistics:</b>
     { $count ->
-        [0] - Count: {$count}
+        [0] • <b>Count:</b> {$count}
         *[other] 
-            - Count: {$count}{ $expenses-count ->
+            • <b>Count:</b> {$count}{ $expenses-count ->
                 [0] {""}
                 *[other]
                     {" "}
-                    - Who paid the most: {$travelers-paid-most}
-                    - Who paid the least: {$travelers-paid-least}
-                    - Who pays most frequently: {$travelers-pays-most-frequently}
-                    - Who pays least frequently: {$travelers-pays-least-frequently}
+                    • <b>Who paid the most:</b> {$travelers-paid-most}
+                    • <b>Who paid the least:</b> {$travelers-paid-least}
+                    • <b>Who pays most frequently:</b> {$travelers-pays-most-frequently}
+                    • <b>Who pays least frequently:</b> {$travelers-pays-least-frequently}
             }{ $balances-count ->
                 [0] {""}
                 *[other]
                     {" "}
-                    - Major creditors: {$major-creditors}
-                    - Major debtors: {$major-debtors}
+                    • <b>Major creditors:</b> {$major-creditors}
+                    • <b>Major debtors:</b> {$major-debtors}
             }
     }
 format-stats =

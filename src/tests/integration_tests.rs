@@ -23,7 +23,7 @@ async fn test_full_expense_flow() {
 
     // List travelers
     bot.update("/listtravelers");
-    let response = "Alice\nBob\nCharlie";
+    let response = "• Alice\n• Bob\n• Charlie";
     bot.test_last_message(response).await;
 
     // Add an expense
@@ -115,7 +115,7 @@ async fn test_traveler_lifecycle() {
 
     // Verify traveler exists
     bot.update("/listtravelers");
-    let response = "Alice";
+    let response = "• Alice";
     bot.test_last_message(response).await;
 
     // Try to add same traveler again - should fail

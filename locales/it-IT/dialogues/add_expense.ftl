@@ -1,6 +1,6 @@
 ## start
 
-add-expense-start = Il processo può essere interrotto in qualsiasi momento inviando `/{-cancel-command}`.
+add-expense-start = Il processo può essere interrotto in qualsiasi momento inviando <code>/{-cancel-command}</code>.
 add-expense-ask-description = Imposta una descrizione per questa spesa.
 
 ## receive_description
@@ -17,14 +17,14 @@ add-expense-non-positive-amount = L'importo deve essere maggiore di zero.
 ## receive_paid_by
 
 add-expense-invalid-paid-by = Hai inviato un nome non valido, per favore riprova.
-add-expense-ask-shares = Come vorresti dividere la spesa? Digita `/{-help-command} {-add-expense-command}` per maggiori informazioni.
-add-expense-traveler-not-found = Impossibile trovare il viaggiatore {$name}. Specifica il viaggiatore che ha pagato per questa spesa.
-add-expense-traveler-generic-error = Si è verificato un errore durante la ricerca del viaggiatore {$name}. Per favore riprova.
+add-expense-ask-shares = Come vorresti dividere la spesa? Digita <code>/{-help-command} {-add-expense-command}</code> per maggiori informazioni.
+add-expense-traveler-not-found = Impossibile trovare il viaggiatore <b>{$name}</b>. Specifica il viaggiatore che ha pagato per questa spesa.
+add-expense-traveler-generic-error = Si è verificato un errore durante la ricerca del viaggiatore <b>{$name}</b>. Per favore riprova.
 
 ## start_split_among / receive_split_among
 
-add-expense-continue-split = Continua a dividere o digita `{-end-kword}` per terminare il processo.
-add-expense-ok = Spesa registrata con successo!
+add-expense-continue-split = Continua a dividere o digita <code>{-end-kword}</code> per terminare il processo.
+add-expense-ok = <b>Spesa registrata con successo!</b>
 add-expense-error-on-computing-shares = Si è verificato un errore durante il calcolo delle quote.
 add-expense-creating-expense-generic-error = Si è verificato un errore durante la creazione della spesa.
 add-expense-shares-parsing-error = Si è verificato un errore durante l'analisi del testo. Per favore riprova.

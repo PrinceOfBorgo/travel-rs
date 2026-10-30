@@ -11,7 +11,7 @@ use crate::{
     i18n::{self, Translate, TranslateWithArgs},
 };
 use std::sync::{Arc, Mutex};
-use teloxide::Bot;
+use crate::Bot;
 use teloxide::types::{InlineKeyboardButton, InlineKeyboardMarkup, Message};
 use teloxide::{requests::Requester, types::CallbackQuery};
 

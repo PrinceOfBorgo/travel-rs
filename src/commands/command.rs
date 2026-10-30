@@ -1,3 +1,4 @@
+use crate::Bot;
 use crate::{
     Context, HandlerResult,
     commands::{
@@ -222,7 +223,7 @@ impl HelpMessage for Command {
                 &hashmap! {
                     i18n::args::AVAILABLE_LANGS.into() =>
                         i18n::available_langs()
-                        .map(|lang| format!("- {lang}"))
+                        .map(|lang| format!("• {lang}"))
                         .collect::<Vec<_>>()
                         .join("\n")
                         .into()

@@ -55,9 +55,10 @@ use std::collections::HashSet;
 use std::sync::{Arc, LazyLock, Mutex};
 use surrealdb::{Surreal, engine::any::Any};
 use teloxide::{
+    adaptors::DefaultParseMode,
     dispatching::{UpdateHandler, dialogue::InMemStorage},
     prelude::*,
-    types::{BotCommandScope, Recipient},
+    types::{BotCommandScope, ParseMode, Recipient},
 };
 use tracing::Level;
 use tracing_appender::rolling::daily;
@@ -72,6 +73,10 @@ pub(crate) use relationships::*;
 pub(crate) use tables::*;
 
 pub type HandlerResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
+
+/// Bot used by all handlers: every outgoing text is parsed as Telegram HTML.
+/// User-provided content must therefore be escaped (see [i18n::escape_html]).
+pub type Bot = DefaultParseMode<teloxide::Bot>;
 
 #[derive(Debug, Clone)]
 pub struct Context {
@@ -166,7 +171,7 @@ async fn main() -> anyhow::Result<()> {
 async fn start_bot() {
     tracing::info!("Starting TravelRS bot...");
     let token = SETTINGS.token_value();
-    let bot = Bot::new(token);
+    let bot = teloxide::Bot::new(token);
     tracing::info!("TravelRS bot started.");
 
     // Initialize the database connection.
@@ -452,6 +457,7 @@ pub(crate) fn handler_tree() -> UpdateHandler<Box<dyn std::error::Error + Send +
         .branch(add_expense_dialogue::callback_branch());
 
     dptree::entry()
+        .map(|bot: teloxide::Bot| bot.parse_mode(ParseMode::Html))
         .branch(message_branch)
         .branch(dialogue_callback_branch)
         .branch(add_expense_callback_branch)

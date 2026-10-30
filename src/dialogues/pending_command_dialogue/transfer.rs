@@ -19,8 +19,8 @@ use std::{
     sync::{Arc, Mutex},
 };
 use surrealdb::{Surreal, engine::any::Any};
+use crate::Bot;
 use teloxide::{
-    Bot,
     payloads::SendMessageSetters,
     requests::Requester,
     types::{CallbackQuery, Message},

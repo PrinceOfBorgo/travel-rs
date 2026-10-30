@@ -29,6 +29,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 use strum::{EnumIter, IntoEnumIterator};
+use crate::Bot;
 use teloxide::{
     dispatching::dialogue::{InMemStorage, Storage},
     prelude::*,

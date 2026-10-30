@@ -26,7 +26,7 @@ pub async fn list_travelers(
             } else {
                 travelers
                     .into_iter()
-                    .map(|traveler| (*traveler.name).to_owned())
+                    .map(|traveler| format!("• {}", i18n::escape_html(&traveler.name)))
                     .collect::<Vec<_>>()
                     .join("\n")
             };
@@ -61,7 +61,7 @@ mod tests {
 
         // List travelers -> "Alice", "Bob"
         bot.update("/listtravelers");
-        let response = "Alice\nBob";
+        let response = "• Alice\n• Bob";
         bot.test_last_message(response).await;
     }
 
