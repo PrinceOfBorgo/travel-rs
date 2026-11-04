@@ -419,7 +419,7 @@ At **INFO** level, the bot logs a one-line summary for each user-facing action: 
 
 ## 7. GitHub Actions Workflows
 
-This repository has two main workflows under `.github/workflows/`:
+This repository has the following workflows under `.github/workflows/`:
 
 - `ci.yml`: runs on `push` and `pull_request` to the `main` branch. It performs:
   - `cargo build` and `cargo test` on `stable`, `beta`, and `nightly`
@@ -430,15 +430,17 @@ This repository has two main workflows under `.github/workflows/`:
   - `[release:minor]` (minor bump)
   - `[release:major]` (major bump)
 
-When the release trigger matches, the workflow:
-- bumps `Cargo.toml` version (`cargo set-version`) according to release type
-- updates `CHANGELOG.md` by converting `x.y.z-SNAPSHOT` to the real release heading and section
-- builds and pushes the Docker image (multi-arch, GHCR tags)
-- builds a **deploy bundle** (`deploy-v<version>.zip`) containing a version-pinned `docker-compose.yml`, locale files, database scripts, a sanitized config template, and a `MIGRATIONS.md` manifest
-- commits and tags release as `v<version>`
-- generates GitHub release notes, attaches the deploy bundle, and publishes the release
-- re-pins the repository's `docker-compose.yml` to the released image tag and commits it back to `main`, so the deployment file always tracks the latest published release
-- bumps the next snapshot version in `Cargo.toml` and pre-populates `CHANGELOG.md` for ongoing development
+  When the release trigger matches, the workflow:
+  - bumps `Cargo.toml` version (`cargo set-version`) according to release type
+  - updates `CHANGELOG.md` by converting `x.y.z-SNAPSHOT` to the real release heading and section
+  - builds and pushes the Docker image (multi-arch, GHCR tags)
+  - builds a **deploy bundle** (`deploy-v<version>.zip`) containing a version-pinned `docker-compose.yml`, locale files, database scripts, a sanitized config template, and a `MIGRATIONS.md` manifest
+  - commits and tags release as `v<version>`
+  - generates GitHub release notes, attaches the deploy bundle, and publishes the release
+  - re-pins the repository's `docker-compose.yml` to the released image tag and commits it back to `main`, so the deployment file always tracks the latest published release
+  - bumps the next snapshot version in `Cargo.toml` and pre-populates `CHANGELOG.md` for ongoing development
+
+- `archanist-sandbox.yml`: runs after each successful `Release` run or on manual dispatch with an optional release tag. It downloads the release's deploy bundle, sets up Archanist from the bundled `archanist/` files, and runs `archanist sandbox run travel-rs` (v0.2.5 baseline upgraded to the release), checks that the sandbox container was swapped, tests `sandbox rollback`, and finally runs `sandbox reset`. Archanist logs are uploaded as an artifact. See [archanist/README.md](archanist/README.md#rehearsing-an-update-sandbox).
 
 See [DEPLOYMENT.md](DEPLOYMENT.md) for how to use the deploy bundle for production deployments and upgrades.
 

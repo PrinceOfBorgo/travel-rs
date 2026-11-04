@@ -139,9 +139,14 @@ command = ["import", "--conn", "${vars.surreal_import_url}", "--user", "${vars.s
 # forward-only, there are no down-scripts. {backup} is a per-attempt dir under
 # .archanist-backups, on the mounted volume so the container can write it.
 backup_command = ["export", "--conn", "${vars.surreal_import_url}", "--user", "${vars.surreal_user}", "--pass", "${vars.surreal_pass}", "--ns", "${vars.surreal_ns}", "--db", "${vars.surreal_db}", "{backup}/pre-migrate.surql"]
-# Rollback: drop the DB (reset DDL on stdin) then reimport the snapshot - a
-# plain import won't remove objects newer migrations added. Two ordered
-# container runs, no shell.
+# Rollback: patch the dump, drop the DB (reset DDL on stdin), then reimport
+# the snapshot - a plain import won't remove objects newer migrations added.
+# SurrealDB 2.x exports relation tables' in/out fields as plain DEFINE FIELD,
+# which its own import rejects ("field 'in' already exists"), hence OVERWRITE.
+[[steps.restore]]
+image = "busybox"
+command = ["sed", "-i", "-E", "s/^DEFINE FIELD (in|out) ON /DEFINE FIELD OVERWRITE \\1 ON /", "{backup}/pre-migrate.surql"]
+
 [[steps.restore]]
 command = ["sql", "--conn", "${vars.surreal_import_url}", "--user", "${vars.surreal_user}", "--pass", "${vars.surreal_pass}", "--ns", "${vars.surreal_ns}"]
 stdin = "REMOVE DATABASE IF EXISTS ${vars.surreal_db}; DEFINE DATABASE ${vars.surreal_db};"
@@ -197,3 +202,124 @@ volumes = ["${vars.install_dir_host}/config:/app/config", "${vars.install_dir_ho
 env = ["TRAVELRS_BOT_TOKEN=${env.TRAVELRS_BOT_TOKEN}", "TRAVELRS_DB_ADDRESS=${env.TRAVELRS_DB_ADDRESS}", "TRAVELRS_DB_USERNAME=${env.TRAVELRS_DB_USERNAME}", "TRAVELRS_DB_PASSWORD=${env.TRAVELRS_DB_PASSWORD}", "TRAVELRS_DB_NAMESPACE=${env.TRAVELRS_DB_NAMESPACE}", "TRAVELRS_DB_NAME=${env.TRAVELRS_DB_NAME}"]
 extra_hosts = ["host.docker.internal:host-gateway"]
 restart_policy = "always"
+
+# ============================================================================
+# Sandbox: `archanist sandbox run travel-rs` rehearses the update above
+# against a throwaway in-memory SurrealDB and a v0.2.5 baseline, then upgrades
+# it to the real latest release - download -> parse DEPLOYMENT.md -> migrate
+# only the post-0.2.5 migrations -> sync locales/profile -> swap. Everything
+# lands under /app/data/sandbox/travel-rs and the `archanist-sandbox` network;
+# `archanist sandbox reset travel-rs` wipes it. Production is never touched:
+# the DB/profile/token come from [sandbox.env], paths from [sandbox.vars],
+# and the swap targets `travel-rs-sandbox`.
+#
+# The upgraded bot won't actually run (dummy token) - the sandbox checks the
+# pipeline, not a healthy bot. `restart_policy = "no"` keeps it from looping.
+# ============================================================================
+[sandbox]
+# v0.2.5 has no deploy zip, so setup builds the baseline from the git tag.
+# Bumping this means reviewing the migration list in `baseline_migrate`.
+baseline_version = "0.2.5"
+network = "archanist-sandbox"
+# They'd overwrite the live recipes/config with the bundle's copies.
+skip_steps = ["sync_archanist_recipes", "sync_archanist_config"]
+
+# Shadows ${env.*}: the sandbox DB service below and a dummy bot token.
+[sandbox.env]
+TRAVELRS_PROFILE = "dev-local-docker"
+TRAVELRS_BOT_TOKEN = "sandbox-dummy-token"
+TRAVELRS_DB_ADDRESS = "http://travel-rs-sandbox-surrealdb:8000"
+TRAVELRS_DB_USERNAME = "root"
+TRAVELRS_DB_PASSWORD = "root"
+TRAVELRS_DB_NAMESPACE = "travel_rs"
+TRAVELRS_DB_NAME = "travel_rs_db"
+
+# Redirect every path into the sandbox dir (container view) and its host
+# equivalent under ARCHANIST_HOST_DATA_DIR.
+[sandbox.vars]
+install_dir = "${sandbox.dir}/travel-rs"
+install_dir_host = "${vars.host_data_dir}/sandbox/${component}/travel-rs"
+staging_zip = "${sandbox.dir}/staging/travel-rs-deploy-v${version}.zip"
+staging_root = "${sandbox.dir}/staging/travel-rs-v${version}"
+bundle_extracted = "${sandbox.dir}/staging/travel-rs-v${version}/deploy-v${version}"
+baseline_zip = "${sandbox.dir}/staging/travel-rs-src-v${sandbox.baseline_version}.zip"
+baseline_root = "${sandbox.dir}/staging/baseline"
+baseline_tree = "${sandbox.dir}/staging/baseline/travel-rs-${sandbox.baseline_version}"
+
+[sandbox.override.migrate]
+network = "${sandbox.network}"
+
+[sandbox.override.swap]
+container = "travel-rs-sandbox"
+network = "${sandbox.network}"
+restart_policy = "no"
+
+# In-memory SurrealDB for the sandbox, reachable by name on the network.
+[[sandbox.services]]
+name = "travel-rs-sandbox-surrealdb"
+image = "${vars.surreal_image}"
+command = ["start", "--user", "${env.TRAVELRS_DB_USERNAME}", "--pass", "${env.TRAVELRS_DB_PASSWORD}", "--bind", "0.0.0.0:8000", "memory"]
+healthcheck = { test = ["CMD", "/surreal", "isready", "--conn", "http://localhost:8000"] }
+
+# The "old" deployment the swap replaces. It only has to exist.
+[[sandbox.services]]
+name = "travel-rs-sandbox"
+image = "ghcr.io/princeofborgo/travel-rs:v${sandbox.baseline_version}"
+command = ["sh", "-c", "echo 'travel-rs baseline placeholder; sleeping' && sleep infinity"]
+
+# --- Baseline setup (first `sandbox run` only; ${version} = baseline) ---
+
+[[sandbox.setup]]
+id = "baseline_download"
+type = "download"
+url = "https://github.com/PrinceOfBorgo/travel-rs/archive/refs/tags/v${version}.zip"
+dest = "${vars.baseline_zip}"
+backup = false
+
+[[sandbox.setup]]
+id = "baseline_extract"
+type = "container_run"
+image = "busybox"
+binds = ["${vars.host_data_dir}:/app/data"]
+command = ["unzip", "-o", "-q", "${vars.baseline_zip}", "-d", "${vars.baseline_root}"]
+
+# SurrealDB 2.x auto-defines in/out on relation tables, so the old scripts'
+# `DEFINE FIELD in|out ON ...` must become `DEFINE FIELD OVERWRITE ...`.
+[[sandbox.setup]]
+id = "baseline_patch_migrations"
+type = "container_run"
+image = "busybox"
+binds = ["${vars.host_data_dir}:/app/data"]
+command = ["sh", "-c", '''sed -i -E 's/DEFINE[[:space:]]+FIELD[[:space:]]+(in|out)[[:space:]]+ON/DEFINE FIELD OVERWRITE \1 ON/I' "$0"/*.surql''', "${vars.baseline_tree}/database/migrations"]
+
+# Migrations cumulative at v0.2.5 per DEPLOYMENT.md.
+[[sandbox.setup]]
+id = "baseline_migrate"
+type = "db_migrate"
+files = ["001_init.surql", "002_add_timestamps.surql", "003_define_stats_functions.surql", "004_overwrite_traveler_stats_function.surql", "005_fix_overwrite_stats_function.surql"]
+base = "${vars.baseline_tree}/database/migrations"
+image = "${vars.surreal_image}"
+network = "${sandbox.network}"
+binds = ["${vars.host_data_dir}:/app/data"]
+command = ["import", "--conn", "${vars.surreal_import_url}", "--user", "${vars.surreal_user}", "--pass", "${vars.surreal_pass}", "--ns", "${vars.surreal_ns}", "--db", "${vars.surreal_db}", "{file}"]
+
+[[sandbox.setup]]
+id = "baseline_locales"
+type = "copy_files"
+src = "${vars.baseline_tree}/locales"
+dest = "${vars.install_dir}/locales"
+backup = false
+
+[[sandbox.setup]]
+id = "baseline_profile"
+type = "copy_files"
+src = "${vars.baseline_tree}/config/profiles/${vars.profile}.toml"
+dest = "${vars.install_dir}/config/profiles/${vars.profile}.toml"
+backup = false
+
+[[sandbox.setup]]
+id = "baseline_config"
+type = "container_run"
+image = "busybox"
+binds = ["${vars.host_data_dir}:/app/data"]
+command = ["sh", "-c", '''printf 'profile = "%s"\n' "$1" > "$0"''', "${vars.install_dir}/config/config.toml", "${vars.profile}"]

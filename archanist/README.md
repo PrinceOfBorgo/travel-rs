@@ -120,3 +120,17 @@ docker compose run --rm archanist status
 ```
 
 `update` with no component updates every configured component: `travel-rs` (the bot) and `archanist` (itself). The self-update swaps the Archanist container and exits; the compose `restart: unless-stopped` policy brings the new image back up.
+
+## Rehearsing an update (sandbox)
+
+The `[sandbox]` section of `components/travel-rs.toml` lets Archanist rehearse the bot upgrade end to end without touching production: it starts an in-memory SurrealDB (`travel-rs-sandbox-surrealdb`) and a v0.2.5 placeholder (`travel-rs-sandbox`) on the `archanist-sandbox` network, lays down a v0.2.5 baseline (schema + migrations `001..005`, locales, profile) once, then runs the real update against the latest release. All files land under `archanist-data/sandbox/travel-rs/`, with its own `state.toml`.
+
+```bash
+docker compose run --rm archanist sandbox run travel-rs       # rehearse (re-runs skip the baseline)
+docker compose run --rm archanist sandbox rollback travel-rs  # test rollback
+docker compose run --rm archanist sandbox reset travel-rs     # wipe containers, network, sandbox dir
+```
+
+The upgraded sandbox bot exits right away (dummy token); the rehearsal checks the pipeline - migrations applied, image swapped - not a running bot.
+
+The `archanist-sandbox.yml` GitHub workflow runs this rehearsal automatically after every release, using the recipes shipped in that release's bundle.

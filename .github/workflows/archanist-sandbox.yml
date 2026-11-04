@@ -1,0 +1,103 @@
+name: Archanist Sandbox
+
+# Rehearses the Archanist upgrade (v0.2.5 baseline -> latest release) using the
+# archanist/ files shipped in the release bundle, exactly as an operator gets them.
+on:
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag whose bundle provides the Archanist recipes (default latest)
+        required: false
+
+concurrency:
+  group: archanist-sandbox
+  cancel-in-progress: false
+
+jobs:
+  sandbox:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      WORK_DIR: ${{ github.workspace }}/sandbox
+    steps:
+      - name: Download release bundle
+        run: |
+          TAG="${{ inputs.tag }}"
+          if [ -z "$TAG" ]; then
+            TAG=$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName -q .tagName)
+          fi
+          echo "Using bundle from ${TAG}"
+          mkdir -p "$WORK_DIR"
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern 'deploy-v*.zip' --dir "$WORK_DIR"
+          unzip -q "$WORK_DIR"/deploy-v*.zip -d "$WORK_DIR"
+
+      - name: Prepare Archanist data dir
+        id: prep
+        run: |
+          ARCHANIST_DIR=$(echo "$WORK_DIR"/deploy-v*/archanist)
+          DATA_DIR="$ARCHANIST_DIR/archanist-data"
+          mkdir -p "$DATA_DIR"
+          cp "$ARCHANIST_DIR/config.toml" "$DATA_DIR/"
+          cp -r "$ARCHANIST_DIR/components" "$DATA_DIR/"
+          # The Archanist container may not run as the runner user.
+          chmod -R a+rwX "$DATA_DIR"
+
+          # Only satisfy compose's `:?` checks; [sandbox.env] shadows the TRAVELRS_* values.
+          cat > "$ARCHANIST_DIR/.env" <<EOF
+          ARCHANIST_HOST_DATA_DIR=$DATA_DIR
+          TRAVELRS_PROFILE=dev-local-docker
+          TRAVELRS_BOT_TOKEN=sandbox-dummy-token
+          TRAVELRS_DB_ADDRESS=http://travel-rs-sandbox-surrealdb:8000
+          TRAVELRS_DB_USERNAME=root
+          TRAVELRS_DB_PASSWORD=root
+          TRAVELRS_DB_NAMESPACE=travel_rs
+          TRAVELRS_DB_NAME=travel_rs_db
+          EOF
+          sed -i 's/^ *//' "$ARCHANIST_DIR/.env"
+
+          echo "archanist_dir=$ARCHANIST_DIR" >> "$GITHUB_OUTPUT"
+          echo "data_dir=$DATA_DIR" >> "$GITHUB_OUTPUT"
+
+      - name: Sandbox run
+        working-directory: ${{ steps.prep.outputs.archanist_dir }}
+        run: docker compose run --rm archanist sandbox run travel-rs
+
+      - name: Verify swapped image
+        run: |
+          IMAGE=$(docker inspect travel-rs-sandbox --format '{{.Config.Image}}')
+          echo "travel-rs-sandbox image: $IMAGE"
+          case "$IMAGE" in
+            *:v0.2.5) echo "Swap did not happen" >&2; exit 1 ;;
+          esac
+
+      - name: Sandbox rollback
+        working-directory: ${{ steps.prep.outputs.archanist_dir }}
+        run: docker compose run --rm archanist sandbox rollback travel-rs
+
+      - name: Show sandbox state
+        if: always() && steps.prep.outputs.data_dir != ''
+        env:
+          DATA_DIR: ${{ steps.prep.outputs.data_dir }}
+        run: |
+          find "$DATA_DIR/sandbox" -maxdepth 3 -name '*.toml' -print -exec cat {} \; 2>/dev/null || true
+          docker ps -a --filter name=travel-rs-sandbox
+
+      - name: Upload Archanist logs
+        if: always() && steps.prep.outputs.data_dir != ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: archanist-sandbox-logs
+          path: ${{ steps.prep.outputs.data_dir }}/logs
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Sandbox reset
+        if: always() && steps.prep.outputs.archanist_dir != ''
+        working-directory: ${{ steps.prep.outputs.archanist_dir }}
+        run: docker compose run --rm archanist sandbox reset travel-rs || true
