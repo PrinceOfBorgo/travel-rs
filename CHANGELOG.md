@@ -1,6 +1,7 @@
 # Changelog
 
-## [0.4.4-SNAPSHOT] - Unreleased
+## [0.4.4] - 2026-11-04
+### 🔧 Patch Release
 ### Added
 - HTML formatting support for bot responses. User-provided values passed as Fluent args are HTML-escaped automatically, except for args carrying pre-rendered fragments (`MARKUP_ARGS` in `i18n/translate.rs`); text composed outside Fluent must be escaped with `i18n::escape_html`.
 - `archanist-sandbox.yml` workflow: after each release, rehearses the Archanist upgrade and rollback in the sandbox using the release bundle's recipes.
