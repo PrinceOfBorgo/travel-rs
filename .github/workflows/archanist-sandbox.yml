@@ -48,7 +48,7 @@ jobs:
           # The Archanist container may not run as the runner user.
           chmod -R a+rwX "$DATA_DIR"
 
-          # Only satisfy compose's `:?` checks; [sandbox.env] shadows the TRAVELRS_* values.
+          # Values Archanist needs (passed via env_file); [sandbox.env] shadows the TRAVELRS_* ones.
           cat > "$ARCHANIST_DIR/.env" <<EOF
           ARCHANIST_HOST_DATA_DIR=$DATA_DIR
           TRAVELRS_PROFILE=dev-local-docker

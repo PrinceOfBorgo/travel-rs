@@ -23,10 +23,8 @@ log_rotation = "daily"
 # it survives container replacement / self-update.
 state_file = "state.toml"
 
-# Directory holding the component recipes (travel-rs.toml, archanist.toml).
+# Directory holding the component recipes (travel-rs.toml).
 components_dir = "components"
 
-# This Archanist manages its own container: the `self = true` docker_swap in
-# components/archanist.toml exits the process cleanly after the swap so the
-# new image takes over.
-self_component = "archanist"
+# No `self_component`: Archanist is updated by docker compose pulling its
+# image on every run (see docker-compose.yml), not by a recipe.

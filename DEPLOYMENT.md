@@ -27,6 +27,9 @@ This document covers production deployment, upgrades, and database migration pro
   - [4.2. Manual Rollback](#42-manual-rollback)
 - [5. Deploy Bundle Contents](#5-deploy-bundle-contents)
 - [6. Migration Reference](#6-migration-reference)
+- [7. Manual Archanist Host Changes](#7-manual-archanist-host-changes)
+  - [7.1. v0.4.5](#71-v045)
+  - [7.2. v0.4.3](#72-v043)
 
 ## 1. Prerequisites
 
@@ -406,11 +409,10 @@ deploy-v<version>/
 │       └── prod.toml.example            # Sanitized profile template
 └── archanist/                           # Archanist update-engine automation (see archanist/README.md)
     ├── config.toml                      # Archanist main config (synced on every update)
-    ├── docker-compose.yml               # First-time bootstrap only (not synced)
-    ├── .env.example                     # First-time bootstrap template (not synced)
+    ├── docker-compose.yml               # First-time bootstrap only (not synced, see section 7)
+    ├── .env.example                     # First-time bootstrap template (not synced, see section 7)
     ├── README.md                        # Archanist bootstrap & usage guide (not synced)
     └── components/
-        ├── archanist.toml               # Recipe: self-update Archanist (synced on every update)
         └── travel-rs.toml               # Recipe: upgrade the bot (synced on every update)
 ```
 
@@ -431,3 +433,53 @@ The following table maps each release to the database migration scripts it intro
 | v0.3.0  | `006_add_validation_constraints.surql`, `007_case_insensitive_traveler_names.surql` | Schema validation constraints               |
 | v0.3.1  | `008_add_traveler_number.surql`                                                     | Stable numeric ID for travelers             |
 | v0.3.2  | `009_assert_chat_equality.surql`                                                    | Chat-equality assertions on relation tables |
+
+## 7. Manual Archanist Host Changes
+
+An [Archanist](archanist/README.md) update keeps the bot, its locales, its profile, and Archanist's own `config.toml` + `components/` current. It does **not** touch the host files you own, and it never deletes files:
+
+- `archanist/docker-compose.yml` and `archanist/.env` are not synced.
+- A recipe dropped from the bundle stays in `archanist-data/components/` until you delete it.
+
+When a release needs one of those changes, it is listed below. **Apply it before running `docker compose run --rm archanist update`**. If you skip releases, apply every entry from your deployed version up to the target, oldest first.
+
+> **For contributors:** if a release changes `archanist/docker-compose.yml`, adds a required key to `archanist/.env.example`, or removes a file from the bundle's `archanist/` directory, add an entry here before releasing.
+
+### 7.1. v0.4.5
+
+Archanist is now updated by docker compose (it pulls the newest image on every run) instead of by an `archanist` recipe, and the compose file passes the whole `.env` to Archanist.
+
+1. **Update `archanist/docker-compose.yml`.** Replace it with the bundle's `archanist/docker-compose.yml`, or edit the `archanist` service by hand:
+   - add `pull_policy: always`;
+   - add `env_file: .env`;
+   - remove the `environment:` list (every key now comes from `.env`);
+   - remove `restart: unless-stopped`.
+2. **Delete the retired recipe** so `update` stops processing it:
+
+   ```bash
+   rm archanist-data/components/archanist.toml
+   ```
+
+3. **Remove the leftover Archanist container**, if one exists. The old recipe recreated a long-lived `archanist` container that only prints `--help` and restarts forever:
+
+   ```bash
+   docker rm -f archanist
+   ```
+
+4. *(Optional)* Remove the `self_component = "archanist"` line from `archanist-data/config.toml`. The config sync never removes keys, but a leftover value is harmless.
+5. **Check** that the new image is pulled:
+
+   ```bash
+   docker compose run --rm archanist --version
+   ```
+
+   You don't need to check `.env` by hand: the first step of every update (`check_env`) fails before anything is downloaded if a required key is missing. A failed update blocklists the target version, so after fixing `.env` run `docker compose run --rm archanist unblock travel-rs <version>`.
+
+### 7.2. v0.4.3
+
+The bot reads its token from the `TRAVELRS_BOT_TOKEN` environment variable instead of `config/prod-token.txt`; the `swap` step injects it into the bot container.
+
+1. Add `TRAVELRS_BOT_TOKEN=<your token>` to `archanist/.env`.
+2. Only if you stay below v0.4.5: in `archanist/docker-compose.yml`, add `TRAVELRS_BOT_TOKEN: ${TRAVELRS_BOT_TOKEN:?set TRAVELRS_BOT_TOKEN in .env}` under the `archanist` service's `environment:`. From v0.4.5 the whole `.env` is passed through.
+
+If the token never reaches Archanist, the bot container is recreated without it and restarts in a loop with `Environment variable 'TRAVELRS_BOT_TOKEN' for bot.token should be set`.

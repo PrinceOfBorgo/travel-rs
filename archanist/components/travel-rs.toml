@@ -3,14 +3,16 @@
 # Automated equivalent of the manual upgrade documented in DEPLOYMENT.md:
 #   1. Download deploy-v<version>.zip from the GitHub release
 #   2. Extract it
-#   3. Parse DEPLOYMENT.md and pick the migrations introduced AFTER the
+#   3. Install Archanist's OWN recipes from the bundle and continue the run
+#      with the new travel-rs recipe, so each release deploys with the
+#      automation shipped alongside it
+#   4. Parse DEPLOYMENT.md and pick the migrations introduced AFTER the
 #      currently-deployed version
-#   4. Snapshot the DB, then run those migrations
-#   5. Sync locale files
-#   6. Merge new keys into the active profile
-#   7. Refresh Archanist's OWN recipes + main config from the bundle, so the
-#      next update always uses the latest automation shipped with the bot
-#   8. Pull + recreate the bot container
+#   5. Snapshot the DB, then run those migrations
+#   6. Sync locale files
+#   7. Merge new keys into the active profile
+#   8. Refresh Archanist's main config from the bundle
+#   9. Pull + recreate the bot container
 #
 # Runs inside the dockerized Archanist (archanist/docker-compose.yml), which
 # needs nothing but its own binary and the mounted docker socket. Component
@@ -60,8 +62,8 @@ surreal_image = "surrealdb/surrealdb:v${vars.surreal_version}"
 install_dir = "/app/data/travel-rs"                  # container view
 install_dir_host = "${vars.host_data_dir}/travel-rs" # host view, for swap mounts
 
-# Archanist's own config + recipes sit at the volume root.
-archanist_components_dir = "/app/data/components"
+# Archanist's own config sits at the volume root (recipe_sync knows where
+# the recipes go).
 archanist_config = "/app/data/config.toml"
 
 # Bundle staging inside the volume.
@@ -76,6 +78,17 @@ bundle_extracted = "/app/data/staging/travel-rs-v${version}/deploy-v${version}"
 # copy/merge steps restore their pre-run backups, swap goes back to the old
 # image, and migrate restores the whole-DB snapshot taken before it ran.
 # ============================================================================
+
+# Fail fast on a missing .env entry. Step bodies resolve ${env.*} strictly
+# while [vars] tolerate gaps, so naming every variable the recipe needs here
+# stops the update before anything is downloaded or migrated, instead of
+# failing at the step that first uses it. Keep in sync with .env.example.
+[[steps]]
+id = "check_env"
+type = "container_run"
+image = "busybox"
+command = ["true"]
+env = ["ARCHANIST_HOST_DATA_DIR=${env.ARCHANIST_HOST_DATA_DIR}", "TRAVELRS_PROFILE=${env.TRAVELRS_PROFILE}", "TRAVELRS_BOT_TOKEN=${env.TRAVELRS_BOT_TOKEN}", "TRAVELRS_DB_ADDRESS=${env.TRAVELRS_DB_ADDRESS}", "TRAVELRS_DB_USERNAME=${env.TRAVELRS_DB_USERNAME}", "TRAVELRS_DB_PASSWORD=${env.TRAVELRS_DB_PASSWORD}", "TRAVELRS_DB_NAMESPACE=${env.TRAVELRS_DB_NAMESPACE}", "TRAVELRS_DB_NAME=${env.TRAVELRS_DB_NAME}"]
 
 # Grab the release zip.
 [[steps]]
@@ -92,6 +105,15 @@ type = "container_run"
 image = "busybox"
 binds = ["${vars.host_data_dir}:/app/data"]
 command = ["unzip", "-o", "${vars.staging_zip}", "-d", "${vars.staging_root}"]
+
+# Install the bundle's recipes (validated first, so a bad one never lands)
+# and continue this run with the new travel-rs.toml: the steps below come
+# from the release being deployed.
+[[steps]]
+id = "sync_archanist_recipes"
+type = "recipe_sync"
+src = "${vars.bundle_extracted}/archanist/components"
+reload = true
 
 # Work out which migrations are new. DEPLOYMENT.md's Migration Reference
 # table lists only releases that ship migrations; keep the rows strictly
@@ -171,15 +193,7 @@ type = "config_merge"
 target = "${vars.install_dir}/config/profiles/${vars.profile}.toml"
 patch = "${vars.bundle_extracted}/config/profiles/prod.toml.example"
 
-# Pull the latest recipes from the bundle so the next run uses them.
-# Overwrites components/*.toml, including this file (already loaded, fine).
-[[steps]]
-id = "sync_archanist_recipes"
-type = "copy_files"
-src = "${vars.bundle_extracted}/archanist/components"
-dest = "${vars.archanist_components_dir}"
-
-# Same for archanist's own config (no secrets, plain merge).
+# Refresh archanist's own config from the bundle (no secrets, plain merge).
 [[steps]]
 id = "sync_archanist_config"
 type = "config_merge"
@@ -221,8 +235,9 @@ restart_policy = "always"
 # Bumping this means reviewing the migration list in `baseline_migrate`.
 baseline_version = "0.2.5"
 network = "archanist-sandbox"
-# They'd overwrite the live recipes/config with the bundle's copies.
-skip_steps = ["sync_archanist_recipes", "sync_archanist_config"]
+# Would overwrite the live config with the bundle's copy. (`recipe_sync` is
+# safe here: in a sandbox it installs under the sandbox dir and never reloads.)
+skip_steps = ["sync_archanist_config"]
 
 # Shadows ${env.*}: the sandbox DB service below and a dummy bot token.
 [sandbox.env]

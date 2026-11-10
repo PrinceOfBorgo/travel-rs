@@ -7,33 +7,31 @@
 #
 # The Archanist container drives the host docker daemon through the mounted
 # socket to (re)create the bot container and ephemeral migration containers.
+#
+# This file is not synced by updates, so it is kept generic: per-host values
+# live in .env, and new releases only ever need new .env entries.
 
 services:
   archanist:
     image: ${ARCHANIST_IMAGE:-ghcr.io/princeofborgo/archanist}:${ARCHANIST_TAG:-latest}
     container_name: archanist
+    # Every run pulls the image first, so updates always run on the newest
+    # Archanist (or on ARCHANIST_TAG when pinned in .env). This is how
+    # Archanist itself gets updated.
+    pull_policy: always
     # Run on demand (`docker compose run --rm archanist update`); the default
-    # entrypoint is the Archanist binary. restart policy applies to the
-    # container that a `self` swap recreates.
-    restart: unless-stopped
+    # entrypoint is the Archanist binary. No restart policy: each run is a
+    # one-shot command.
     working_dir: /app/data
     command: ["--config", "/app/data/config.toml", "update"]
-    # Values feed both the recipe's `migrate` step and the bot container the
-    # `swap` step recreates. `:?` refuses to start if a value is
-    # missing.
-    environment:
-      # MUST equal the absolute host path that `./archanist-data` below
-      # resolves to on this host.
-      # The recipes hand this path to sibling containers, and the docker daemon
-      # resolves bind sources on the host, not inside Archanist.
-      ARCHANIST_HOST_DATA_DIR: ${ARCHANIST_HOST_DATA_DIR:?set ARCHANIST_HOST_DATA_DIR in .env}
-      TRAVELRS_PROFILE: ${TRAVELRS_PROFILE:?set TRAVELRS_PROFILE in .env}
-      TRAVELRS_BOT_TOKEN: ${TRAVELRS_BOT_TOKEN:?set TRAVELRS_BOT_TOKEN in .env}
-      TRAVELRS_DB_ADDRESS: ${TRAVELRS_DB_ADDRESS:?set TRAVELRS_DB_ADDRESS in .env}
-      TRAVELRS_DB_USERNAME: ${TRAVELRS_DB_USERNAME:?set TRAVELRS_DB_USERNAME in .env}
-      TRAVELRS_DB_PASSWORD: ${TRAVELRS_DB_PASSWORD:?set TRAVELRS_DB_PASSWORD in .env}
-      TRAVELRS_DB_NAMESPACE: ${TRAVELRS_DB_NAMESPACE:?set TRAVELRS_DB_NAMESPACE in .env}
-      TRAVELRS_DB_NAME: ${TRAVELRS_DB_NAME:?set TRAVELRS_DB_NAME in .env}
+    # Passes every .env entry to Archanist: the recipes read them as
+    # ${env.NAME} for the `migrate` step and the bot container `swap`
+    # recreates. Required keys are listed in .env.example; the travel-rs
+    # recipe's first step fails the update if any is missing.
+    env_file: .env
     volumes:
+      # ARCHANIST_HOST_DATA_DIR in .env MUST be the absolute host path this
+      # resolves to: the recipes hand it to sibling containers, and the docker
+      # daemon resolves bind sources on the host, not inside Archanist.
       - ./archanist-data:/app/data
       - /var/run/docker.sock:/var/run/docker.sock

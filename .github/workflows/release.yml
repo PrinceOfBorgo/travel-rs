@@ -104,7 +104,6 @@ jobs:
           mkdir -p "${BUNDLE_DIR}/archanist/components"
           cp archanist/config.toml "${BUNDLE_DIR}/archanist/config.toml"
           cp archanist/components/travel-rs.toml "${BUNDLE_DIR}/archanist/components/travel-rs.toml"
-          cp archanist/components/archanist.toml "${BUNDLE_DIR}/archanist/components/archanist.toml"
 
           # Ship the first-time bootstrap files too, so an operator can stand
           # Archanist up from the bundle alone. These are NOT synced on update

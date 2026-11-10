@@ -16,7 +16,7 @@ fluent-datetime = "=0.1.0"                                                      
 fluent-templates = "=0.13.0"                                                                                  # dependi: disable-check
 icu_calendar = "=1.5.2"                                                                                       # dependi: disable-check
 indoc = "2.0.8"
-log = "0.4.34"
+log = "0.4.35"
 macro_rules_attribute = "0.2.3"
 maplit = "1.0.2"
 regex = "1.13.1"

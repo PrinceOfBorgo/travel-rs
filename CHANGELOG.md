@@ -5,10 +5,12 @@
 - N/A
 
 ### Changed
-- N/A
+- Archanist is no longer updated by a recipe: `archanist/docker-compose.yml` now sets `pull_policy: always`, so every `docker compose run` pulls the newest image (or the pinned `ARCHANIST_TAG`) and updates always run on the latest Archanist. `components/archanist.toml` is removed from the repo and the bundle. `self_component` is gone from `archanist/config.toml`.
+- `archanist/docker-compose.yml` passes the whole `.env` to Archanist (`env_file: .env`) instead of listing each variable, so new variables only need a `.env` entry. The `travel-rs` recipe gains a first `check_env` step that fails the update if a required variable is missing, before anything is downloaded or migrated.
+- New [DEPLOYMENT.md section 7](DEPLOYMENT.md#7-manual-archanist-host-changes) lists, per release, the host-side changes updates can't make: compose edits, new `.env` keys, recipe deletions. **v0.4.5 needs one**: update the compose file, delete `archanist-data/components/archanist.toml`, and `docker rm -f archanist`.
 
 ### Fixed
-- N/A
+- Archanist README: `update`/`check` take the component as a positional argument (`update travel-rs`), not `--component`.
 
 ## [0.4.4] - 2026-11-04
 ### 🔧 Patch Release
