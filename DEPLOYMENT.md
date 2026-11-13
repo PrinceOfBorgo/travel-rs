@@ -1,7 +1,11 @@
 <!-- omit from toc -->
 # Deployment Guide
 
-This document covers production deployment, upgrades, and database migration procedures for Travel-RS Bot. The recommended deployment method is **Docker**; a manual (binary) deployment path is also documented for environments where Docker is not available.
+This document covers production deployment, upgrades, and database migration procedures for Travel-RS Bot.
+
+> **Default method: Archanist.** The recommended way to install and keep Travel-RS up to date is [Archanist](https://github.com/PrinceOfBorgo/archanist), the dockerized update engine shipped in every release bundle under `archanist/`. It automates the upgrade procedure below (download, migrations, locales, profile merge, container swap) with state tracking and rollback. **Follow the [Archanist guide](archanist/README.md)** for bootstrap and everyday operation, and check [section 7 (Manual Archanist Host Changes)](#7-manual-archanist-host-changes) before each update.
+>
+> The manual procedures in sections 2-4 (Docker or standalone binary) remain documented as a fallback and as a reference for what Archanist does under the hood.
 
 <!-- omit from toc -->
 ## Table of Contents
@@ -37,13 +41,15 @@ This document covers production deployment, upgrades, and database migration pro
 - A SurrealDB instance (cloud or self-hosted) accessible from the deployment host.
 - A valid Telegram bot token (obtain one from [@BotFather](https://t.me/BotFather)).
 
-**For Docker deployment (recommended):**
+**For Archanist deployment (default) and manual Docker deployment:**
 - **Docker Desktop** (Windows/macOS) or **Docker Engine** (Linux) installed and running.
 
 **For manual deployment:**
 - A `travel-rs` binary for your platform, built from source with `cargo build --release`. The release workflow only publishes Docker images — standalone binaries are not provided as release assets.
 
 ## 2. Fresh Installation
+
+> **Using Archanist (default)?** Follow the [Archanist guide](archanist/README.md#first-time-bootstrap) instead. On a fresh install Archanist applies every migration automatically. The steps below are the manual equivalent.
 
 ### 2.1. Download the Deploy Bundle
 
@@ -109,6 +115,8 @@ done
 
 ### 2.4. Start the Bot (Docker)
 
+> Manual Docker deployment. Prefer [Archanist](archanist/README.md), which manages the bot container for you.
+
 ```bash
 docker compose up -d
 ```
@@ -122,7 +130,7 @@ docker compose logs -f travel-rs
 
 ### 2.5. Start the Bot (Manual)
 
-> Docker is the recommended deployment method (see [the previous section](#24-start-the-bot-docker)). Use this section only if Docker is not available in your environment.
+> [Archanist](archanist/README.md) is the default deployment method, and plain Docker (see [the previous section](#24-start-the-bot-docker)) is the manual alternative. Use this section only if Docker is not available in your environment.
 
 If you prefer to run the binary directly without Docker:
 
@@ -198,6 +206,15 @@ If you prefer to run the binary directly without Docker:
 
 ## 3. Upgrading to a New Version
 
+> **Using Archanist (default)?** Apply any host changes listed in [section 7](#7-manual-archanist-host-changes) for the target release, then run:
+>
+> ```bash
+> cd /example/path/to/travel-rs/archanist
+> docker compose run --rm archanist update travel-rs
+> ```
+>
+> See the [Archanist guide](archanist/README.md#everyday-operation) for details. The steps below are the manual equivalent.
+
 ### 3.1. Download the New Deploy Bundle
 
 Download the **`deploy-v<version>.zip`** from the target [GitHub Release](https://github.com/PrinceOfBorgo/travel-rs/releases) and extract it to a temporary location:
@@ -271,7 +288,7 @@ docker compose up -d
 
 ### 3.7. Update and Restart (Manual)
 
-> Docker is the recommended deployment method (see [the previous section](#36-update-and-restart-docker)). Use this section only if you are running the binary directly.
+> [Archanist](archanist/README.md) is the default deployment method, and plain Docker (see [the previous section](#36-update-and-restart-docker)) is the manual alternative. Use this section only if you are running the binary directly.
 
 If running the binary directly:
 
@@ -317,6 +334,8 @@ rm -rf config.bak locales.bak  # after confirming everything works
 ## 4. Rollback
 
 If an upgrade fails:
+
+> **Using Archanist (default)?** Run `docker compose run --rm archanist rollback travel-rs` from the `archanist/` directory. It undoes the completed update steps in reverse, including restoring the database snapshot taken before migrating. See the [Archanist guide](archanist/README.md#everyday-operation).
 
 ### 4.1. Docker Rollback
 

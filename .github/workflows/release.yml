@@ -50,6 +50,13 @@ jobs:
         with:
           fetch-depth: 0
 
+      # Bundle the bumped CHANGELOG/Cargo.toml, not the -SNAPSHOT ones.
+      - name: Overlay bumped release files
+        uses: actions/download-artifact@v8
+        with:
+          name: release-files
+          path: .
+
       - name: Set lowercase repository name
         id: repo_lower_case
         run: echo "repo_lower=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"

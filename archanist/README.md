@@ -115,9 +115,9 @@ From the next release onward, step 4's `components/` and `config.toml` inside `a
 cd /example/path/to/travel-rs/archanist
 
 docker compose run --rm archanist check          # what updates are available
-docker compose run --rm archanist update         # update all components
-docker compose run --rm archanist update travel-rs
-docker compose run --rm archanist rollback travel-rs
+docker compose run --rm archanist update         # update all components (just travel-rs)
+docker compose run --rm archanist update travel-rs  # only travel-rs, even if stale recipes linger in components/
+docker compose run --rm archanist rollback travel-rs  # component name is required
 docker compose run --rm archanist status
 ```
 

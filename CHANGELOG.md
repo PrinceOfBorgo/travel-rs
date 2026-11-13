@@ -5,10 +5,10 @@
 - N/A
 
 ### Changed
-- N/A
+- Updated deployment documentation for Archanist.
 
 ### Fixed
-- N/A
+- Released Docker images reported the `-SNAPSHOT` version (e.g. `0.4.5-SNAPSHOT`): the image was compiled from the triggering commit before the version bump was committed. The release workflow now overlays the bumped `Cargo.toml`/`Cargo.lock`/`CHANGELOG.md` (`release-files` artifact) before building the image and the deploy bundle. Requires `rust-github-workflows` v2.3.0+.
 
 ## [0.4.5] - 2026-11-10
 ### 🔧 Patch Release
