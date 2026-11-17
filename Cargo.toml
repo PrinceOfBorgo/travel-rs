@@ -9,7 +9,7 @@ edition = "2024"
 [dependencies]
 anyhow = "1.0.104"
 chrono = "0.4.45"
-clap = { version = "4.6.7", features = ["derive"] }
+clap = { version = "4.6.8", features = ["derive"] }
 config = "0.15.27"
 fluent = "=0.16.1"                                                                                            # dependi: disable-check
 fluent-datetime = "=0.1.0"                                                                                    # dependi: disable-check
@@ -35,7 +35,7 @@ travel-rs-derive = { version = "0.1.0", path = "travel-rs-derive" }
 unic-langid = { version = "0.9.6", features = ["serde"] }
 
 [dev-dependencies]
-rand = "0.10.3"
+rand = "0.10.4"
 teloxide_tests = "0.4.0"
 
 [build-dependencies]

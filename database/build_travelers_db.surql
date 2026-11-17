@@ -227,7 +227,7 @@ DEFINE FUNCTION OVERWRITE fn::traveler_stats($chat: record<chat>) {
         math::sum(amount) AS total_paid,
         count() AS payment_count
     FROM $expenses
-    GROUP BY creditor
+    GROUP BY creditor, traveler_name
     ORDER BY traveler_name;
 
     -- Travelers who paid the most
@@ -294,7 +294,7 @@ DEFINE FIELD OVERWRITE amount ON expense TYPE decimal
 DEFINE FIELD OVERWRITE chat ON expense TYPE record<chat> PERMISSIONS FOR select, create, update WHERE FULL;
 DEFINE FIELD OVERWRITE description ON expense TYPE string PERMISSIONS FOR select, create, update WHERE FULL;
 DEFINE FIELD OVERWRITE number ON expense TYPE int PERMISSIONS FOR select, create, update WHERE FULL;
-DEFINE FIELD OVERWRITE timestamp_utc ON expense VALUE time::now() PERMISSIONS FOR select FULL, FOR create, update NONE;
+DEFINE FIELD OVERWRITE timestamp_utc ON expense TYPE datetime DEFAULT time::now() READONLY PERMISSIONS FOR select FULL, FOR create, update NONE;
 
 DEFINE INDEX OVERWRITE expense_chat_number_index ON expense FIELDS chat, number UNIQUE;
 
@@ -369,7 +369,7 @@ DEFINE FIELD OVERWRITE out ON transferred_to TYPE record<traveler>
     ASSERT $value != $this.in
         AND $value.chat == $this.in.chat
     PERMISSIONS FULL;
-DEFINE FIELD OVERWRITE timestamp_utc ON transferred_to VALUE time::now() PERMISSIONS FOR select FULL, FOR create, update NONE;
+DEFINE FIELD OVERWRITE timestamp_utc ON transferred_to TYPE datetime DEFAULT time::now() READONLY PERMISSIONS FOR select FULL, FOR create, update NONE;
 
 DEFINE INDEX OVERWRITE transferred_to_chat_number_index ON transferred_to FIELDS in.chat, number UNIQUE;
 

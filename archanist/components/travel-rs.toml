@@ -163,11 +163,18 @@ command = ["import", "--conn", "${vars.surreal_import_url}", "--user", "${vars.s
 backup_command = ["export", "--conn", "${vars.surreal_import_url}", "--user", "${vars.surreal_user}", "--pass", "${vars.surreal_pass}", "--ns", "${vars.surreal_ns}", "--db", "${vars.surreal_db}", "{backup}/pre-migrate.surql"]
 # Rollback: patch the dump, drop the DB (reset DDL on stdin), then reimport
 # the snapshot - a plain import won't remove objects newer migrations added.
-# SurrealDB 2.x exports relation tables' in/out fields as plain DEFINE FIELD,
-# which its own import rejects ("field 'in' already exists"), hence OVERWRITE.
+# The patch fixes two problems with SurrealDB 2.x dumps:
+# - relation tables' in/out fields are exported as plain DEFINE FIELD, which
+#   its own import rejects ("field 'in' already exists"), hence OVERWRITE;
+# - every DEFINE INDEX is moved to the end of the dump, so indexes are built
+#   once all records exist. Tables are exported alphabetically, so
+#   transferred_to is imported before traveler: building its
+#   (in.chat, number) unique index in place resolves in.chat to NONE, and two
+#   chats each holding transfer #1 collide and drop every transfer.
+#   (`$$` escapes Archanist interpolation: sed receives `${G;}`.)
 [[steps.restore]]
 image = "busybox"
-command = ["sed", "-i", "-E", "s/^DEFINE FIELD (in|out) ON /DEFINE FIELD OVERWRITE \\1 ON /", "{backup}/pre-migrate.surql"]
+command = ["sed", "-i", "-E", "-e", "s/^DEFINE FIELD (in|out) ON /DEFINE FIELD OVERWRITE \\1 ON /", "-e", "/^DEFINE INDEX /{H;d;}", "-e", "$${G;}", "{backup}/pre-migrate.surql"]
 
 [[steps.restore]]
 command = ["sql", "--conn", "${vars.surreal_import_url}", "--user", "${vars.surreal_user}", "--pass", "${vars.surreal_pass}", "--ns", "${vars.surreal_ns}"]

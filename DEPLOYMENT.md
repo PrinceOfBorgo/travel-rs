@@ -396,6 +396,15 @@ If an upgrade fails:
    ```
 
 > **Note:** Database migrations cannot be automatically rolled back. If a migration caused issues, you may need to manually revert the schema changes or restore from a database backup.
+>
+> **Restoring a `surreal export` dump (SurrealDB 2.x):** import it into an emptied database (`REMOVE DATABASE IF EXISTS <db>; DEFINE DATABASE <db>;`) only after patching it the way the Archanist recipe does. Relation tables' `in`/`out` fields need `OVERWRITE`, and every `DEFINE INDEX` must move to the end of the file, so indexes over record links (such as the per-chat transfer number) are built after all records exist:
+>
+> ```bash
+> sed -i -E -e 's/^DEFINE FIELD (in|out) ON /DEFINE FIELD OVERWRITE \1 ON /' \
+>   -e '/^DEFINE INDEX /{H;d;}' -e '${G;}' backup.surql
+> ```
+>
+> Without the index move, the import fails as soon as two chats both have a transfer with the same number, and every transfer is lost.
 
 ## 5. Deploy Bundle Contents
 
@@ -452,6 +461,7 @@ The following table maps each release to the database migration scripts it intro
 | v0.3.0  | `006_add_validation_constraints.surql`, `007_case_insensitive_traveler_names.surql` | Schema validation constraints               |
 | v0.3.1  | `008_add_traveler_number.surql`                                                     | Stable numeric ID for travelers             |
 | v0.3.2  | `009_assert_chat_equality.surql`                                                    | Chat-equality assertions on relation tables |
+| v0.4.6  | `010_fix_timestamps.surql`, `011_fix_traveler_stats.surql`                          | Stable timestamps; traveler stats grouping  |
 
 ## 7. Manual Archanist Host Changes
 

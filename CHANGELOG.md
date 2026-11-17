@@ -6,9 +6,15 @@
 
 ### Changed
 - Updated deployment documentation for Archanist.
+- Updated dependencies.
 
 ### Fixed
-- Released Docker images reported the `-SNAPSHOT` version (e.g. `0.4.5-SNAPSHOT`): the image was compiled from the triggering commit before the version bump was committed. The release workflow now overlays the bumped `Cargo.toml`/`Cargo.lock`/`CHANGELOG.md` (`release-files` artifact) before building the image and the deploy bundle. Requires `rust-github-workflows` v2.3.0+.
+- Archanist `migrate` step's rollback lost every transfer once two chats each had a transfer with the same number. SurrealDB exports tables alphabetically, so `transferred_to` was re-imported before `traveler`. Its `(in.chat, number)` unique index then resolved `in.chat` to `NONE` and collided. The recipe's restore patch now moves all `DEFINE INDEX` statements to the end of the snapshot, so indexes are built once every record exists.
+- `timestamp_utc` on expenses and transfers was defined with `VALUE time::now()`, which is re-evaluated on every write: updating a record reset its date. It is now `DEFAULT time::now() READONLY`, set once on creation. Existing dates are kept. This fix requires [database](database) schema updates. Run the following script to migrate (update through [Archanist](archanist/README.md) to apply it automatically):
+  - [`010_fix_timestamps.surql`](database/migrations/010_fix_timestamps.surql)
+- `fn::traveler_stats` grouped payments by `creditor` only while projecting `creditor.name`. Newer SurrealDB versions return that projection as an array (`["Alice"]`). It now groups by `creditor, traveler_name`. The output is unchanged on SurrealDB 2.x. This fix requires [database](database) schema updates. Run the following script to migrate (update through [Archanist](archanist/README.md) to apply it automatically):
+  - [`011_fix_traveler_stats.surql`](database/migrations/011_fix_traveler_stats.surql)
+- Released Docker images reported the `-SNAPSHOT` version: the image was compiled from the triggering commit before the version bump was committed. The release workflow now overlays the bumped `Cargo.toml`/`Cargo.lock`/`CHANGELOG.md` (`release-files` artifact) before building the image and the deploy bundle. Requires `rust-github-workflows` v2.3.0+.
 
 ## [0.4.5] - 2026-11-10
 ### 🔧 Patch Release

@@ -220,3 +220,32 @@ impl Display for Expense {
         write!(f, "{}", self.translate_default())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{chat::Chat, db::db};
+
+    test! { test_timestamp_utc_preserved_on_update,
+        let db = db().await;
+        let chat_id = ChatId(rand::random());
+        Chat::db_create(db.clone(), chat_id, &"en-US".parse().unwrap(), "USD")
+            .await
+            .unwrap();
+        let expense = Expense::db_create(db.clone(), chat_id, "Dinner".into(), Decimal::new(1000, 2))
+            .await
+            .unwrap()
+            .unwrap();
+
+        let updated = db
+            .query(format!("UPDATE $id SET {DESCRIPTION} = 'Lunch'"))
+            .bind(("id", expense.id.clone()))
+            .await
+            .and_then(|mut response| response.take::<Option<Expense>>(0))
+            .unwrap()
+            .unwrap();
+
+        assert_eq!(updated.description, "Lunch");
+        assert_eq!(updated.timestamp_utc, expense.timestamp_utc);
+    }
+}
